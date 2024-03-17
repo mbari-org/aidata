@@ -92,7 +92,7 @@ depends on the model.
 
 Be sure to have a solid internet connection and enough disk space to download the data.
 
-*If your leave off the labels option*, the default is to fetch **all** concepts.
+*If your leave off the labels option*, the default is to fetch **all** labels.
 
 ```shell
 python aidata download --version Baseline --labels "Diatoms, Copepods"
@@ -121,7 +121,7 @@ This should be done by a company AWS administrator.  Once the account is setup, 
 If you want to download data also in the PASCAL VOC format, use the optional --voc flag, e.g.
 
 ```shell
-python aidata download --generator cluster --version Baseline --concepts "Krill molt, Eusergestes similis" --voc
+python aidata download --generator cluster --version Baseline --labels "Diatoms, Copepods" --voc
 ```
 
 Download data format is saved to a directory with the following structure e.g. for the Baseline version:
@@ -138,7 +138,7 @@ Baseline
 Use the optional --coco flag to download data in the [COCO](https://cocodataset.org/#home) format, e.g.
 
 ```shell
-python aidata download --version Baseline --concepts "Krill molt, Eusergestes similis"  --coco
+python aidata download --version Baseline --labels "Diatoms, Copepods"  --coco
 ```
 
 Download data format is saved to a directory with the following structure e.g. for the Baseline version:
