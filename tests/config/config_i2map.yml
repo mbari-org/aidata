@@ -1,0 +1,35 @@
+# config_i2map.yml
+# Config file for i2MAP experiments testing
+mounts:
+  - name: "image"
+    path: "./data/i2map"
+    nginx_root: "/data/i2map"
+    host: "192.168.0.17" # Note: This is the IP address of the host machine which changes based on the network
+    port: 8082
+
+plugins:
+  - name: "extractor"
+    module: "aidata.plugins.extractors.tap_i2map_media"
+    function: "extract_media"
+
+tator:
+  project: "i2map"
+  host: "ada.local"
+  image:
+    attributes:
+      iso_datetime:
+        type: datetime
+      depth:
+        type: int
+      is_day:
+        type: bool
+  box:
+    attributes:
+      Label:
+        type: string
+      score:
+        type: float
+      cluster:
+        type: string
+      saliency:
+        type: float
