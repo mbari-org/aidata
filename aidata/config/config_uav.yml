@@ -1,0 +1,30 @@
+# config_uav.yml
+# Config file for UAV production
+mounts:
+  - name: "image"
+    path: "/mnt/UAV"
+    nginx_root: "/UAV"
+
+tator:
+  project: "901902-uavs"
+  host: "mantis.shore.mbari.org"
+  image:
+    attributes:
+      iso_datetime:
+        type: string
+      latitude:
+        type: float
+      longitude:
+        type: float
+  box:
+    attributes:
+      Label:
+        type: string
+      score:
+        type: float
+      cluster:
+        type: string
+      saliency:
+        type: float
+      area:
+        type: int

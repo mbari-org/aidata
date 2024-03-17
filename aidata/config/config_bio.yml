@@ -1,0 +1,45 @@
+# config_bio.yml
+# Config file for BioDiversity project production
+mounts:
+  - name: "video"
+    path: "/mnt/M3"
+    host: "m3.shore.mbari.org"
+    nginx_root: "/M3"
+  - name: "image"
+    path: "/raid/bio"
+    host: "digits-dev-box-fish.shore.mbari.org"
+    nginx_root: "/bio"
+    port: 8081
+
+
+tator:
+  project: "901103-biodiversity"
+  host: "mantis.shore.mbari.org"
+  image:
+    attributes:
+      iso_datetime:
+        type: datetime
+      index_elapsed_time_millis:
+        type: int
+  video:
+    attributes:
+      iso_start_datetime:
+        type: datetime
+      video_reference_uuid:
+        type: string
+  box:
+    attributes:
+      Label:
+        type: string
+      score:
+        type: float
+      concept:
+        type: string
+      cluster:
+        type: string
+      group:
+        type: string
+      obs_url:
+        type: string
+
+ffmpeg_path: "/opt/homebrew/bin/ffmpeg"

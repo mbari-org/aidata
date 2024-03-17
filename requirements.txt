@@ -1,0 +1,9 @@
+redis==5.0.1
+tator==1.2.3
+ephem
+pytz
+pandas
+click
+tqdm
+requests
+pascal-voc-writer>=0.1.4

@@ -1,0 +1,36 @@
+# config_i2map.yml
+# Config file for i2MAP experiments
+mounts:
+  - name: "image"
+    path: "/Volumes/tatordata"
+    host: "i2map.shore.mbari.org"
+    port: 8081
+
+plugins:
+  - name: "extractor"
+    module: "aidata.plugins.extractors.tap_i2map_media"
+    function: "extract_media"
+
+tator:
+  project: "i2map"
+  host: "i2map.shore.mbari.org"
+  image:
+    attributes:
+      iso_datetime:
+        type: datetime
+      depth:
+        type: int
+      is_day:
+        type: bool
+  box:
+    attributes:
+      Label:
+        type: string
+      score:
+        type: float
+      cluster:
+        type: string
+      saliency:
+        type: float
+
+ffmpeg_path: "/opt/homebrew/bin/ffmpeg"
