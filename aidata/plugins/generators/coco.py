@@ -156,7 +156,7 @@ def download(
                         break
 
                     localizations = localizations + new_localizations
-        else:
+        if not labels_list and not concepts_list:
             localizations = []
             for start in range(0, num_records, inc):
                 if attribute_filter:
