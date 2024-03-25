@@ -2,7 +2,7 @@
 [![Python](https://img.shields.io/badge/language-Python-blue.svg)](https://www.python.org/downloads/)
 
 *aidata* is a command line tool to do basic extract, transform, load and download operations
-on ai data for a number of projects at MBARI that require detection or classifation
+on ai data for a number of projects at MBARI that require detection or classification
 workflows.
 
 This is a work in progress and more operations will be added as needed.
