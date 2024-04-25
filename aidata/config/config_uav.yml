@@ -3,7 +3,13 @@
 mounts:
   - name: "image"
     path: "/mnt/UAV"
+    host: "DiGiTS-Dev-Box-Fish.shore.mbari.org"
     nginx_root: "/UAV"
+
+plugins:
+  - name: "extractor"
+    module: "aidata.plugins.extractors.tap_uav_media"
+    function: "extract_media"
 
 tator:
   project: "901902-uavs"
