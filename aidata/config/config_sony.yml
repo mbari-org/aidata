@@ -1,0 +1,43 @@
+# config_sony.yml
+# Config file for SONY image metadata extraction
+mounts:
+  - name: "image"
+    path: "/mnt/UAV"
+    host: "mantis.shore.mbari.org"
+    nginx_root: "/UAV"
+
+plugins:
+  - name: "extractor"
+    module: "aidata.plugins.extractors.tap_sony"
+    function: "extract_media"
+
+tator:
+  project: "901902-uavs"
+  host: "mantis.shore.mbari.org"
+  image:
+    attributes:
+      date:
+        type: string
+      time:
+        type: string
+      latitude:
+        type: float
+      longitude:
+        type: float
+      make:
+        type: string
+      model:
+        type: string
+
+  box:
+    attributes:
+      Label:
+        type: string
+      score:
+        type: float
+      cluster:
+        type: string
+      saliency:
+        type: float
+      area:
+        type: int
