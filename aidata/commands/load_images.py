@@ -84,7 +84,7 @@ def load_images(token: str, config: str, dry_run: bool, input: str, section: str
         specs = []
         image_path_str = input_path.as_posix()
         for index, row in df_media.iterrows():
-            file_loc_sans_root = row["image_path"].split(image_path_str)[-1]
+            file_loc_sans_root = row["image_path"].split(image_mount_path.as_posix())[-1]
             image_url = f"{image_base_url}{file_loc_sans_root}"
 
             # Check if the URL is valid
