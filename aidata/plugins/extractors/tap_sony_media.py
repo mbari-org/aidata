@@ -16,7 +16,7 @@ def extract_media(image_path: Path, max_images: int = None) -> pd.DataFrame:
     # Create a dataframe to store the combined data in an image_path column in sorted order
     images_df = pd.DataFrame()
     images = []
-    allowed_extensions = [".png"]
+    allowed_extensions = [".jpg", ".jpeg", ".png"]
     for ext in allowed_extensions:
         images.extend(list(image_path.rglob(f"*{ext}")))
 
@@ -25,6 +25,11 @@ def extract_media(image_path: Path, max_images: int = None) -> pd.DataFrame:
     images_df.sort_values(by="image_path")
     if max_images:
         images_df = images_df.iloc[:max_images]
+
+    # Check for empty dataframe
+    if images_df.empty:
+        info("No images found")
+        return images_df
 
     # Read in the exif data from the image
     info(f"Reading exif data from {len(images_df)} images")
