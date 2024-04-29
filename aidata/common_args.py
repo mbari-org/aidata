@@ -6,9 +6,6 @@ from pathlib import Path
 import os
 import click
 
-default_yaml_config = Path(os.path.dirname(__file__)) / "config" / "config_uav.yml"
-default_yaml_config = Path(os.path.dirname(__file__)) / "config" / "config_bio.yml"
-
 # Common arguments for commands
 token = click.option(
     "--token",
@@ -19,7 +16,6 @@ token = click.option(
 yaml_config = click.option(
     "--config",
     required=True,
-    default=default_yaml_config,
     type=click.Path(exists=True),
     help="Path to a YAML file with project configuration",
 )
