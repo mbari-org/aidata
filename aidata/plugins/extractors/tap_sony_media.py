@@ -16,7 +16,7 @@ def extract_media(image_path: Path, max_images: int = None) -> pd.DataFrame:
     # Create a dataframe to store the combined data in an image_path column in sorted order
     images_df = pd.DataFrame()
     images = []
-    allowed_extensions = [".jpg", ".jpeg", ".png", "*.JPEG", "*.JPG", "*.PNG"]
+    allowed_extensions = [".jpg", ".jpeg", ".png", ".JPEG", ".JPG", ".PNG"]
     for ext in allowed_extensions:
         images.extend(list(image_path.rglob(f"*{ext}")))
 
