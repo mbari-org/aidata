@@ -42,8 +42,10 @@ def extract_media(image_path: Path, max_images: int = None) -> pd.DataFrame:
     date = []
     time = []
     # TODO: save date/time as iso_datetime object instead of separate date and time columns strings
-    for df in images_df.iterrows():
-        exif = piexif.load(df.image_path.as_posix())
+    sorted_df = images_df.sort_values(by='image_path')
+    for _, row in sorted_df.iterrows():
+        info(f"Reading {row.image_path}")
+        exif = piexif.load(row.image_path)
         # Get the date and time the image was taken
         date_time = exif['Exif'][piexif.ExifIFD.DateTimeOriginal].decode('utf-8')
         # Get the date the image was taken
@@ -80,3 +82,5 @@ def extract_media(image_path: Path, max_images: int = None) -> pd.DataFrame:
     images_df["longitude"] = longitude
     images_df["date"] = date
     images_df["time"] = time
+    info(f'Done')
+    return images_df
