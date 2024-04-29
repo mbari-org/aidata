@@ -51,6 +51,7 @@ Adjust if needed, e.g. to point to the correct mount point for the data.
 mounts:
   - name: "image"
     path: "/Volumes/CFElab"
+    host: "192.168.0.17" # or a hostname 
     ...
 ```
 
@@ -58,6 +59,12 @@ Images need to be loaded before SDCAT csv files, e.g.
 
 ```text
 python aidata load images --config config/config_cfe.yml --input /Volumes/CFElab/2021-07-01/ --section 2021/07
+```
+
+### TIP
+Add the --dry-run to load without actually loading
+```text
+python aidata load images --config config/config_cfe.yml --input /Volumes/CFElab/2021-07-01/ --dry-run --section 2021/07
 ```
 
 then load the SDCAT csv files, e.g.
