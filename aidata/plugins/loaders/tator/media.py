@@ -148,9 +148,9 @@ def load_bulk_images(project_id: int, api: tator.api, specs: list) -> List[int]:
     try:
         chunk_size = min(500, len(specs))
         media_ids = []
-        print(f"Creating {len(specs)} media images")
+        info(f"Creating {len(specs)} media images")
         media_ids += [new_id for response in tator.util.chunked_create(api.create_media_list, project_id, chunk_size=chunk_size, body=specs) for new_id in response.id]
-        print(f"Created {len(media_ids)} medias")
+        info(f"Created {len(media_ids)} medias")
         return media_ids
     except Exception as e:
         err(f"Error creating media images {e}")
