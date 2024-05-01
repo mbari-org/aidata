@@ -1,0 +1,34 @@
+# config_compas.yml
+# Config file for CoMPAS project production
+mounts:
+  - name: "image"
+    path: "/mnt/CoMPAS"
+    host: "mantis.shore.mbari.org"
+    nginx_root: "/CoMPAS"
+
+
+tator:
+  project: "902204-CoMPAS"
+  host: "mantis.shore.mbari.org"
+  image:
+    attributes:
+      iso_datetime:
+        type: datetime
+      depth:
+        type: float
+      latitude:
+        type: float
+      longitude:
+        type: float
+      platform:
+        type: string
+      camera:
+        type: string
+      mission:
+        type: string
+  box:
+    attributes:
+      Label:
+        type: string
+      score:
+        type: float
