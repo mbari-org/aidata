@@ -85,7 +85,6 @@ def load_boxes(token: str, config: str, version: str, input: str, dry_run: bool,
             info(f"{image_path} boxes {specs}")
             box_ids = load_bulk_boxes(tator_project.id, api, specs)
             info(f"Loaded {len(box_ids)} boxes into Tator for {image_path}")
-            return len(box_ids)
     except Exception as e:
         err(f"Error: {e}")
         raise e
