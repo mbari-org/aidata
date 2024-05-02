@@ -27,7 +27,7 @@ def extract_media(image_path: Path, max_images: int = None) -> pd.DataFrame:
     images_df["image_path"] = images
     images_df.sort_values(by="image_path")
     if max_images:
-        images_df = images_df.iloc[:max_images]
+        images_df = images_df.head(max_images)
 
     pattern_date1 = re.compile(r"(\d{4})(\d{2})(\d{2})T(\d{2})(\d{2})(\d{2})Z")  # 20161025T184500Z
     pattern_date2 = re.compile(r"(\d{4})(\d{2})(\d{2})T(\d{2})(\d{2})(\d{2})Z\d*mF*")

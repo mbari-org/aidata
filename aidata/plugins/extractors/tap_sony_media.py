@@ -24,7 +24,7 @@ def extract_media(image_path: Path, max_images: int = None) -> pd.DataFrame:
     images_df["image_path"] = images
     images_df.sort_values(by="image_path")
     if max_images:
-        images_df = images_df.iloc[:max_images]
+        images_df = images_df.head(max_images)
 
     # Check for empty dataframe
     if images_df.empty:
