@@ -27,7 +27,7 @@ def extract_media(image_path: Path, max_images: int = None) -> pd.DataFrame:
     # Create a dataframe to store the combined data in an image_path column in sorted order
     images_df = pd.DataFrame()
     images = []
-    allowed_extensions = [".png"]
+    allowed_extensions = [".png", ".jpg"]
     for ext in allowed_extensions:
         images.extend(list(image_path.rglob(f"*{ext}")))
 
@@ -37,10 +37,8 @@ def extract_media(image_path: Path, max_images: int = None) -> pd.DataFrame:
     if max_images:
         images_df = images_df.iloc[:max_images]
 
-    # 'CFE_ISIIS-010-2024-01-26T10-14-07.102Z_0835.png'
-    pattern_date = re.compile(r"\d{4}-\d{2}-\d{2}T\d{2}-\d{2}-\d{2}.\d{3}Z")  # 2016-06-06T16_04_54
-    pattern_instrument = re.compile(r"(.+?)\d{4}-\d{2}-\d{2}T\d{2}-\d{2}-\d{2}")  # CFE_ISIIS-010-
-    pattern_frame = re.compile(r"_(\d{4}).png")  # 0835.png
+    # 'CFE_ISIIS-010-2024-01-26 10-14-07.102_0835.png'
+    pattern = re.compile(r"CFE_(.*?)-(\d+)-(\d{4}-\d{2}-\d{2} \d{2}-\d{2}-\d{2}\.\d{3})_(\d{4})")
 
     # Grab any additional metadata from the image name,
     iso_datetime = {}
@@ -52,29 +50,26 @@ def extract_media(image_path: Path, max_images: int = None) -> pd.DataFrame:
     for group, df in images_df.groupby("image_path"):
         image_name = Path(group).name
         info(image_name)
-        if pattern_date.search(image_name):
-            match = pattern_date.search(image_name)
-            datetime_str = match[0]
-            dt = datetime.strptime(datetime_str, "%Y-%m-%dT%H-%M-%S.%fZ")
+        matches = re.findall(pattern, image_name)
+        if matches:
+            instrument, _, datetime_str, frame_num = matches[0] 
+            datetime_str = datetime_str + 'Z'
+            dt = datetime.strptime(datetime_str, "%Y-%m-%d %H-%M-%S.%fZ")
             dt_utc = pytz.utc.localize(dt)
             iso_datetime[index] = dt_utc
-        if pattern_instrument.search(image_name):
-            match = pattern_instrument.search(image_name).groups()
-            instrument = match[0]
-            instrument_type[index] = instrument[:-1]  # Remove trailing - from instrument type
-        if pattern_frame.search(image_name):
-            match = pattern_frame.search(image_name).groups()
-            increment_seconds = int(int(match[0]) / fps)
-            # Add the increment seconds to the iso datetime
-            iso_datetime[index] = iso_datetime[index] + pd.Timedelta(seconds=increment_seconds)
-        index += 1
+            instrument_type[index] = instrument
+            increment_mseconds = int(int(frame_num) * 1e6 / fps)
+            iso_datetime[index] = iso_datetime[index] + pd.Timedelta(microseconds=increment_mseconds)
+            index += 1
 
     if len(instrument_type) == 0:
         raise ValueError("No instrument type found in image names")
     if len(iso_datetime) == 0:
         raise ValueError("No iso datetime found in image names")
 
+    if max_images:
+        images_df = images_df.head(max_images)
+
     images_df["instrument"] = instrument_type
     images_df["iso_datetime"] = iso_datetime
-
     return images_df
