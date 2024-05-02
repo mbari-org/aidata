@@ -21,7 +21,8 @@ from aidata.plugins.module_utils import load_module
 @common_args.dry_run
 @click.option("--input", type=str, required=True, help="Path to directory with input images")
 @click.option("--section", type=str, default="All Media", help="Section to load images into. Default is 'All Media'")
-def load_images(token: str, config: str, dry_run: bool, input: str, section: str) -> int:
+@click.option("--max-images", type=int, help="Only load up to max-images. Useful for testing. Default is to load all images")
+def load_images(token: str, config: str, dry_run: bool, input: str, section: str, max_images: int) -> int:
     """Load images from a directory. Assumes the images are available via a web server. Returns the number of images loaded."""
     create_logger_file("load_images")
     try:
@@ -72,7 +73,7 @@ def load_images(token: str, config: str, dry_run: bool, input: str, section: str
             err(f"{input_path} does not exist")
             return -1
 
-        df_media = extractor(input_path)
+        df_media = extractor(input_path, max_images)
         if len(df_media) == 0:
             info(f"No images found in {input_path}")
             return 0
