@@ -58,19 +58,19 @@ mounts:
 Images need to be loaded before SDCAT csv files, e.g. 
 
 ```text
-python aidata load images --config config/config_cfe.yml --input /Volumes/CFElab/2021-07-01/ --section 2021/07
+python aidata load images --token $TATOR_TOKEN --config config/config_cfe.yml --input /Volumes/CFElab/2021-07-01/ --section 2021/07
 ```
 
 ### TIP
 Add the --dry-run to load without actually loading
 ```text
-python aidata load images --config config/config_cfe.yml --input /Volumes/CFElab/2021-07-01/ --dry-run --section 2021/07
+python aidata load images  --token $TATOR_TOKEN --config config/config_cfe.yml --input /Volumes/CFElab/2021-07-01/ --dry-run --section 2021/07
 ```
 
 then load the SDCAT csv files, e.g.
 
 ```text
-python aidata load boxes --config config/config_cfe.yml --input /Volumes/CFElab/2021-07-01/ --version Baseline
+python aidata load boxes --token $TATOR_TOKEN --config config/config_cfe.yml --input /Volumes/CFElab/2021-07-01/ --version Baseline
 ```
 
 ## 
@@ -102,7 +102,7 @@ Be sure to have a solid internet connection and enough disk space to download th
 *If your leave off the labels option*, the default is to fetch **all** labels.
 
 ```shell
-python aidata download --version Baseline --labels "Diatoms, Copepods"
+python aidata download  --token $TATOR_TOKEN --version Baseline --labels "Diatoms, Copepods"
 ```
 
 Download data format is saved to a directory with the following structure e.g. for the Baseline version:
@@ -128,7 +128,7 @@ This should be done by a company AWS administrator.  Once the account is setup, 
 If you want to download data also in the PASCAL VOC format, use the optional --voc flag, e.g.
 
 ```shell
-python aidata download --generator cluster --version Baseline --labels "Diatoms, Copepods" --voc
+python aidata download  --token $TATOR_TOKEN --generator cluster --version Baseline --labels "Diatoms, Copepods" --voc
 ```
 
 Download data format is saved to a directory with the following structure e.g. for the Baseline version:
@@ -145,7 +145,7 @@ Baseline
 Use the optional --coco flag to download data in the [COCO](https://cocodataset.org/#home) format, e.g.
 
 ```shell
-python aidata download --version Baseline --labels "Diatoms, Copepods"  --coco
+python aidata download  --token $TATOR_TOKEN --version Baseline --labels "Diatoms, Copepods"  --coco
 ```
 
 Download data format is saved to a directory with the following structure e.g. for the Baseline version:
@@ -160,7 +160,7 @@ Baseline
 Use the optional --cifar flag to download data in the [CIFAR](https://www.cs.toronto.edu/~kriz/cifar.html) format, e.g.
 
 ```shell
-download --generator vars-annotation --version Baseline --group MERGE_CLASSIFY --base-dir VARSi2MAP --concepts "Atolla" --cifar --voc --cifar-size 128
+download --generator vars-annotation  --token $TATOR_TOKEN --version Baseline --group MERGE_CLASSIFY --base-dir VARSi2MAP --concepts "Atolla" --cifar --voc --cifar-size 128
 ```
 
 The CIFAR data is saved in a npy file with the following structure, e.g. for the data version Baseline:
