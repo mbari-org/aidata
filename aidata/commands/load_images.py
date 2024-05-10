@@ -9,10 +9,10 @@ import requests
 
 from aidata import common_args
 from aidata.logger import create_logger_file, info, err
-from aidata.plugins.attribute_utils import format_attributes
-from aidata.plugins.loaders.common import init_yaml_config, init_api_project, find_media_type
 from aidata.plugins.loaders.tator.media import gen_spec as gen_media_spec, load_bulk_images
 from aidata.plugins.module_utils import load_module
+from aidata.plugins.loaders.tator.attribute_utils import format_attributes
+from aidata.plugins.loaders.tator.common import init_api_project, find_media_type, init_yaml_config
 
 
 @click.command("images", help="Load images from a directory")
