@@ -101,6 +101,8 @@ Be sure to have a solid internet connection and enough disk space to download th
 
 *If your leave off the labels option*, the default is to fetch **all** labels.
 
+*multiple versions* can be combined before downloading, e.g. `--version Baseline --version Test`
+
 ```shell
 python aidata download  --token $TATOR_TOKEN --version Baseline --labels "Diatoms, Copepods"
 ```

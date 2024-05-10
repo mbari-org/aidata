@@ -6,7 +6,7 @@ import json
 import redis
 
 from aidata.plugins.loaders.tator.localization import gen_spec, load_bulk_boxes
-from aidata.plugins.attribute_utils import format_attributes
+from aidata.plugins.loaders.tator.attribute_utils import format_attributes
 from aidata.logger import info
 
 

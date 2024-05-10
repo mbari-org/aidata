@@ -11,9 +11,9 @@ import click
 
 from aidata import common_args
 from aidata.logger import info, create_logger_file
-from aidata.plugins.loaders.common import init_yaml_config, init_api_project, find_media_type, find_box_type
 from aidata.plugins.loaders.tator_redis.consume_localization import ConsumeLocalization
 from aidata.plugins.loaders.tator_redis.consume_media import ConsumeVideo
+from aidata.plugins.loaders.tator.common import init_yaml_config, init_api_project, find_media_type, find_box_type
 
 
 @click.command("queue", help="Load data from a Redis message queue")
