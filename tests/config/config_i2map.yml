@@ -5,7 +5,7 @@ mounts:
     path: "./data/i2map"
     nginx_root: "/data/i2map"
     host: "192.168.0.17" # Note: This is the IP address of the host machine which changes based on the network
-    port: 8082
+    port: 8080
 
 plugins:
   - name: "extractor"
