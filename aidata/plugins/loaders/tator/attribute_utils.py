@@ -1,5 +1,5 @@
 # aidata, Apache-2.0 license
-# Filename: database/data_types.py
+# Filename: plugins/loaders/tator/attribute_utils.py
 # Description:  Database types
 
 import pytz

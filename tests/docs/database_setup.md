@@ -7,7 +7,7 @@ First checkout the 1.2.5 release of TATOR
 
 ```shell
 git clone --recurse-submodules https://github.com/mbari-org/tator
-checkout 1.2.5
+git checkout 1.2.5
 cd tator
 cp example.env .env
 ```
@@ -18,7 +18,7 @@ Replace localhost with name of your machine running the TATOR database in the **
 MAIN_HOST=ada.local # replace with your machine name
 ```
 
-Add your IP to the e.g. `config_cfe_local.yml` file.
+Add your IP to the e.g. `../tests/config/config_cfe.yml` file.
 
 ```yaml
 mounts:

@@ -33,7 +33,7 @@ def test_load_media_dryrun():
             "--dry-run",
             "--input",
             image_path.as_posix(),
-            "--yaml-config",
+            "--config",
             config_yaml.as_posix(),
         ],
     )
@@ -55,7 +55,7 @@ def test_load_media_i2map():
             "images",
             "--input",
             image_path.as_posix(),
-            "--yaml-config",
+            "--config",
             config_yaml.as_posix(),
         ],
     )
@@ -77,7 +77,7 @@ def test_load_media_cfe():
             "images",
             "--input",
             image_path.as_posix(),
-            "--yaml-config",
+            "--config",
             config_yaml.as_posix(),
         ],
     )
@@ -97,7 +97,7 @@ def test_load_boxes_i2map():
             "boxes",
             "--input",
             csv_path.as_posix(),
-            "--yaml-config",
+            "--config",
             config_yaml.as_posix(),
         ],
     )
@@ -119,7 +119,7 @@ def test_load_boxes_i2map_version():
             csv_path.as_posix(),
             "--version",
             "Baseline",
-            "--yaml-config",
+            "--config",
             config_yaml.as_posix(),
         ],
     )
