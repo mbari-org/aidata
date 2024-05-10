@@ -1,5 +1,5 @@
 # aidata, Apache-2.0 license
-# Filename: plugins/loaders/common.py
+# Filename: plugins/loaders/tator/common.py
 # Description: Common database functions
 import os
 import yaml

@@ -5,11 +5,11 @@ import click
 from aidata import common_args
 from pathlib import Path
 from aidata.logger import create_logger_file, info, err
-from aidata.plugins.attribute_utils import format_attributes
 from aidata.plugins.extractors.tap_sdcat_csv import extract_sdcat_csv
-from aidata.plugins.loaders.common import init_yaml_config, init_api_project, find_box_type, get_version_id
 from aidata.plugins.loaders.tator.localization import gen_spec as gen_localization_spec
 from aidata.plugins.loaders.tator.localization import load_bulk_boxes
+from aidata.plugins.loaders.tator.attribute_utils import format_attributes
+from aidata.plugins.loaders.tator.common import init_yaml_config, find_box_type, init_api_project, get_version_id
 
 
 @click.command("boxes", help="Load boxes from a directory with SDCAT formatted CSV files")
