@@ -38,17 +38,11 @@ class ConsumeLocalization:
                         boxes = []
                         for b in objects:
                             obj = objects[b]
-                            import pdb
-
-                            pdb.set_trace()
                             attributes = format_attributes(obj, self.box_type.attributes)
-                            version_id = None
-                            if "version_id" in obj:
-                                version_id = obj["version_id"]
                             boxes.append(
                                 gen_spec(
                                     box=[obj["x1"], obj["y1"], obj["x2"], obj["y2"]],
-                                    version_id=version_id,
+                                    version_id=obj["version_id"],
                                     label=obj["label"],
                                     width=obj["width"],
                                     height=obj["height"],

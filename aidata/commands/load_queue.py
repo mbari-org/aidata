@@ -8,7 +8,7 @@ from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 
 import click
-
+import redis
 from aidata import common_args
 from aidata.logger import info, create_logger_file
 from aidata.plugins.loaders.tator_redis.consume_localization import ConsumeLocalization
@@ -22,7 +22,6 @@ from aidata.plugins.loaders.tator.common import init_yaml_config, init_api_proje
 def load_queue(token: str, config: str) -> None:
     """Load data from a Redis message queue."""
     create_logger_file("load_queue")
-    import redis
 
     # Load the configuration file
     config_dict = init_yaml_config(config)

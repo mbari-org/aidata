@@ -1,7 +1,6 @@
 # aidata, Apache-2.0 license
 # Filename: common_args.py
 # Description: Common arguments for commands
-from pathlib import Path
 
 import os
 import click
