@@ -1,11 +1,11 @@
 # aidata, Apache-2.0 license
-# Filename: aidata/generators/utils.py
+# Filename: generators/utils.py
 # Description: Algorithms to run on lists of localizations to combine them
 from typing import List
 from tator.openapi.tator_openapi import Localization
 import pandas as pd
 
-from logger import debug
+from aidata.logger import debug
 
 
 def combine_localizations(boxes: List[Localization]) -> List[Localization]:
