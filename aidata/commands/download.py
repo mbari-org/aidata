@@ -10,7 +10,7 @@ from aidata import common_args
 from aidata.logger import create_logger_file, info, exception
 from aidata.generators.coco import download as download_full
 
-from plugins.loaders.tator.common import init_yaml_config, init_api_project, find_project
+from aidata.plugins.loaders.tator.common import init_yaml_config, init_api_project, find_project
 
 # Default values
 # The base directory is the same directory as this file
