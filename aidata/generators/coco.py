@@ -1,5 +1,5 @@
 # aidata, Apache-2.0 license
-# Filename: aidata/generators/coco.py
+# Filename: generators/coco.py
 # Description: Generate a COCO formatted dataset from a list of media and localizations
 import json
 from pathlib import Path

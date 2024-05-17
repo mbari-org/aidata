@@ -11,8 +11,9 @@ import redis
 from tator.openapi.tator_openapi import TatorApi
 from tator.openapi.tator_openapi.models import Project, MediaType
 from aidata.plugins.loaders.tator.media import load_media
-from aidata.plugins.attribute_utils import format_attributes
+
 from aidata.logger import info, err
+from aidata.plugins.loaders.tator.attribute_utils import format_attributes
 
 
 class ConsumeVideo:

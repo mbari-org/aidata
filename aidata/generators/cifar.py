@@ -1,5 +1,5 @@
 # aidata, Apache-2.0 license
-# Filename: aidata/generators/cifar.py
+# Filename: generators/cifar.py
 # Description: Creates a CIFAR formatted dataset from a list of media and localizations
 
 import multiprocessing
