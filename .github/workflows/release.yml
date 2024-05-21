@@ -7,20 +7,14 @@ on:
 jobs:
   semantic_release:
     runs-on: ubuntu-latest
-    name: Runs semantic release
     steps:
-      - uses: actions/checkout@v3
-
-      - uses: codfish/semantic-release-action@v3.1.0
-        id: semantic
+      - name: Checkout code
+        uses: actions/checkout@v3
         with:
-          dry-run: false
-          branches: |
-            ['main']
-          additional-packages: |
-            ['@semantic-release/git']
-          plugins: |
-            ['@semantic-release/git', '@semantic-release/commit-analyzer', '@semantic-release/release-notes-generator', '@semantic-release/github', '@semantic-release/git']
-        env:
-            GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-            NPM_TOKEN: 000000000000000
+          fetch-depth: 0
+
+      - name: Python Semantic Release
+        id: semantic
+        uses: python-semantic-release/python-semantic-release@master
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
