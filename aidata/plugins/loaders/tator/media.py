@@ -93,14 +93,14 @@ def gen_thumbnail(ffmpeg_path: str, num_frames: int, fps: float, video_path: str
     # This logic makes a max(video_length,60) second summary video than speeds it up 4 times and saves as a gif
     video_duration = int(num_frames / fps)
 
-    # Max thumbnail duration is 60 seconds
+    # Max thumbnail duration is 10 seconds
     thumb_duration = min(10, video_duration)
 
     # We either select every Nth second based on how much longer than 60 seconds we are
     frame_select = max(fps, (video_duration / thumb_duration) * fps)
 
-    # We play each 1 second sample at 4x
-    speed_up = 16 * max(1, round(video_duration / thumb_duration))
+    # We play each 1 second sample at 64x speed
+    speed_up = 64 * max(1, round(video_duration / thumb_duration))
     cmd = [
         ffmpeg_path,
         "-y",
