@@ -110,11 +110,11 @@ class ConsumeVideo:
                                 info(f"Video path {video_path} does not exist")
                             else:
                                 # Organize by year and month
-                                section = f"Video/{iso_start_datetime.year}/{iso_start_datetime.month}"
+                                section = f"Video/{iso_start_datetime.year:02}/{iso_start_datetime.month:02}"
 
                                 # TODO: add support for different payloads
                                 attributes = {
-                                    "iso_start_datetime": iso_start_datetime,
+                                    "iso_start_datetime": iso_start_datetime.isoformat(),
                                     "video_reference_uuid": video_ref,
                                 }
                                 formatted_attributes = format_attributes(attributes, self.attribute_mapping)
