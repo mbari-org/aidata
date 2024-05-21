@@ -42,4 +42,4 @@ tator:
       obs_url:
         type: string
 
-ffmpeg_path: "/opt/homebrew/bin/ffmpeg"
+ffmpeg_path: "/usr/bin/ffmpeg"
