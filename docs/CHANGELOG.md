@@ -2,6 +2,13 @@
 
 
 
+## v1.4.4 (2024-05-21)
+
+### Performance
+
+* perf: speed-up 64x speed ([`e5902f2`](https://github.com/mbari-org/aidata/commit/e5902f2ba8fe66e62dcd8bda43e73ee5516f5d1a))
+
+
 ## v1.4.3 (2024-05-21)
 
 ### Documentation
