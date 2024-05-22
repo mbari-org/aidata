@@ -2,6 +2,21 @@
 
 
 
+## v1.4.6 (2024-05-22)
+
+### Fix
+
+* fix: revert to original pass through of datetime object ([`45dcd1e`](https://github.com/mbari-org/aidata/commit/45dcd1e0ce238da023b62f209d17f60e2eeabbe9))
+
+* fix: correct load_bulk_boxes args and attribute mapping for redis load ([`33497f5`](https://github.com/mbari-org/aidata/commit/33497f5156d745ff36666dc11c6d13943b117fd4))
+
+### Performance
+
+* perf: remove audio and reduce frame rate to 24 for .git ([`2a5a9f9`](https://github.com/mbari-org/aidata/commit/2a5a9f972c1518a8dc96f3206590e13a06020188))
+
+* perf: handle variable case attribues ([`01db568`](https://github.com/mbari-org/aidata/commit/01db568e178fdf6f5c08971bcc3caf74a7886e42))
+
+
 ## v1.4.5 (2024-05-22)
 
 ### Performance
