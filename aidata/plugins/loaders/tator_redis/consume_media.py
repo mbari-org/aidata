@@ -114,7 +114,7 @@ class ConsumeVideo:
 
                                 # TODO: add support for different payloads
                                 attributes = {
-                                    "iso_start_datetime": iso_start_datetime.isoformat(),
+                                    "iso_start_datetime": iso_start_datetime,
                                     "video_reference_uuid": video_ref,
                                 }
                                 formatted_attributes = format_attributes(attributes, self.attribute_mapping)
