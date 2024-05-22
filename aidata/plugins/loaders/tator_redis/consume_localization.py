@@ -7,7 +7,7 @@ import redis
 
 from aidata.plugins.loaders.tator.localization import gen_spec, load_bulk_boxes
 from aidata.plugins.loaders.tator.attribute_utils import format_attributes
-from aidata.logger import info
+from aidata.logger import info, debug
 
 
 class ConsumeLocalization:
@@ -16,6 +16,8 @@ class ConsumeLocalization:
         self.api = api
         self.tator_project = tator_project
         self.box_type = box_type
+        # Create a dictionary of key/values from the box type attributes field name and dtype
+        self.attribute_mapping = {a.name: {"type": a.dtype} for a in box_type.attribute_types }
 
     def consume(self):
         while True:
@@ -38,7 +40,8 @@ class ConsumeLocalization:
                         boxes = []
                         for b in objects:
                             obj = objects[b]
-                            attributes = format_attributes(obj, self.box_type.attributes)
+                            debug(obj)
+                            attributes = format_attributes(obj, self.attribute_mapping)
                             boxes.append(
                                 gen_spec(
                                     box=[obj["x1"], obj["y1"], obj["x2"], obj["y2"]],
@@ -54,7 +57,7 @@ class ConsumeLocalization:
                                 )
                             )
 
-                        load_bulk_boxes(boxes, self.api, self.tator_project)
+                        load_bulk_boxes(self.tator_project.id, self.api, boxes)
 
                         # Remove them from the queue
                         for obj_id in objects:
