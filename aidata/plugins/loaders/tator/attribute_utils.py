@@ -14,7 +14,7 @@ def format_attributes(attributes: dict, attribute_mapping: dict) -> dict:
     """Formats attributes according to the attribute mapping."""
     for a_key, a_value in attributes.items():
         for m_key, m_value in attribute_mapping.items():
-            if a_key == m_key:
+            if a_key.upper() == m_key.upper():
                 # Truncate datetime to milliseconds, convert to UTC, and format as ISO 8601
                 if m_value["type"] == "datetime":
                     dt_utc = attributes[a_key].astimezone(pytz.utc)
