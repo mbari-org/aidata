@@ -2,6 +2,13 @@
 
 
 
+## v1.4.5 (2024-05-22)
+
+### Performance
+
+* perf: remove palette gen for speed-up of video gif creation ([`5adaa02`](https://github.com/mbari-org/aidata/commit/5adaa022f1e6609ffd09d4ee04ae571b902e5750))
+
+
 ## v1.4.4 (2024-05-21)
 
 ### Performance
