@@ -110,7 +110,7 @@ def download(
         localizations = []
 
         def query_localizations(prefix: str, query_str: str, max_records: int):
-            inc = min(5000, max_records)
+            inc = min(5000, max_records-1)
             for start in range(0, max_records, inc):
                 info(f"Query records {start} to {start + inc} using attribute filter {attribute} {prefix} {query_str}")
 
