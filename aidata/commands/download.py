@@ -21,7 +21,7 @@ DEFAULT_BASE_DIR = Path.home() / "aidata" / "datasets"
 @common_args.token
 @common_args.yaml_config
 @common_args.version
-@click.option("--base-path", default=DEFAULT_BASE_DIR, help="Path to the base directory to save all data to.")
+@click.option("--base-path", default=DEFAULT_BASE_DIR, help=f"Path to the base directory to save all data to. Defaults to {DEFAULT_BASE_DIR}")
 @click.option("--group", help="Group name, e.g. VB250")
 @click.option("--generator", help="Generator name, e.g. vars-labelbot or vars-annotation")
 @click.option("--labels", default="all", help='Comma separated list of labels to download, or "all" for all labels.')
