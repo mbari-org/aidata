@@ -1,6 +1,10 @@
 # CHANGELOG
 
+## v1.4.7 (2024-06-24)
 
+### Fix
+
+* fix: handle fewer records correctly ([`aa25d62`](https://github.com/mbari-org/aidata/commit/aa25d62f1f137cd41af4a305c8ed106405b59b2b))
 
 ## v1.4.6 (2024-05-22)
 
@@ -16,20 +20,17 @@
 
 * perf: handle variable case attribues ([`01db568`](https://github.com/mbari-org/aidata/commit/01db568e178fdf6f5c08971bcc3caf74a7886e42))
 
-
 ## v1.4.5 (2024-05-22)
 
 ### Performance
 
 * perf: remove palette gen for speed-up of video gif creation ([`5adaa02`](https://github.com/mbari-org/aidata/commit/5adaa022f1e6609ffd09d4ee04ae571b902e5750))
 
-
 ## v1.4.4 (2024-05-21)
 
 ### Performance
 
 * perf: speed-up 64x speed ([`e5902f2`](https://github.com/mbari-org/aidata/commit/e5902f2ba8fe66e62dcd8bda43e73ee5516f5d1a))
-
 
 ## v1.4.3 (2024-05-21)
 
@@ -41,20 +42,17 @@
 
 * fix: correct key for datetime attribute format ([`84eabaf`](https://github.com/mbari-org/aidata/commit/84eabaf5041ed52e080196bf4af7975e437abce7))
 
-
 ## v1.4.2 (2024-05-16)
 
 ### Fix
 
 * fix: correct import path ([`4c04a4d`](https://github.com/mbari-org/aidata/commit/4c04a4d5886ffa7bdb93b7ff65ee3fb4c3fab1dc))
 
-
 ## v1.4.1 (2024-05-16)
 
 ### Fix
 
 * fix: add missing files ([`b2fe084`](https://github.com/mbari-org/aidata/commit/b2fe084179145f2a81d0266e62412c6efeb3b80c))
-
 
 ## v1.4.0 (2024-05-10)
 
@@ -68,7 +66,6 @@
 
 * feat: some refactoring but mostly addition of support for versioning ([`70b958a`](https://github.com/mbari-org/aidata/commit/70b958a99bd8d38cacb765555e53c90aaa1ca00e))
 
-
 ## v1.3.0 (2024-05-02)
 
 ### Feature
@@ -79,20 +76,17 @@
 
 * fix: adjustments to match Fernandas generated test images ([`4cfcbff`](https://github.com/mbari-org/aidata/commit/4cfcbffe713abfbab4fcfefca4810fd905751927))
 
-
 ## v1.2.3 (2024-05-01)
 
 ### Fix
 
 * fix: remove return to load all ([`bfe312f`](https://github.com/mbari-org/aidata/commit/bfe312f9939b861be3428eca4e14d776edd9be91))
 
-
 ## v1.2.2 (2024-04-29)
 
 ### Fix
 
 * fix: skip over images with no metadata and minor logging fix ([`4790efe`](https://github.com/mbari-org/aidata/commit/4790efede4ba0f1e6aed3303c51296b732063915))
-
 
 ## v1.2.1 (2024-04-29)
 
@@ -114,7 +108,6 @@
 
 * fix: added missing host for CFE ([`5bbf029`](https://github.com/mbari-org/aidata/commit/5bbf0296b6584b400e1d01aded6bd1f2747070f0))
 
-
 ## v1.2.0 (2024-04-29)
 
 ### Feature
@@ -127,13 +120,11 @@
 
 * fix: minor type ([`168d258`](https://github.com/mbari-org/aidata/commit/168d25882a18310900240c0f5dcf28caffa1a8d9))
 
-
 ## v1.1.0 (2024-04-29)
 
 ### Feature
 
 * feat: added support for extracing sony mdata for UAV ([`60e8d76`](https://github.com/mbari-org/aidata/commit/60e8d76543a12861cbbf610a0a24b5bd589f44a0))
-
 
 ## v1.0.4 (2024-04-25)
 
@@ -141,20 +132,17 @@
 
 * fix: added missing host for UAV image load ([`0bc6cab`](https://github.com/mbari-org/aidata/commit/0bc6cab07b319fcdf18136c0b397a6d087a4deac))
 
-
 ## v1.0.3 (2024-03-26)
 
 ### Fix
 
 * fix: correct path to data in test database ([`b1fc26e`](https://github.com/mbari-org/aidata/commit/b1fc26e209e7c699b3731009173f7d461fd129ea))
 
-
 ## v1.0.2 (2024-03-26)
 
 ### Fix
 
 * fix: correct formatting for the cluster string ([`d934276`](https://github.com/mbari-org/aidata/commit/d9342769c5ab908b5b21eceabe0b6fcd947abbda))
-
 
 ## v1.0.1 (2024-03-25)
 
@@ -171,7 +159,6 @@
 ### Unknown
 
 * doc: update to fix typo ([`6abefda`](https://github.com/mbari-org/aidata/commit/6abefda888915bb03ca9a905b8ef1ffdc8d8a973))
-
 
 ## v1.0.0 (2024-03-16)
 
