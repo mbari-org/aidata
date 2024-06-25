@@ -1,5 +1,15 @@
 # CHANGELOG
 
+## v1.5.0 (2024-06-25)
+
+### Documentation
+
+* docs: improved doc on save ([`8d1f111`](https://github.com/mbari-org/aidata/commit/8d1f111848d6c7db3134e9f770b5daa09a011456))
+
+### Feature
+
+* feat: pass through the id to the voc output ([`72d350f`](https://github.com/mbari-org/aidata/commit/72d350fa847568a56ecb0619bcd118a9fdf5faa8))
+
 ## v1.4.7 (2024-06-24)
 
 ### Fix
