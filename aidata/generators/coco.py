@@ -242,10 +242,17 @@ def download(
                     x2 = int(round(x2))
                     y2 = int(round(y2))
 
-                    writer.addObject(loc.attributes["Label"], x1, y1, x2, y2)
+                    writer.addObject(loc.attributes["Label"], x1, y1, x2, y2, pose=str(loc.id))
 
                 # Write the file
                 writer.save(voc_xml_path.as_posix())
+
+                # Replace the xml tag pose with uuid
+                with open(voc_xml_path, 'r') as file:
+                    filedata = file.read()
+                filedata = filedata.replace('pose', 'id')
+                with open(voc_xml_path, 'w') as file:
+                    file.write(filedata)
 
             if coco:
                 coco_localizations = []
