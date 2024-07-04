@@ -14,7 +14,7 @@ from aidata.logger import info
 
 
 def extract_media(image_path: Path, max_images: int = None) -> pd.DataFrame:
-    """Extracts data I2MAP image meta data"""
+    """Extracts I2MAP image meta data"""
 
     # Create a dataframe to store the combined data in an image_path column in sorted order
     images_df = pd.DataFrame()

@@ -1,5 +1,5 @@
 # aidata, Apache-2.0 license
-# Filename: commands/queue.py
+# Filename: commands/load_queue.py
 # Description: Commands for loading data from a Redis message queue
 
 import concurrent

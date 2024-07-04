@@ -1,0 +1,3 @@
+cluster,image_path,model
+Unknown C0,./Otter/1908334.jpg,dino_vits8
+Unknown C1,./Otter/1909167.jpg,dino_vits8

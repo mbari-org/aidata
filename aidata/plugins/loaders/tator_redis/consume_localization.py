@@ -11,8 +11,8 @@ from aidata.logger import info, debug
 
 
 class ConsumeLocalization:
-    def __init__(self, q: redis.Redis, api, tator_project, box_type):
-        self.q = q
+    def __init__(self, r: redis.Redis, api, tator_project, box_type):
+        self.r = r
         self.api = api
         self.tator_project = tator_project
         self.box_type = box_type
@@ -23,18 +23,18 @@ class ConsumeLocalization:
         while True:
             try:
                 info("Waiting for new localizations...")
-                keys = self.q.keys("locs:*")
+                keys = self.r.keys("locs:*")
                 for k in keys:
                     video_ref = k.decode("utf-8").split(":")[1]
-                    load_key = self.q.keys(f"tator_ids:{video_ref}")
+                    load_key = self.r.keys(f"tator_ids:{video_ref}")
                     if len(load_key) == 1:
                         info(f"Loading localization for video ref {video_ref}")
-                        hash_data = self.q.hgetall(f"locs:{video_ref}")
+                        hash_data = self.r.hgetall(f"locs:{video_ref}")
                         objects = {key.decode("utf-8"): json.loads(value.decode("utf-8")) for key, value in hash_data.items()}
 
                         # Load them referencing the video by its load_id
                         info(f"Getting tator_id from {load_key[0]}")
-                        tator_id = int(self.q.hget(load_key[0], "tator_id").decode("utf-8"))
+                        tator_id = int(self.r.hget(load_key[0], "tator_id").decode("utf-8"))
                         info(f"Loading {len(objects)} localization(s) for video ref {video_ref} load_id {tator_id}")
 
                         boxes = []
@@ -62,7 +62,7 @@ class ConsumeLocalization:
                         # Remove them from the queue
                         for obj_id in objects:
                             info(f"Removing localization {obj_id} from queue")
-                            self.q.hdel(f"locs:{video_ref}", obj_id)
+                            self.r.hdel(f"locs:{video_ref}", obj_id)
             except Exception as e:
                 info(f"Error: {e}")
 
