@@ -23,7 +23,8 @@ conda env create
 conda activate aidata
 export PYTHONPATH=$PWD
 ```
- 
+
+A docker version is also available at mbari:aidata, but that is a WIP.
 
 ## Commands
 
