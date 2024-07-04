@@ -6,12 +6,11 @@ import pandas as pd
 from pathlib import Path
 import piexif
 
-from aidata.logger import info,err
-
+from aidata.logger import info, err
 
 
 def extract_media(image_path: Path, max_images: int = None) -> pd.DataFrame:
-    """Extracts data SONY image meta data"""
+    """Extracts SONY image meta data"""
 
     # Create a dataframe to store the combined data in an image_path column in sorted order
     images_df = pd.DataFrame()

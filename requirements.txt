@@ -1,10 +1,13 @@
 redis==5.0.1
 tator==1.2.3
 ephem
+opencv-contrib-python
 pytz
 piexif==1.1.3
 pandas
 click
 tqdm
+transformers
+torchvision==0.17.1
 requests
 pascal-voc-writer>=0.1.4
