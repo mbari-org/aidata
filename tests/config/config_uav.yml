@@ -2,18 +2,26 @@
 # Config file for SONY image metadata extraction
 mounts:
   - name: "image"
-    path: "/mnt/UAV"
-    host: "mantis.shore.mbari.org"
-    nginx_root: "/UAV"
+    path: "./data/uav"
+    host: "192.168.0.17"
+    nginx_root: "/uav"
+
+redis:
+    host: "doris.shore.mbari.org"
+    port: 6380
 
 plugins:
   - name: "extractor"
     module: "aidata.plugins.extractors.tap_sony_media"
     function: "extract_media"
-
+  - name: "predictor"
+    module: "aidata.plugins.predictors.run_vss"
+    function: "predict"
+    classes:
+      [ "Buoy", "Seagull", "Otter" ]
 tator:
   project: "901902-uavs"
-  host: "mantis.shore.mbari.org"
+  host: "ada.local"
   image:
     attributes:
       date:

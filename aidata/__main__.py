@@ -2,14 +2,20 @@
 # Filename: __main__.py
 # Description: Main entry point for the aidata command line interface
 from datetime import datetime
+from pathlib import Path
 
 import pytz
 import click
+import sys
+
+
+sys.path.insert(0, str(Path(__file__).parent.parent))
 
 from pathlib import Path
 
 from aidata.commands.download import download
 from aidata.commands.load_images import load_images
+from aidata.commands.load_exemplars import load_exemplars
 from aidata.logger import err, info
 
 from aidata import __version__
@@ -41,6 +47,7 @@ cli.add_command(cli_load)
 cli_load.add_command(load_images)
 cli_load.add_command(load_boxes)
 cli_load.add_command(load_queue)
+cli_load.add_command(load_exemplars)
 
 
 @click.group(name="download")
@@ -53,7 +60,6 @@ def cli_download():
 
 cli.add_command(cli_download)
 cli_download.add_command(download)
-
 
 if __name__ == "__main__":
     try:
