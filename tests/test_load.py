@@ -1,3 +1,4 @@
+import pytest
 from click.testing import CliRunner
 from pathlib import Path
 
@@ -9,15 +10,18 @@ CustomLogger(output_path=Path.cwd() / "logs", output_prefix=__name__)
 data_path = Path(__file__).parent / "data"
 config_path = Path(__file__).parent / "config"
 
+HAS_DATABASE = False
 
 def setup():
     # Make sure the TATOR_TOKEN environment variable is set
     import os
 
+    # TODO: Add a check for the database presence
     assert "TATOR_TOKEN" in os.environ, "TATOR_TOKEN environment variable must be set"
     os.environ["ENVIRONMENT"] = "Testing"
 
 
+@pytest.mark.skipif(not HAS_DATABASE, reason="This test is excluded because it requires a database")
 def test_load_media_dryrun():
     setup()
     runner = CliRunner()
@@ -41,6 +45,7 @@ def test_load_media_dryrun():
     assert result.exit_code == 0
 
 
+@pytest.mark.skipif(not HAS_DATABASE, reason="This test is excluded because it requires a database")
 def test_load_media_i2map():
     setup()
     runner = CliRunner()
@@ -63,6 +68,7 @@ def test_load_media_i2map():
     assert result.exit_code == 0
 
 
+@pytest.mark.skipif(not HAS_DATABASE, reason="This test is excluded because it requires a database")
 def test_load_media_cfe():
     setup()
     runner = CliRunner()
@@ -85,6 +91,7 @@ def test_load_media_cfe():
     assert result.exit_code == 0
 
 
+@pytest.mark.skipif(not HAS_DATABASE, reason="This test is excluded because it requires a database")
 def test_load_boxes_i2map():
     setup()
     csv_path = data_path / "i2map" / "16-06-06T16_38_18-200m-F041_25000.csv"
@@ -105,6 +112,7 @@ def test_load_boxes_i2map():
     assert result.exit_code == 0
 
 
+@pytest.mark.skipif(not HAS_DATABASE, reason="This test is excluded because it requires a database")
 def test_load_boxes_i2map_version():
     setup()
     csv_path = data_path / "i2map" / "16-06-06T16_38_18-200m-F041_25000.csv"
