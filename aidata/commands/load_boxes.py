@@ -96,6 +96,6 @@ if __name__ == "__main__":
     # To run this script, you need to have the TATOR_TOKEN environment variable set and uncomment all @click decorators above
     os.environ["ENVIRONMENT"] = "TESTING"
     test_path = Path(__file__).parent.parent / "tests" / "data" / "i2map"
-    yaml_path = Path(__file__).parent.parent / "config" / "config_i2map_local.yml"
+    yaml_path = Path(__file__).parent.parent / "config" / "config_i2map.yml"
     tator_token = os.getenv("TATOR_TOKEN")
     load_boxes(token=tator_token, config=yaml_path.as_posix(), dry_run=False, version="Baseline", input=test_path.as_posix())

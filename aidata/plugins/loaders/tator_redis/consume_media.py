@@ -19,7 +19,7 @@ from aidata.plugins.loaders.tator.attribute_utils import format_attributes
 class ConsumeVideo:
     def __init__(
         self,
-        q: redis.Redis,
+        r: redis.Redis,
         api: TatorApi,
         tator_project: Project,
         media_type: MediaType,
@@ -27,7 +27,7 @@ class ConsumeVideo:
         ffmpeg_path: str,
         attribute_mapping: dict,
     ):
-        self.q = q
+        self.r = r
         self.api = api
         self.tator_project = tator_project
         self.media_type = media_type
@@ -40,14 +40,14 @@ class ConsumeVideo:
             try:
                 info("Waiting for new video")
                 # Get the video references to load
-                keys = self.q.keys("video_refs_load:*")
+                keys = self.r.keys("video_refs_load:*")
                 if len(keys) == 0:
                     info("No video references to load")
                 else:
                     for k in keys:
-                        video_uri = self.q.hget(k, "video_uri").decode("utf-8")
+                        video_uri = self.r.hget(k, "video_uri").decode("utf-8")
                         video_ref = k.decode("utf-8").split(":")[1]
-                        tator_id = self.q.keys(f"tator_ids:{video_ref}")
+                        tator_id = self.r.keys(f"tator_ids:{video_ref}")
 
                         if len(tator_id) == 0:
                             # Check if the video is already loaded by its reference
@@ -59,14 +59,14 @@ class ConsumeVideo:
                             )
                             if len(medias) == 1:
                                 info(f"Video reference {video_ref} already loaded")
-                                self.q.hset(
+                                self.r.hset(
                                     f"tator_ids:{video_ref}",
                                     "tator_id",
                                     str(medias[0].id),
                                 )
                                 continue
 
-                            start_timestamp = self.q.hget(f"video_refs_start:{video_ref}", "start_timestamp").decode("utf-8")
+                            start_timestamp = self.r.hget(f"video_refs_start:{video_ref}", "start_timestamp").decode("utf-8")
                             pattern_date0 = re.compile(r"(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2}):(\d{2})Z")
                             pattern_date1 = re.compile(r"(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2}):(\d{2})Z\d*mF*")
                             pattern_date2 = re.compile(r"(\d{4})(\d{2})(\d{2})T(\d{2})(\d{2})(\d{2})Z")  # 20161025T184500Z
@@ -128,7 +128,7 @@ class ConsumeVideo:
                                     tator_project=self.tator_project,
                                     media_type=self.media_type,
                                 )
-                                self.q.hset(f"tator_ids:{video_ref}", "tator_id", str(tator_id))
+                                self.r.hset(f"tator_ids:{video_ref}", "tator_id", str(tator_id))
             except Exception as e:
                 err(f"Error consuming video {e}")
 

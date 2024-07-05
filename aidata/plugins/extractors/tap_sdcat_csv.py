@@ -31,6 +31,10 @@ def extract_sdcat_csv(csv_path: str) -> pd.DataFrame:
 
     combined_df = combined_df.sort_values(by="image_path")
 
+    # If x, y, xx, xy columns are not present, return the dataframe as is
+    if not all(col in combined_df.columns for col in ["x", "y", "xx", "xy"]):
+        return combined_df
+
     # Remove any duplicate rows; duplicates have the same .x, .y, .xx, .xy,
     combined_df = combined_df.drop_duplicates(subset=["x", "y", "xx", "xy"])
 
