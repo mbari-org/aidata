@@ -46,10 +46,10 @@ def sim_inference(r: redis.Redis, video_url: str, video_ref_uuid: str, iso_start
 
 if __name__ == "__main__":
     # Connect to Redis
-    r = redis.Redis(host="mantis.shore.mbari.org", port=6379, db=1)
+    redis_queue = redis.Redis(host="mantis.shore.mbari.org", port=6379, db=1)
 
     # Clear the database
-    r.flushdb()
+    redis_queue.flushdb()
 
     # Simulate inference for a few videos
     for video_name in [
@@ -68,4 +68,4 @@ if __name__ == "__main__":
         video_ref_uuid = data["video_reference_uuid"]
         video_uri = data["uri"]
         start_timestamp = data["start_timestamp"]
-        sim_inference(r, video_uri, video_ref_uuid, start_timestamp)
+        sim_inference(redis_queue, video_uri, video_ref_uuid, start_timestamp)

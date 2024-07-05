@@ -18,6 +18,7 @@ class ConsumeLocalization:
         self.box_type = box_type
         # Create a dictionary of key/values from the box type attributes field name and dtype
         self.attribute_mapping = {a.name: {"type": a.dtype} for a in box_type.attribute_types }
+        # self.attribute_mapping = {a["name"]: a["dtype"] for a in box_type.attributes}
 
     def consume(self):
         while True:
