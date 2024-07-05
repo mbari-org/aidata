@@ -1,5 +1,19 @@
 # CHANGELOG
 
+## v1.6.0 (2024-07-05)
+
+### Feature
+
+* feat: added sdcat exemplar load ([`a8e42f0`](https://github.com/mbari-org/aidata/commit/a8e42f071d5b3942b2bdb2d183112b8703167ad4))
+
+### Fix
+
+* fix: remove whitespace and move exemplar to load ([`decd1e6`](https://github.com/mbari-org/aidata/commit/decd1e67fea4bb9e43d5162e1478ab4f4825cbf4))
+
+### Unknown
+
+* working exemplar test load ([`88ddc2e`](https://github.com/mbari-org/aidata/commit/88ddc2e4eedd796d5105114d467e50b03e81bb3c))
+
 ## v1.5.0 (2024-06-25)
 
 ### Documentation
