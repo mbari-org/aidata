@@ -7,7 +7,7 @@ mounts:
     nginx_root: "/uav"
 
 redis:
-    host: "localhost"
+    host: "doris.shore.mbari.org"
     port: 6380
 
 plugins:
