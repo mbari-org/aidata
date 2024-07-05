@@ -19,7 +19,6 @@ from aidata.predictors.process_vits import ProcessVITS
 @click.option("--batch-size", type=int, default=32, help="Batch size for loading embeddings")
 @click.option("--label", type=str, help="Class label for the exemplars. This is used as the base class name for the "
                                         "exemplar images, e.g. Otter_0, Otter_1, etc.")
-
 def load_exemplars(config: str, input: str, dry_run: bool, label: str, batch_size=32, reset: bool=False) -> int:
     """Load embeddings from a directory with SDCAT formatted exemplar CSV files. Returns the number of exemplar image
     embeddings loaded."""

@@ -47,6 +47,7 @@ cli.add_command(cli_load)
 cli_load.add_command(load_images)
 cli_load.add_command(load_boxes)
 cli_load.add_command(load_queue)
+cli_load.add_command(load_exemplars)
 
 
 @click.group(name="download")
@@ -59,16 +60,6 @@ def cli_download():
 
 cli.add_command(cli_download)
 cli_download.add_command(download)
-
-@click.group(name="predict")
-def cli_predict():
-    """
-    Commands related to prediction
-    """
-    pass
-
-cli.add_command(cli_predict)
-cli.add_command(load_exemplars)
 
 if __name__ == "__main__":
     try:
