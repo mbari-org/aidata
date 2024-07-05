@@ -66,5 +66,5 @@ if __name__ == "__main__":
     os.environ["ENVIRONMENT"] = "TESTING"
 
     test_path = Path(__file__).parent.parent.parent / "tests" / "data" / "uav" / "otterexemplars.csv"
-    yaml_path = Path(__file__).parent.parent.parent / "tests"/ "config" / "config_sony.yml"
+    yaml_path = Path(__file__).parent.parent.parent / "tests"/ "config" / "config_uav.yml"
     load_exemplars(config=yaml_path.as_posix(), dry_run=False,  input=test_path.as_posix(), label="Otter", batch_size=32, reset=True)
