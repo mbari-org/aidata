@@ -2,14 +2,20 @@
 # Filename: __main__.py
 # Description: Main entry point for the aidata command line interface
 from datetime import datetime
+from pathlib import Path
 
 import pytz
 import click
+import sys
+
+
+sys.path.insert(0, str(Path(__file__).parent.parent))
 
 from pathlib import Path
 
 from aidata.commands.download import download
 from aidata.commands.load_images import load_images
+from aidata.commands.load_exemplars import load_exemplars
 from aidata.logger import err, info
 
 from aidata import __version__
@@ -54,6 +60,15 @@ def cli_download():
 cli.add_command(cli_download)
 cli_download.add_command(download)
 
+@click.group(name="predict")
+def cli_predict():
+    """
+    Commands related to prediction
+    """
+    pass
+
+cli.add_command(cli_predict)
+cli.add_command(load_exemplars)
 
 if __name__ == "__main__":
     try:
