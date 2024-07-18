@@ -4,13 +4,18 @@
 
 import multiprocessing
 import tempfile
+from typing import List
+
 import numpy as np
 from pathlib import Path
+
+import tator # type: ignore
+
 from aidata.logger import err
 from PIL import Image
 
 
-def create_cifar_dataset(size: int, data_path: Path, media_lookup_by_id, localizations: [], class_names: []) -> bool:
+def create_cifar_dataset(size: int, data_path: Path, media_lookup_by_id, localizations: List[tator.models.Localization], class_names: List[str]) -> bool:
     """
     Create CIFAR formatted data from a list of media and localizations
     :param size: Size to resize the images to, e.g. 32 for 32x32, 224 for 224x224
@@ -23,34 +28,39 @@ def create_cifar_dataset(size: int, data_path: Path, media_lookup_by_id, localiz
     images = []
     labels = []
 
-    with tempfile.TemporaryDirectory() as temp_path:
-        temp_path = Path(temp_path)
+    try:
 
-        # Crop the images in parallel using multiprocessing to speed up the processing
-        num_processes = min(multiprocessing.cpu_count(), len(media_lookup_by_id))
-        with multiprocessing.Pool(num_processes) as pool:
-            args = [[size, temp_path, Path(media_path), [l for l in localizations if l.media == media_id]] for media_id, media_path in media_lookup_by_id.items()]
-            pool.starmap(crop, args)
+        with tempfile.TemporaryDirectory() as temp_dir:
+            temp_path = Path(temp_dir)
 
-        # Read in the images and labels from a temporary directory
-        for npy in sorted(temp_path.glob("*.npy")):
-            images.append(np.load(npy.as_posix()).astype("int32"))
+            # Crop the images in parallel using multiprocessing to speed up the processing
+            num_processes = min(multiprocessing.cpu_count(), len(media_lookup_by_id))
+            with multiprocessing.Pool(num_processes) as pool:
+                args = [[size, temp_path, Path(media_path), [l for l in localizations if l.media == media_id]] for media_id, media_path in media_lookup_by_id.items()]
+                pool.starmap(crop, args)
 
-            # label name is the last part of the filename after the -
-            label_name = npy.stem.split("-")[-1]
-            labels.append([int(class_names.index(label_name))])
+            # Read in the images and labels from a temporary directory
+            for npy in sorted(temp_path.glob("*.npy")):
+                images.append(np.load(npy.as_posix()).astype("int32"))
 
-        # Save the data
-        image_path = data_path / "images.npy"
-        label_path = data_path / "labels.npy"
-        if image_path.exists():
-            image_path.unlink()
-        if label_path.exists():
-            label_path.unlink()
-        np.save(data_path / "images.npy", images)
-        np.save(data_path / "labels.npy", labels)
+                # label name is the last part of the filename after the -
+                label_name = npy.stem.split("-")[-1]
+                labels.append([int(class_names.index(label_name))])
 
-    return images, labels
+            # Save the data
+            image_path = data_path / "images.npy"
+            label_path = data_path / "labels.npy"
+            if image_path.exists():
+                image_path.unlink()
+            if label_path.exists():
+                label_path.unlink()
+            np.save(data_path / "images.npy", images)
+            np.save(data_path / "labels.npy", labels)
+    except Exception as e:
+        err(f"Error creating CIFAR dataset: {e}")
+        return False
+
+    return True
 
 
 def crop(size: int, temp_path: Path, image_path: Path, localizations) -> bool:
@@ -106,7 +116,9 @@ def crop(size: int, temp_path: Path, image_path: Path, localizations) -> bool:
             # Save the image and label to the temporary directory as npy files
             np.save(temp_path / f"{image_path.stem}-image-{l.attributes['Label']}.npy", image_array)
 
-            return True
+        return True
     except Exception as e:
         err(f"Error processing {image_path}: {e}. Skipping...")
         return False
+
+    return False

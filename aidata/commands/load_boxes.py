@@ -17,12 +17,12 @@ from aidata.plugins.loaders.tator.common import init_yaml_config, find_box_type,
 @common_args.yaml_config
 @common_args.dry_run
 @common_args.version
-@click.option("--input", type=str, required=True, help="input CSV file or path with CSV detection files to load")
+@click.option("--input", type=Path, required=True, help="input CSV file or path with CSV detection files to load")
 @click.option("--max-num", type=int, help="Maximum number of boxes to load")
-def load_boxes(token: str, config: str, version: str, input: str, dry_run: bool, max_num: int) -> int:
+def load_boxes(token: str, config: str, version: str, input: Path, dry_run: bool, max_num: int) -> int:
     """Load boxes from a directory with SDCAT formatted CSV files. Returns the number of boxes loaded."""
-    create_logger_file("load_boxes")
     try:
+        create_logger_file("load_boxes")
         # Load the configuration file
         config_dict = init_yaml_config(config)
         project = config_dict["tator"]["project"]
@@ -50,7 +50,7 @@ def load_boxes(token: str, config: str, version: str, input: str, dry_run: bool,
         # Group the detections by image_path
         for image_path, group in df_boxes.groupby("image_path"):
             # Query for the media object with the same name as the image_path - this assumes the image has a unique name
-            image_name = Path(image_path).name
+            image_name = Path(image_path).name # type: ignore
             media = api.get_media_list(project=tator_project.id, name=image_name)
             if len(media) == 0:
                 print(f"No media found with name {image_name} in project {tator_project.name}.")
@@ -89,13 +89,14 @@ def load_boxes(token: str, config: str, version: str, input: str, dry_run: bool,
         err(f"Error: {e}")
         raise e
 
+    return len(df_boxes)
 
 if __name__ == "__main__":
     import os
 
     # To run this script, you need to have the TATOR_TOKEN environment variable set and uncomment all @click decorators above
     os.environ["ENVIRONMENT"] = "TESTING"
-    test_path = Path(__file__).parent.parent / "tests" / "data" / "i2map"
-    yaml_path = Path(__file__).parent.parent / "config" / "config_i2map.yml"
+    test_path = Path(__file__).parent.parent.parent / "tests" / "data" / "i2map"
+    yaml_path = Path(__file__).parent.parent.parent / "tests" / "config" / "config_i2map.yml"
     tator_token = os.getenv("TATOR_TOKEN")
-    load_boxes(token=tator_token, config=yaml_path.as_posix(), dry_run=False, version="Baseline", input=test_path.as_posix())
+    load_boxes(token=tator_token, config=yaml_path.as_posix(), dry_run=False, version="Baseline", input=test_path, max_num=10)

@@ -2,11 +2,13 @@
 # Filename: plugins/loaders/tator/common.py
 # Description: Common database functions
 import os
+from typing import Tuple
+
 import yaml
 
-from tator.openapi.tator_openapi import TatorApi
-from tator.openapi.tator_openapi.models import Project
-import tator
+from tator.openapi.tator_openapi import TatorApi # type: ignore
+from tator.openapi.tator_openapi.models import Project # type: ignore
+import tator # type: ignore
 
 from aidata.logger import info, debug, err
 
@@ -33,7 +35,7 @@ def get_version_id(api: TatorApi, project: Project, version: str) -> int:
     return version_match[0].id
 
 
-def init_api_project(host: str, token: str, project: str) -> (TatorApi, tator.models.Project):
+def init_api_project(host: str, token: str, project: str) -> Tuple[TatorApi, tator.models.Project]:
     """
     Fetch the Tator API and project
     :param host: hostname, e.g. localhost
@@ -50,7 +52,7 @@ def init_api_project(host: str, token: str, project: str) -> (TatorApi, tator.mo
     tator_project = find_project(api, project)
     info(f"Found project {tator_project.name} with id {tator_project.id}")
     if tator_project is None:
-        raise f"Could not find project {project}"
+        raise Exception(f"Could not find project {project}")
 
     return api, tator_project
 
@@ -111,6 +113,6 @@ def init_yaml_config(yaml_config: str) -> dict:
         try:
             config_dict = yaml.safe_load(file)
         except yaml.YAMLError as e:
-            err("Error reading YAML file:", e)
+            err(f"Error reading YAML file: {e}")
             raise e
     return config_dict

@@ -2,13 +2,13 @@
 # Filename: plugins/loaders/tator/localization.py
 # Description: Load localizations into the database
 
-import tator
+import tator # type: ignore
 
 from aidata.logger import info
-
+from typing import List
 
 def gen_spec(
-    box: [],
+    box: List[float],
     version_id: int,
     label: str,
     width: int,

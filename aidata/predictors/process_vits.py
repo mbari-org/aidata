@@ -7,7 +7,7 @@ import numpy as np
 import redis
 import torch
 from PIL import Image
-from transformers import ViTImageProcessor, ViTModel
+from transformers import ViTImageProcessor, ViTModel # type: ignore
 from typing import List
 
 from aidata.logger import info
@@ -37,7 +37,7 @@ class ProcessVITS:
     def model_name(self) -> str:
         return self.MODEL_NAME
 
-    def preprocess_images(self, image_paths: List[Path]):
+    def preprocess_images(self, image_paths: List[str]):
         images = [Image.open(image_path).convert("RGB") for image_path in image_paths]
         inputs = self.processor(images=images, return_tensors="pt").to(self.device)
         return inputs
@@ -49,7 +49,7 @@ class ProcessVITS:
         batch_embeddings = embeddings.last_hidden_state[:, 0, :].cpu().numpy()
         return np.array(batch_embeddings)
 
-    def load(self, image_paths: List[Path], class_names: List[str]):
+    def load(self, image_paths: List[str], class_names: List[str]):
         """Load and preprocess batch of images and add to the vector similarity index"""
 
         unique_class_names = list(set(class_names))
@@ -64,7 +64,7 @@ class ProcessVITS:
 
         info(f'Finished processing {len(image_paths)} images for {unique_class_names}')
 
-    def predict(self, image_paths: List[Path], top_n: int = 1) -> List[List[str]]:
+    def predict(self, image_paths: List[str], top_n: int = 1) -> tuple[list[list[str]], list[list[float]]]:
         """Search using KNN for embeddings for a batch of images"""
         predictions = []
         scores = []

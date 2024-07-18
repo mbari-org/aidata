@@ -14,7 +14,9 @@ def format_attributes(attributes: dict, attribute_mapping: dict) -> dict:
     """Formats attributes according to the attribute mapping."""
     for a_key, a_value in attributes.items():
         for m_key, m_value in attribute_mapping.items():
-            if a_key.upper() == m_key.upper():
+            a_key = a_key.lower()
+            m_key = m_key.lower()
+            if a_key == m_key:
                 # Truncate datetime to milliseconds, convert to UTC, and format as ISO 8601
                 if m_value["type"] == "datetime":
                     dt_utc = attributes[a_key].astimezone(pytz.utc)
@@ -46,7 +48,3 @@ def _find_types(api, project):
     loc_types = {loc_type.dtype: loc_type for loc_type in loc_types}
     state_types = {state_type.association: state_type for state_type in state_types}
     return loc_types, state_types
-
-
-if __name__ == "__main__":
-    _find_types()

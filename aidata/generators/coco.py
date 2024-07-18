@@ -3,12 +3,12 @@
 # Description: Generate a COCO formatted dataset from a list of media and localizations
 import json
 from pathlib import Path
+from typing import List
 
-import numpy as np
-import tator
+import tator # type: ignore
 from PIL import Image
 from tqdm import tqdm
-from pascal_voc_writer import Writer
+from pascal_voc_writer import Writer # type: ignore
 from aidata.logger import debug, info, err, exception
 from aidata.generators.cifar import create_cifar_dataset
 from aidata.generators.utils import combine_localizations
@@ -18,11 +18,11 @@ def download(
     api: tator.api,
     project_id: int,
     group: str,
-    version_list: [],
+    version_list: List[str],
     generator: str,
     output_path: Path,
-    labels_list: [] = None,
-    concepts_list: [] = None,
+    labels_list: List[str],
+    concepts_list: List[str],
     cifar_size: int = 32,
     skip_image_download: bool = False,
     save_score: bool = False,
@@ -68,15 +68,15 @@ def download(
         if group:
             attribute += [f"group::{group}"]
 
-        if concepts_list:
+        if len(concepts_list) > 0:
             for concept in concepts_list:
                 num_concept_records[concept] = api.get_localization_count(project=project_id, version=version_ids, attribute_contains=[f'concept::{concept}']+attribute)
                 num_records += num_concept_records[concept]
-        if labels_list:
+        if len(labels_list) > 0:
             for label in labels_list:
                 num_label_records[label] = api.get_localization_count(project=project_id, version=version_ids, attribute_contains=[f'Label::{label}']+attribute)
                 num_records += num_label_records[label]
-        if not concepts_list and not labels_list:
+        if len(concepts_list) == 0 and len(labels_list) == 0:
             num_records = api.get_localization_count(project=project_id, version=version_ids)
 
         info(
@@ -107,10 +107,17 @@ def download(
             coco_path.mkdir(exist_ok=True)
             info(f"Creating COCO files in {coco_path}")
 
-        localizations = []
+        localizations = [tator.models.Localization]
 
         def query_localizations(prefix: str, query_str: str, max_records: int):
-            inc = min(5000, max_records-1)
+            # set inc to 5000 or max_records-1 or 1, whichever is larger
+            if max_records == 0:
+                return
+            if max_records == 1:
+                inc = 1
+            else:
+                inc = min(5000, max_records-1)
+
             for start in range(0, max_records, inc):
                 info(f"Query records {start} to {start + inc} using attribute filter {attribute} {prefix} {query_str}")
 
@@ -172,7 +179,7 @@ def download(
                                 debug(f"{media.name} download progress: {progress}%")
                             success = True
                         except Exception as e:
-                            err(e)
+                            err(str(e))
                             num_tries += 1
                     if num_tries == 3:
                         err(f"Could not download {media.name}")
@@ -293,9 +300,10 @@ def download(
             cifar_path.mkdir(exist_ok=True)
             info(f"Creating CIFAR data in {cifar_path}")
 
-            images, labels = create_cifar_dataset(cifar_size, cifar_path, media_lookup_by_id, localizations, labels)
-            np.save(cifar_path / "images.npy", images)
-            np.save(cifar_path / "labels.npy", labels)
+            success = create_cifar_dataset(cifar_size, cifar_path, media_lookup_by_id, localizations, labels)
+            if not success:
+                err("Could not create CIFAR data")
+                return False
 
         if coco:
             info(f"Creating COCO data in {coco_path}")
@@ -304,23 +312,23 @@ def download(
 
         return True
     except Exception as e:
-        exception(e)
+        exception(str(e))
         return False
 
 
-def get_media(api: tator.api, project_id: int, media_ids: []):
+def get_media(api: tator.api, project_id: int, media_ids: List[int]) -> List[tator.models.Media]:
     """
     Get media from a project
     :param api: tator.api
     :param project_id: project id
     :param media_ids: List of media ids
     """
+    medias = [tator.models.Media]
     try:
-        medias = []
         for start in range(0, len(media_ids), 200):
             new_medias = api.get_media_list(project=project_id, media_id=media_ids[start : start + 200])
             medias = medias + new_medias
         return medias
     except Exception as e:
-        err(e)
-        return None
+        err(str(e))
+        return medias

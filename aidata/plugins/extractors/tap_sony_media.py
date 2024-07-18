@@ -4,25 +4,21 @@
 
 import pandas as pd
 from pathlib import Path
-import piexif
+import piexif # type: ignore
 
 from aidata.logger import info, err
 
 
-def extract_media(image_path: Path, max_images: int = None) -> pd.DataFrame:
+def extract_media(image_path: Path, max_images: int = -1) -> pd.DataFrame:
     """Extracts SONY image meta data"""
 
     # Create a dataframe to store the combined data in an image_path column in sorted order
     images_df = pd.DataFrame()
-    images = []
-    allowed_extensions = [".jpg", ".jpeg", ".png", ".JPEG", ".JPG", ".PNG"]
-    for ext in allowed_extensions:
-        images.extend(list(image_path.rglob(f"*{ext}")))
 
-    images = [str(image) for image in images]
-    images_df["image_path"] = images
+    allowed_extensions = [".png", ".jpg", ".jpeg", ".JPEG", ".PNG"]
+    images_df["image_path"] = [str(file) for file in image_path.rglob('*') if file.suffix.lower() in allowed_extensions]
     images_df.sort_values(by="image_path")
-    if max_images:
+    if max_images > 0:
         images_df = images_df.head(max_images)
 
     # Check for empty dataframe
@@ -76,7 +72,7 @@ def extract_media(image_path: Path, max_images: int = None) -> pd.DataFrame:
             make.append(exif['0th'][piexif.ImageIFD.Make].decode('utf-8'))
             model.append(exif['0th'][piexif.ImageIFD.Model].decode('utf-8'))
         except Exception as e:
-            err(e)
+            err(str(e))
             failed_indexes.append(i)
 
     # Remove any failed indexes

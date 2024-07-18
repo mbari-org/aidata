@@ -2,7 +2,7 @@
 # Filename: generators/utils.py
 # Description: Algorithms to run on lists of localizations to combine them
 from typing import List
-from tator.openapi.tator_openapi import Localization
+from tator.openapi.tator_openapi import Localization # type: ignore
 import pandas as pd
 
 from aidata.logger import debug
@@ -29,8 +29,6 @@ def combine_localizations(boxes: List[Localization]) -> List[Localization]:
     # Group by 'id', count occurrences, and find the label with the maximum count
     # Note that in the case of a tie, the first label will be chosen
     max_labels = df.groupby("id")["label"].apply(lambda x: x.value_counts().idxmax()).reset_index(name="max_label")
-
-    debug(max_labels)
 
     # Merge the maximum labels with the original data
     max_labels = max_labels.merge(df, on="id", how="left")

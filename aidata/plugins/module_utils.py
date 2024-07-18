@@ -12,6 +12,8 @@ def load_module(module_name) -> object:
     if spec is not None:
         module = importlib.util.module_from_spec(spec)
         sys.modules[module_name] = module
+        if spec.loader is None:
+            raise ImportError(f"Module {module_name} not found")
         spec.loader.exec_module(module)
         return module
     else:

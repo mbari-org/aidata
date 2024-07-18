@@ -4,19 +4,19 @@
 import hashlib
 import json
 import os
-from typing import List
+from typing import List, Any, Dict
 
 import requests
 import subprocess
 
 from pathlib import Path
 from uuid import uuid1
-import tator
+import tator  # type: ignore
+from tator.openapi.tator_openapi import TatorApi as tatorapi # type: ignore
 from PIL import Image
-from tator.util._upload_file import _upload_file
-from tator.openapi.tator_openapi import MessageResponse
+from tator.util._upload_file import _upload_file # type: ignore
+from tator.openapi.tator_openapi import MessageResponse # type: ignore
 from aidata.logger import err, debug, info
-
 
 def local_md5_partial(file_name, max_chunks=5):
     """Computes md5sum-based fingerprint of the first part of a local file.
@@ -138,7 +138,7 @@ def get_video_metadata(video_name):
         return None
 
 
-def load_bulk_images(project_id: int, api: tator.api, specs: list) -> List[int]:
+def load_bulk_images(project_id: int, api: tatorapi, specs: list) -> List[int]:
     """
     Load a list of media objects to the database.
     :param project_id: The project ID
@@ -158,7 +158,7 @@ def load_bulk_images(project_id: int, api: tator.api, specs: list) -> List[int]:
         return []
 
 
-def load(ffmpeg_path: str, project_id: int, api: tator.api, media_path: str, spec, **kwargs) -> any:
+def load(ffmpeg_path: str, project_id: int, api: tatorapi, media_path: str, spec: Dict, **kwargs: Any) -> int or None:
     """
     Load image/video reference to the database. This creates a media object,
     and a thumbnail gif representation of the video.
@@ -167,6 +167,8 @@ def load(ffmpeg_path: str, project_id: int, api: tator.api, media_path: str, spe
     :param api: The Tator API object.
     :param media_path: The media path to load
     :param spec: The media spec to create
+    :param kwargs: Additional arguments
+    :return: The media ID or None if failed
     """
     media_id = None
     try:
@@ -230,9 +232,11 @@ def load(ffmpeg_path: str, project_id: int, api: tator.api, media_path: str, spe
             thumb_gif_def = {
                 "path": thumbnail_gif_info.key,
                 "size": os.stat(thumb_gif_path).st_size,
-                "resolution": [thumb_gif_image.height, thumb_gif_image.width],
-                "mime": f"image/{thumb_gif_image.format.lower()}",
+                "resolution": [thumb_gif_image.height, thumb_gif_image.width]
             }
+
+            if thumb_gif_image and thumb_gif_image.format:
+                thumb_gif_def["mime"] = f"image/{thumb_gif_image.format.lower()}"
 
             response = api.create_image_file(media_id, role="thumbnail_gif", image_definition=thumb_gif_def)
             if not isinstance(response, MessageResponse):
@@ -278,12 +282,12 @@ def load_media(
     media_path: str,
     media_url: str,
     section: str,
-    attributes: any,
-    api,
+    attributes: dict,
+    api: tatorapi,
     tator_project,
     media_type,
     **kwargs,
-) -> any:
+) -> int:
     """
     Load media from url/local file system to the database
     :param ffmpeg_path: Path to the ffmpeg binary

@@ -1,0 +1,31 @@
+# config_default.yml
+mounts:
+  - name: "image"
+    path: "/mnt/data"
+    host: "localhost"
+    nginx_root: "/data"
+
+plugins:
+  - name: "extractor"
+    module: "aidata.plugins.extractors.tap_cfe_media"
+    function: "extract_media"
+
+tator:
+  project: "default"
+  host: "localhost"
+  image:
+    attributes:
+      iso_datetime:
+        type: datetime
+  box:
+    attributes:
+      Label:
+        type: string
+      score:
+        type: float
+      cluster:
+        type: string
+      saliency:
+        type: float
+      area:
+        type: int
