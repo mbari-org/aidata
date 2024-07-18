@@ -4,7 +4,7 @@
 
 import re
 from datetime import datetime
-import ephem
+import ephem # type: ignore
 import pytz
 
 import pandas as pd
@@ -13,20 +13,15 @@ from pathlib import Path
 from aidata.logger import info
 
 
-def extract_media(image_path: Path, max_images: int = None) -> pd.DataFrame:
+def extract_media(image_path: Path, max_images: int = -1) -> pd.DataFrame:
     """Extracts I2MAP image meta data"""
 
     # Create a dataframe to store the combined data in an image_path column in sorted order
     images_df = pd.DataFrame()
-    images = []
-    allowed_extensions = [".jpg", ".jpeg", ".png"]
-    for ext in allowed_extensions:
-        images.extend(list(image_path.rglob(f"*{ext}")))
-
-    images = [str(image) for image in images]
-    images_df["image_path"] = images
+    allowed_extensions = [".png", ".jpg", ".jpeg", ".JPEG", ".PNG"]
+    images_df["image_path"] = [str(file) for file in image_path.rglob('*') if file.suffix.lower() in allowed_extensions]
     images_df.sort_values(by="image_path")
-    if max_images:
+    if max_images and max_images > 0:
         images_df = images_df.head(max_images)
 
     pattern_date1 = re.compile(r"(\d{4})(\d{2})(\d{2})T(\d{2})(\d{2})(\d{2})Z")  # 20161025T184500Z
@@ -57,7 +52,7 @@ def extract_media(image_path: Path, max_images: int = None) -> pd.DataFrame:
     images_df = images_df.groupby("image_path").first().reset_index()
     info(f"Found {len(images_df)} unique images")
     for group, df in images_df.groupby("image_path"):
-        image_name = Path(group).name
+        image_name = Path(str(group)).name
         info(image_name)
         for depth_str in [
             "50m",
@@ -80,27 +75,35 @@ def extract_media(image_path: Path, max_images: int = None) -> pd.DataFrame:
                 depth[index] = int(depth_str.split("m")[0])
                 break
         if pattern_date1.search(image_name):
-            match = pattern_date1.search(image_name).groups()
-            year, month, day, hour, minute, second = map(int, match)
+            match = pattern_date1.search(image_name)
+            if match is None:
+                continue
+            year, month, day, hour, minute, second = map(int, match.groups())
             dt = datetime(year, month, day, hour, minute, second, tzinfo=pytz.utc)
             day_flag[index] = is_day(dt)
             iso_datetime[index] = dt
         if pattern_date2.search(image_name):
-            match = pattern_date2.search(image_name).groups()
-            year, month, day, hour, minute, second = map(int, match)
+            match = pattern_date2.search(image_name)
+            if match is None:
+                continue
+            year, month, day, hour, minute, second = map(int, match.groups())
             dt = datetime(year, month, day, hour, minute, second, tzinfo=pytz.utc)
             day_flag[index] = is_day(dt)
             iso_datetime[index] = dt
         if pattern_date3.search(image_name):
-            match = pattern_date3.search(image_name).groups()
-            year, month, day, hour, minute, second = map(int, match)
+            match = pattern_date3.search(image_name)
+            if match is None:
+                continue
+            year, month, day, hour, minute, second = map(int, match.groups())
             year = 2000 + year
             dt = datetime(year, month, day, hour, minute, second, tzinfo=pytz.utc)
             day_flag[index] = is_day(dt)
             iso_datetime[index] = dt
         if pattern_date4.search(image_name):
-            match = pattern_date4.search(image_name).groups()
-            year, month, day, hour, minute, second = map(int, match)
+            match = pattern_date4.search(image_name)
+            if match is None:
+                continue
+            year, month, day, hour, minute, second = map(int, match.groups())
             year = 2000 + year
             dt = datetime(year, month, day, hour, minute, second, tzinfo=pytz.utc)
             day_flag[index] = is_day(dt)

@@ -8,8 +8,8 @@ from datetime import datetime
 import re
 import redis
 
-from tator.openapi.tator_openapi import TatorApi
-from tator.openapi.tator_openapi.models import Project, MediaType
+from tator.openapi.tator_openapi import TatorApi # type: ignore
+from tator.openapi.tator_openapi.models import Project, MediaType # type: ignore
 from aidata.plugins.loaders.tator.media import load_media
 
 from aidata.logger import info, err

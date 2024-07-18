@@ -50,8 +50,8 @@ def download(
 ) -> bool:
     create_logger_file("download")
     try:
-        base_path = Path(base_path)
-        base_path.mkdir(exist_ok=True, parents=True)
+        base_p = Path(base_path)
+        base_p.mkdir(exist_ok=True, parents=True)
         # Load the configuration file
         config_dict = init_yaml_config(config)
         project = config_dict["tator"]["project"]
@@ -71,26 +71,26 @@ def download(
         else:
             version_final = version[0]
             info(f"Downloading dataset {version_final}")
-        data_path = base_path / version_final
+        data_path = base_p / version_final
         data_path.mkdir(exist_ok=True)
 
         # Convert comma separated list of concepts to a list
         if labels == "all":
-            labels_list = None
+            labels_list = []
         else:
             labels_list = labels.split(",")
             labels_list = [l.strip() for l in labels_list]
             # Check if this is empty
             if len(labels_list) == 1 and labels_list[0] == "":
-                labels_list = None
+                labels_list = []
         if concepts == "all":
-            concepts_list = None
+            concepts_list = []
         else:
             concepts_list = concepts.split(",")
             concepts_list = [l.strip() for l in concepts_list]
             # Check if this is empty
             if len(concepts_list) == 1 and concepts_list[0] == "":
-                concepts_list = None
+                concepts_list = []
 
         # Convert comma separated list of versions to a list
         version_list = version.split(",")

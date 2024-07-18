@@ -33,7 +33,12 @@ def load_images(token: str, config: str, dry_run: bool, input: str, section: str
         plugins = config_dict["plugins"]
         mounts = config_dict["mounts"]
         image_mount = next((mount for mount in mounts if mount["name"] == "image"), None)
-        if "port" in image_mount:
+
+        if not image_mount:
+            err("No image mount found in configuration")
+            return -1
+
+        if  "port" in image_mount:
             port = image_mount["port"]
             image_base_url = f'http://{image_mount["host"]}:{port}'
         else:

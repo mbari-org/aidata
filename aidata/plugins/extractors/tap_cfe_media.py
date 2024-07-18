@@ -4,6 +4,8 @@
 from enum import Enum
 import re
 from datetime import datetime
+from typing import Optional, List
+
 import pytz
 
 import pandas as pd
@@ -21,18 +23,13 @@ class Instrument(Enum):
     SNOW_CAM = "SNOW_CAM"
 
 
-def extract_media(image_path: Path, max_images: int = None) -> pd.DataFrame:
+def extract_media(image_path: Path, max_images: Optional[int] = None) -> pd.DataFrame:
     """Extracts data CFE image meta data"""
 
     # Create a dataframe to store the combined data in an image_path column in sorted order
     images_df = pd.DataFrame()
-    images = []
-    allowed_extensions = [".png", ".jpg"]
-    for ext in allowed_extensions:
-        images.extend(list(image_path.rglob(f"*{ext}")))
-
-    images = [str(image) for image in images]
-    images_df["image_path"] = images
+    allowed_extensions = [".png", ".jpg", ".jpeg", ".JPEG", ".PNG"]
+    images_df["image_path"] = [str(file) for file in image_path.rglob('*') if file.suffix.lower() in allowed_extensions]
     images_df.sort_values(by="image_path")
     if max_images:
         images_df = images_df.iloc[:max_images]
@@ -48,7 +45,9 @@ def extract_media(image_path: Path, max_images: int = None) -> pd.DataFrame:
     info(f"Found {len(images_df)} unique images")
     fps = 17
     for group, df in images_df.groupby("image_path"):
-        image_name = Path(group).name
+        image_name = Path(str(group)).name
+        #: Argument 1 to "Path" has incompatible type "str | bytes | date | datetime | timedelta | datetime64 | timedelta64 | bool | int | float | Timestamp | Timedelta | complex"; expected "str | PathLike[str]"  [arg-type]
+        # aidata/generators/coco.py:11: error: Skipping analyzi
         info(image_name)
         matches = re.findall(pattern, image_name)
         if matches:
@@ -63,7 +62,7 @@ def extract_media(image_path: Path, max_images: int = None) -> pd.DataFrame:
             index += 1
 
     if len(instrument_type) == 0:
-        raise ValueError("No instrument type found in image names")
+        raise ValueError("No instrument type found in CFE image names")
     if len(iso_datetime) == 0:
         raise ValueError("No iso datetime found in image names")
 

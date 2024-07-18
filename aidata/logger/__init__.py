@@ -5,17 +5,16 @@
 import logging
 import os
 from pathlib import Path
-from datetime import datetime as dt
+from datetime import datetime as dt, UTC
 
-
-LOGGER_NAME = "AIDATAHUB"
+LOGGER_NAME = "AIDATA"
 DEBUG = True
 
 
 class _Singleton(type):
     """A metaclass that creates a Singleton base class when called."""
 
-    _instances = {}
+    _instances = {} # type: ignore
 
     def __call__(cls, *args, **kwargs):
         if cls not in cls._instances:
@@ -42,7 +41,7 @@ class CustomLogger(Singleton):
         formatter = logging.Formatter("%(asctime)s %(levelname)s %(message)s")
 
         # default log file date to today
-        now = dt.utcnow()
+        now = dt.now(UTC)
 
         # log to file
         self.log_filename = output_path / f"{output_prefix}_{now:%Y%m%d}.log"
@@ -68,7 +67,8 @@ def create_logger_file(prefix: str = "aidata"):
     Create a logger file
     :param log_path: Path to the log file
     """
-    if os.getenv("ENVIRONMENT") and os.getenv("ENVIRONMENT").upper() == "TESTING":
+    ENVIRONMENT = str(os.getenv("ENVIRONMENT"))
+    if ENVIRONMENT and ENVIRONMENT.upper() == "TESTING":
         log_path = Path("logs")
     else:
         log_path = Path.home() / "aidata" / "logs"
