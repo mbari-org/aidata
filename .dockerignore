@@ -1,0 +1,14 @@
+__pycache__
+*.pyc
+*.log
+.git
+.gitignore
+config/
+tests/
+docs/
+logs/
+Dockerfile
+Dockerfile.cuda
+environment.yml
+pyproject.toml
+README.md
