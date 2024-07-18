@@ -1,5 +1,15 @@
 # CHANGELOG
 
+## v1.6.1 (2024-07-18)
+
+### Build
+
+* build: removed unused imports and bump torch to python3.11 compatible and ([`7d2d786`](https://github.com/mbari-org/aidata/commit/7d2d7866d21fd29823f55c24538c535a24ec8127))
+
+### Fix
+
+* fix: bugs from typecheck ([`cf3020a`](https://github.com/mbari-org/aidata/commit/cf3020a8cbd428065edcc6925dbaaf700f5138ab))
+
 ## v1.6.0 (2024-07-05)
 
 ### Feature
@@ -32,6 +42,8 @@
 
 ## v1.4.6 (2024-05-22)
 
+## v1.4.5 (2024-05-22)
+
 ### Fix
 
 * fix: revert to original pass through of datetime object ([`45dcd1e`](https://github.com/mbari-org/aidata/commit/45dcd1e0ce238da023b62f209d17f60e2eeabbe9))
@@ -43,10 +55,6 @@
 * perf: remove audio and reduce frame rate to 24 for .git ([`2a5a9f9`](https://github.com/mbari-org/aidata/commit/2a5a9f972c1518a8dc96f3206590e13a06020188))
 
 * perf: handle variable case attribues ([`01db568`](https://github.com/mbari-org/aidata/commit/01db568e178fdf6f5c08971bcc3caf74a7886e42))
-
-## v1.4.5 (2024-05-22)
-
-### Performance
 
 * perf: remove palette gen for speed-up of video gif creation ([`5adaa02`](https://github.com/mbari-org/aidata/commit/5adaa022f1e6609ffd09d4ee04ae571b902e5750))
 
