@@ -11,15 +11,25 @@ from aidata.plugins.loaders.tator.common import init_yaml_config
 from aidata.predictors.process_vits import ProcessVITS
 from pathlib import Path
 
+
 @click.command("exemplars", help="Load exemplars from a SDCAT formatted CSV exemplar file into a REDIS server")
 @common_args.yaml_config
 @common_args.dry_run
-@click.option("--input", type=Path, required=True, help="input CSV file with SDCAT formatted CSV exemplar file, or a directory with SDCAT formatted CSV exemplar files")
+@click.option(
+    "--input",
+    type=Path,
+    required=True,
+    help="input CSV file with SDCAT formatted CSV exemplar file, or a directory with SDCAT formatted CSV exemplar files",
+)
 @click.option("--label", type=int, help="Class label for the exemplars")
 @click.option("--batch-size", type=int, default=32, help="Batch size for loading embeddings")
-@click.option("--label", type=str, help="Class label for the exemplars. This is used as the base class name for the "
-                                        "exemplar images, e.g. Otter_0, Otter_1, etc.")
-def load_exemplars(config: str, input: Path, dry_run: bool, label: str, batch_size=32, reset: bool=False) -> int:
+@click.option(
+    "--label",
+    type=str,
+    help="Class label for the exemplars. This is used as the base class name for the "
+    "exemplar images, e.g. Otter_0, Otter_1, etc.",
+)
+def load_exemplars(config: str, input: Path, dry_run: bool, label: str, batch_size=32, reset: bool = False) -> int:
     """Load embeddings from a directory with SDCAT formatted exemplar CSV files. Returns the number of exemplar image
     embeddings loaded."""
     create_logger_file("load_exemplars")
@@ -45,8 +55,8 @@ def load_exemplars(config: str, input: Path, dry_run: bool, label: str, batch_si
             info("Dry run mode. No data will be loaded. Found {len(df)} exemplars")
             return len(df)
 
-        info(f'Processing {len(df)} exemplars')
-        image_paths = df.image_path.unique().tolist() # noqa
+        info(f"Processing {len(df)} exemplars")
+        image_paths = df.image_path.unique().tolist()  # noqa
 
         # If image paths are relative, prepend the base path to the image paths
         if not Path(image_paths[0]).is_absolute():
@@ -64,12 +74,16 @@ def load_exemplars(config: str, input: Path, dry_run: bool, label: str, batch_si
 
     return num_exemplars
 
+
 if __name__ == "__main__":
     import os
     from pathlib import Path
+
     # To run this script, uncomment all @click decorators above
     os.environ["ENVIRONMENT"] = "TESTING"
 
     test_path = Path(__file__).parent.parent.parent / "tests" / "data" / "uav" / "otterexemplars.csv"
-    yaml_path = Path(__file__).parent.parent.parent / "tests"/ "config" / "config_uav.yml"
-    load_exemplars(config=yaml_path.as_posix(), dry_run=False,  input=test_path.as_posix(), label="Otter", batch_size=32, reset=True)
+    yaml_path = Path(__file__).parent.parent.parent / "tests" / "config" / "config_uav.yml"
+    load_exemplars(
+        config=yaml_path.as_posix(), dry_run=False, input=test_path.as_posix(), label="Otter", batch_size=32, reset=True
+    )

@@ -50,7 +50,7 @@ def load_boxes(token: str, config: str, version: str, input: Path, dry_run: bool
         # Group the detections by image_path
         for image_path, group in df_boxes.groupby("image_path"):
             # Query for the media object with the same name as the image_path - this assumes the image has a unique name
-            image_name = Path(image_path).name # type: ignore
+            image_name = Path(image_path).name  # type: ignore
             media = api.get_media_list(project=tator_project.id, name=image_name)
             if len(media) == 0:
                 print(f"No media found with name {image_name} in project {tator_project.name}.")
@@ -91,6 +91,7 @@ def load_boxes(token: str, config: str, version: str, input: Path, dry_run: bool
 
     return len(df_boxes)
 
+
 if __name__ == "__main__":
     import os
 
@@ -99,4 +100,6 @@ if __name__ == "__main__":
     test_path = Path(__file__).parent.parent.parent / "tests" / "data" / "i2map"
     yaml_path = Path(__file__).parent.parent.parent / "tests" / "config" / "config_i2map.yml"
     tator_token = os.getenv("TATOR_TOKEN")
-    load_boxes(token=tator_token, config=yaml_path.as_posix(), dry_run=False, version="Baseline", input=test_path, max_num=10)
+    load_boxes(
+        token=tator_token, config=yaml_path.as_posix(), dry_run=False, version="Baseline", input=test_path, max_num=10
+    )

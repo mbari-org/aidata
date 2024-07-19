@@ -21,17 +21,27 @@ DEFAULT_BASE_DIR = Path.home() / "aidata" / "datasets"
 @common_args.token
 @common_args.yaml_config
 @common_args.version
-@click.option("--base-path", default=DEFAULT_BASE_DIR, help=f"Path to the base directory to save all data to. Defaults to {DEFAULT_BASE_DIR}")
+@click.option(
+    "--base-path",
+    default=DEFAULT_BASE_DIR,
+    help=f"Path to the base directory to save all data to. Defaults to {DEFAULT_BASE_DIR}",
+)
 @click.option("--group", help="Group name, e.g. VB250")
 @click.option("--generator", help="Generator name, e.g. vars-labelbot or vars-annotation")
 @click.option("--labels", default="all", help='Comma separated list of labels to download, or "all" for all labels.')
-@click.option("--concepts", default="all", help='Comma separated list of concepts to download, or "all" for all concepts. For legacy projects only')
+@click.option(
+    "--concepts",
+    default="all",
+    help='Comma separated list of concepts to download, or "all" for all concepts. For legacy projects only',
+)
 @click.option("--voc", is_flag=True, help="True if export as VOC dataset, False if not.")
 @click.option("--coco", is_flag=True, help="True if export as COCO dataset, False if not.")
 @click.option("--cifar", is_flag=True, help="True if export as CIFAR dataset, False if not.")
 @click.option("--cifar-size", default=32, help="Size of CIFAR images.")
 @click.option("--save-score", is_flag=True, help="True to save score in YOLO output, False if not.")
-@click.option("--skip-image-download", is_flag=True, help="Skip image download, only download annotations. CIFAR requires images.")
+@click.option(
+    "--skip-image-download", is_flag=True, help="Skip image download, only download annotations. CIFAR requires images."
+)
 def download(
     token: str,
     config: str,
@@ -66,8 +76,8 @@ def download(
 
         # Download a dataset by its version
         if len(version) > 1:
-            version_final = 'combined'
-            info(f'Combining datasets {version} into {version_final}')
+            version_final = "combined"
+            info(f"Combining datasets {version} into {version_final}")
         else:
             version_final = version[0]
             info(f"Downloading dataset {version_final}")
@@ -83,6 +93,8 @@ def download(
             # Check if this is empty
             if len(labels_list) == 1 and labels_list[0] == "":
                 labels_list = []
+            # Strip off any zero length strings
+            labels_list = [l for l in labels_list if len(l) > 0]
         if concepts == "all":
             concepts_list = []
         else:
@@ -91,11 +103,12 @@ def download(
             # Check if this is empty
             if len(concepts_list) == 1 and concepts_list[0] == "":
                 concepts_list = []
+            # Strip off any zero length strings
+            concepts_list = [c for c in concepts_list if len(c) > 0]
 
         # Convert comma separated list of versions to a list
         version_list = version.split(",")
         version_list = [l.strip() for l in version_list]
-
 
         success = download_full(
             api,

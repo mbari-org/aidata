@@ -4,7 +4,7 @@
 
 import re
 from datetime import datetime
-import ephem # type: ignore
+import ephem  # type: ignore
 import pytz
 
 import pandas as pd
@@ -19,7 +19,7 @@ def extract_media(image_path: Path, max_images: int = -1) -> pd.DataFrame:
     # Create a dataframe to store the combined data in an image_path column in sorted order
     images_df = pd.DataFrame()
     allowed_extensions = [".png", ".jpg", ".jpeg", ".JPEG", ".PNG"]
-    images_df["image_path"] = [str(file) for file in image_path.rglob('*') if file.suffix.lower() in allowed_extensions]
+    images_df["image_path"] = [str(file) for file in image_path.rglob("*") if file.suffix.lower() in allowed_extensions]
     images_df.sort_values(by="image_path")
     if max_images and max_images > 0:
         images_df = images_df.head(max_images)

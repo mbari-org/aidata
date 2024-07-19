@@ -12,6 +12,7 @@ config_path = Path(__file__).parent / "config"
 
 HAS_DATABASE = False
 
+
 def setup():
     # Make sure the TATOR_TOKEN environment variable is set
     import os

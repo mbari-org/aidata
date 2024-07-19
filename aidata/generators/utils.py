@@ -2,7 +2,7 @@
 # Filename: generators/utils.py
 # Description: Algorithms to run on lists of localizations to combine them
 from typing import List
-from tator.openapi.tator_openapi import Localization # type: ignore
+from tator.openapi.tator_openapi import Localization  # type: ignore
 import pandas as pd
 
 from aidata.logger import debug

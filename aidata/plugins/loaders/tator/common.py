@@ -6,9 +6,9 @@ from typing import Tuple
 
 import yaml
 
-from tator.openapi.tator_openapi import TatorApi # type: ignore
-from tator.openapi.tator_openapi.models import Project # type: ignore
-import tator # type: ignore
+from tator.openapi.tator_openapi import TatorApi  # type: ignore
+from tator.openapi.tator_openapi.models import Project  # type: ignore
+import tator  # type: ignore
 
 from aidata.logger import info, debug, err
 
