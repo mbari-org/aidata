@@ -29,7 +29,7 @@ def extract_media(image_path: Path, max_images: Optional[int] = None) -> pd.Data
     # Create a dataframe to store the combined data in an image_path column in sorted order
     images_df = pd.DataFrame()
     allowed_extensions = [".png", ".jpg", ".jpeg", ".JPEG", ".PNG"]
-    images_df["image_path"] = [str(file) for file in image_path.rglob('*') if file.suffix.lower() in allowed_extensions]
+    images_df["image_path"] = [str(file) for file in image_path.rglob("*") if file.suffix.lower() in allowed_extensions]
     images_df.sort_values(by="image_path")
     if max_images:
         images_df = images_df.iloc[:max_images]
@@ -51,8 +51,8 @@ def extract_media(image_path: Path, max_images: Optional[int] = None) -> pd.Data
         info(image_name)
         matches = re.findall(pattern, image_name)
         if matches:
-            instrument, _, datetime_str, frame_num = matches[0] 
-            datetime_str = datetime_str + 'Z'
+            instrument, _, datetime_str, frame_num = matches[0]
+            datetime_str = datetime_str + "Z"
             dt = datetime.strptime(datetime_str, "%Y-%m-%d %H-%M-%S.%fZ")
             dt_utc = pytz.utc.localize(dt)
             iso_datetime[index] = dt_utc

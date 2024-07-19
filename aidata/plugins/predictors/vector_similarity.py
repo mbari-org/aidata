@@ -14,10 +14,7 @@ class VectorSimilarity:
     INDEX_NAME = "index"  # Vector Index Name
     DOC_PREFIX = "doc:"  # RediSearch Key Prefix for the Index
 
-    def __init__(
-            self,
-            r: redis.Redis
-    ):
+    def __init__(self, r: redis.Redis):
         self.r = r
         self.create_index(768)
 
@@ -30,13 +27,15 @@ class VectorSimilarity:
             # schema
             schema = (
                 TagField("tag"),
-                VectorField("vector",
-                            "FLAT", {
-                                "TYPE": "FLOAT32",
-                                "DIM": vector_dimensions,
-                                "DISTANCE_METRIC": "COSINE",
-                            }
-                            ),
+                VectorField(
+                    "vector",
+                    "FLAT",
+                    {
+                        "TYPE": "FLOAT32",
+                        "DIM": vector_dimensions,
+                        "DISTANCE_METRIC": "COSINE",
+                    },
+                ),
             )
 
             # index Definition
@@ -57,7 +56,5 @@ class VectorSimilarity:
             .paging(0, num_results)
             .dialect(2)
         )
-        query_params = {
-            "vec": vector
-        }
+        query_params = {"vec": vector}
         return self.r.ft(self.INDEX_NAME).search(query, query_params).docs

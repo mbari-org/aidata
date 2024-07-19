@@ -34,8 +34,8 @@ def format_attributes(attributes: dict, attribute_mapping: dict) -> dict:
                 if m_value["type"] == "int":
                     attributes[m_key] = int(attributes[m_key])
                 if m_value["type"] == "string":
-                    if m_key == 'cluster':
-                        attributes[m_key] = f'Unknown C{attributes[m_key]}'
+                    if m_key == "cluster":
+                        attributes[m_key] = f"Unknown C{attributes[m_key]}"
                     else:
                         attributes[m_key] = str(attributes[m_key])
     return attributes

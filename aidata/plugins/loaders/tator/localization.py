@@ -2,10 +2,11 @@
 # Filename: plugins/loaders/tator/localization.py
 # Description: Load localizations into the database
 
-import tator # type: ignore
+import tator  # type: ignore
 
 from aidata.logger import info
 from typing import List
+
 
 def gen_spec(
     box: List[float],
@@ -93,6 +94,12 @@ def load_bulk_boxes(project_id, api, specs):
     """
     info(f"Loading {len(specs)} localizations into Tator")
     chunk_size = min(200, len(specs))
-    loc_ids = [new_id for response in tator.util.chunked_create(api.create_localization_list, project_id, chunk_size=chunk_size, body=specs) for new_id in response.id]
+    loc_ids = [
+        new_id
+        for response in tator.util.chunked_create(
+            api.create_localization_list, project_id, chunk_size=chunk_size, body=specs
+        )
+        for new_id in response.id
+    ]
     info(f"Loaded {len(loc_ids)} localizations into Tator")
     return loc_ids

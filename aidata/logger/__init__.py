@@ -5,7 +5,7 @@
 import logging
 import os
 from pathlib import Path
-from datetime import datetime as dt, UTC
+from datetime import datetime as dt, timezone
 
 LOGGER_NAME = "AIDATA"
 DEBUG = True
@@ -14,7 +14,7 @@ DEBUG = True
 class _Singleton(type):
     """A metaclass that creates a Singleton base class when called."""
 
-    _instances = {} # type: ignore
+    _instances = {}  # type: ignore
 
     def __call__(cls, *args, **kwargs):
         if cls not in cls._instances:
@@ -28,7 +28,7 @@ class Singleton(_Singleton("SingletonMeta", (object,), {})):
 
 class CustomLogger(Singleton):
     logger = None
-    output_path = Path.cwd()
+    output_path = Path.home() / "aidata" / "logs"
 
     def __init__(self, output_path: Path = Path.cwd(), output_prefix: str = LOGGER_NAME):
         """
@@ -41,7 +41,7 @@ class CustomLogger(Singleton):
         formatter = logging.Formatter("%(asctime)s %(levelname)s %(message)s")
 
         # default log file date to today
-        now = dt.now(UTC)
+        now = dt.now(timezone.utc)
 
         # log to file
         self.log_filename = output_path / f"{output_prefix}_{now:%Y%m%d}.log"
@@ -72,6 +72,19 @@ def create_logger_file(prefix: str = "aidata"):
         log_path = Path("logs")
     else:
         log_path = Path.home() / "aidata" / "logs"
+        # Check if can write to the log path, and if not revert to system temp
+        try:
+            log_path.mkdir(parents=True, exist_ok=True)
+            test_file = log_path / "test.txt"
+            with open(test_file, "w") as f:
+                f.write("test")
+            test_file.unlink()
+        except PermissionError:
+            import tempfile
+
+            temp_dir = tempfile.gettempdir()
+            log_path = Path(temp_dir) / "aidata" / "logs"
+
     # create the log directory if it doesn't exist
     log_path.mkdir(parents=True, exist_ok=True)
     return CustomLogger(log_path, prefix)

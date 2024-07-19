@@ -5,10 +5,10 @@ import json
 from pathlib import Path
 from typing import List
 
-import tator # type: ignore
+import tator  # type: ignore
 from PIL import Image
 from tqdm import tqdm
-from pascal_voc_writer import Writer # type: ignore
+from pascal_voc_writer import Writer  # type: ignore
 from aidata.logger import debug, info, err, exception
 from aidata.generators.cifar import create_cifar_dataset
 from aidata.generators.utils import combine_localizations
@@ -70,11 +70,15 @@ def download(
 
         if len(concepts_list) > 0:
             for concept in concepts_list:
-                num_concept_records[concept] = api.get_localization_count(project=project_id, version=version_ids, attribute_contains=[f'concept::{concept}']+attribute)
+                num_concept_records[concept] = api.get_localization_count(
+                    project=project_id, version=version_ids, attribute_contains=[f"concept::{concept}"] + attribute
+                )
                 num_records += num_concept_records[concept]
         if len(labels_list) > 0:
             for label in labels_list:
-                num_label_records[label] = api.get_localization_count(project=project_id, version=version_ids, attribute_contains=[f'Label::{label}']+attribute)
+                num_label_records[label] = api.get_localization_count(
+                    project=project_id, version=version_ids, attribute_contains=[f"Label::{label}"] + attribute
+                )
                 num_records += num_label_records[label]
         if len(concepts_list) == 0 and len(labels_list) == 0:
             num_records = api.get_localization_count(project=project_id, version=version_ids)
@@ -116,14 +120,17 @@ def download(
             if max_records == 1:
                 inc = 1
             else:
-                inc = min(5000, max_records-1)
+                inc = min(5000, max_records - 1)
 
             for start in range(0, max_records, inc):
                 info(f"Query records {start} to {start + inc} using attribute filter {attribute} {prefix} {query_str}")
 
                 new_localizations = api.get_localization_list(
-                    project=project_id, attribute_contains=[f'{prefix}::{query_str}']+attribute,
-                    version=version_ids, start=start, stop=start + 5000
+                    project=project_id,
+                    attribute_contains=[f"{prefix}::{query_str}"] + attribute,
+                    version=version_ids,
+                    start=start,
+                    stop=start + 5000,
                 )
                 if len(new_localizations) == 0:
                     break
@@ -131,17 +138,22 @@ def download(
 
         if concepts_list:
             for concept in concepts_list:
-                query_localizations('concept', concept, num_concept_records[concept])
+                query_localizations("concept", concept, num_concept_records[concept])
         if labels_list:
             for label in labels_list:
-                query_localizations('Label', label, num_label_records[label])
+                query_localizations("Label", label, num_label_records[label])
         if not concepts_list and not labels_list:
-            query_localizations('', '', num_records)
+            query_localizations("", "", num_records)
 
-        info(f"Found {len(localizations)} records for version {version_list}, generator {generator}, group {group} and including {labels_list if labels_list else 'everything'}")
+        info(
+            f"Found {len(localizations)} records for version {version_list}, generator {generator}, group {group} and including {labels_list if labels_list else 'everything'}"
+        )
         info(f"Creating output directory {output_path} in YOLO format")
 
         media_lookup_by_id = {}
+
+        # Remove any localization objects that are not tator.models.Localization; this is a bug in the api?
+        localizations = [l for l in localizations if isinstance(l, tator.models.Localization)]
 
         # Get all the unique media ids in the localizations
         media_ids = list(set([l.media for l in localizations]))
@@ -149,12 +161,10 @@ def download(
         # Get all the media objects at those ids
         all_media = get_media(api, project_id, media_ids)
 
-        # Get all the unique media names
-        def get_media_stem(media_path: Path) -> str:
-            parts = Path(media_path.name).stem.rsplit(".", 1)
-            return ".".join(parts)
+        # Remove any localization objects that are not tator.models.Media; this is a bug in the api?
+        all_media = [m for m in all_media if isinstance(m, tator.models.Media)]
 
-        media_names = list(set([get_media_stem(m) for m in all_media]))
+        media_names = list(set([m.name for m in all_media]))
 
         # Get all the unique Label attributes and sort them alphabetically
         labels = list(sorted(set([l.attributes["Label"] for l in localizations])))
@@ -189,10 +199,7 @@ def download(
         info(f"Creating YOLO files in {label_path}")
         json_content = {}
 
-        for media_name in tqdm(media_names, desc="Creating VOC formats", unit="iteration"):
-            # Get the media object
-            media = [m for m in all_media if get_media_stem(m) == media_name][0]
-
+        for media in tqdm(all_media, desc="Creating VOC formats", unit="iteration"):
             # Get all the localizations for this media
             media_localizations = [l for l in localizations if l.media == media.id]
 
@@ -201,7 +208,7 @@ def download(
                 media_localizations = combine_localizations(media_localizations)
 
             media_lookup_by_id[media.id] = media_path / media.name
-            yolo_path = label_path / f"{media_name}.txt"
+            yolo_path = label_path / f"{media.name}.txt"
             image_path = media_path / media.name
 
             # Get the image size from the image using PIL
@@ -226,7 +233,7 @@ def download(
             # optionally create VOC files
             if voc:
                 # Paths to the VOC file and the image
-                voc_xml_path = voc_path / f"{media_name}.xml"
+                voc_xml_path = voc_path / f"{media.name}.xml"
                 image_path = (media_path / media.name).as_posix()
 
                 writer = Writer(image_path, image_width, image_height)
@@ -255,10 +262,10 @@ def download(
                 writer.save(voc_xml_path.as_posix())
 
                 # Replace the xml tag pose with uuid
-                with open(voc_xml_path, 'r') as file:
+                with open(voc_xml_path, "r") as file:
                     filedata = file.read()
-                filedata = filedata.replace('pose', 'id')
-                with open(voc_xml_path, 'w') as file:
+                filedata = filedata.replace("pose", "id")
+                with open(voc_xml_path, "w") as file:
                     file.write(filedata)
 
             if coco:

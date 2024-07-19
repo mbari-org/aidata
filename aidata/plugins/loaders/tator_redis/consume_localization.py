@@ -17,7 +17,7 @@ class ConsumeLocalization:
         self.tator_project = tator_project
         self.box_type = box_type
         # Create a dictionary of key/values from the box type attributes field name and dtype
-        self.attribute_mapping = {a.name: {"type": a.dtype} for a in box_type.attribute_types }
+        self.attribute_mapping = {a.name: {"type": a.dtype} for a in box_type.attribute_types}
         # self.attribute_mapping = {a["name"]: a["dtype"] for a in box_type.attributes}
 
     def consume(self):
@@ -31,7 +31,9 @@ class ConsumeLocalization:
                     if len(load_key) == 1:
                         info(f"Loading localization for video ref {video_ref}")
                         hash_data = self.r.hgetall(f"locs:{video_ref}")
-                        objects = {key.decode("utf-8"): json.loads(value.decode("utf-8")) for key, value in hash_data.items()}
+                        objects = {
+                            key.decode("utf-8"): json.loads(value.decode("utf-8")) for key, value in hash_data.items()
+                        }
 
                         # Load them referencing the video by its load_id
                         info(f"Getting tator_id from {load_key[0]}")

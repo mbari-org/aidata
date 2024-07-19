@@ -12,11 +12,12 @@ import subprocess
 from pathlib import Path
 from uuid import uuid1
 import tator  # type: ignore
-from tator.openapi.tator_openapi import TatorApi as tatorapi # type: ignore
+from tator.openapi.tator_openapi import TatorApi as tatorapi  # type: ignore
 from PIL import Image
-from tator.util._upload_file import _upload_file # type: ignore
-from tator.openapi.tator_openapi import MessageResponse # type: ignore
+from tator.util._upload_file import _upload_file  # type: ignore
+from tator.openapi.tator_openapi import MessageResponse  # type: ignore
 from aidata.logger import err, debug, info
+
 
 def local_md5_partial(file_name, max_chunks=5):
     """Computes md5sum-based fingerprint of the first part of a local file.
@@ -150,7 +151,11 @@ def load_bulk_images(project_id: int, api: tatorapi, specs: list) -> List[int]:
         chunk_size = min(500, len(specs))
         media_ids = []
         info(f"Creating {len(specs)} media images")
-        media_ids += [new_id for response in tator.util.chunked_create(api.create_media_list, project_id, chunk_size=chunk_size, body=specs) for new_id in response.id]
+        media_ids += [
+            new_id
+            for response in tator.util.chunked_create(api.create_media_list, project_id, chunk_size=chunk_size, body=specs)
+            for new_id in response.id
+        ]
         info(f"Created {len(media_ids)} medias")
         return media_ids
     except Exception as e:
@@ -232,7 +237,7 @@ def load(ffmpeg_path: str, project_id: int, api: tatorapi, media_path: str, spec
             thumb_gif_def = {
                 "path": thumbnail_gif_info.key,
                 "size": os.stat(thumb_gif_path).st_size,
-                "resolution": [thumb_gif_image.height, thumb_gif_image.width]
+                "resolution": [thumb_gif_image.height, thumb_gif_image.width],
             }
 
             if thumb_gif_image and thumb_gif_image.format:

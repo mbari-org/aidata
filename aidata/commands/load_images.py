@@ -38,7 +38,7 @@ def load_images(token: str, config: str, dry_run: bool, input: str, section: str
             err("No image mount found in configuration")
             return -1
 
-        if  "port" in image_mount:
+        if "port" in image_mount:
             port = image_mount["port"]
             image_base_url = f'http://{image_mount["host"]}:{port}'
         else:
