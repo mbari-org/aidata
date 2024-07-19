@@ -22,6 +22,7 @@ ENV APP_HOME /app
 WORKDIR ${APP_HOME}
 ADD . ${APP_HOME}
 ENV PYTHONPATH=${APP_HOME}/aidata
+ENV HF_HOME=/tmp/transformers_cache
 
 RUN python3.11 -m pip install --upgrade pip && \
     python3.11 -m pip install -r requirements.txt
