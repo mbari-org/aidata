@@ -1,5 +1,11 @@
 # CHANGELOG
 
+## v1.6.2 (2024-07-19)
+
+### Fix
+
+* fix: handled empty labels, bad media, and more reporting of progress ([`a31ef83`](https://github.com/mbari-org/aidata/commit/a31ef83e2b72762b36e086cffd118ee517c3b84c))
+
 ## v1.6.1 (2024-07-18)
 
 ### Build
