@@ -21,15 +21,17 @@ from pathlib import Path
     required=True,
     help="input CSV file with SDCAT formatted CSV exemplar file, or a directory with SDCAT formatted CSV exemplar files",
 )
-@click.option("--label", type=int, help="Class label for the exemplars")
+@click.option("--device", type=str, default="cpu", help="Device to use for processing, e.g. cuda:0 or cpu")
+@click.option("--label", type=str, help="Class label for the exemplars")
 @click.option("--batch-size", type=int, default=32, help="Batch size for loading embeddings")
+@click.option("--reset", is_flag=True, help="Reset the database before loading. Use with caution!")
 @click.option(
     "--label",
     type=str,
     help="Class label for the exemplars. This is used as the base class name for the "
     "exemplar images, e.g. Otter_0, Otter_1, etc.",
 )
-def load_exemplars(config: str, input: Path, dry_run: bool, label: str, batch_size=32, reset: bool = False) -> int:
+def load_exemplars(config: str, input: Path, dry_run: bool, label: str, device: str, batch_size, reset: bool = False) -> int:
     """Load embeddings from a directory with SDCAT formatted exemplar CSV files. Returns the number of exemplar image
     embeddings loaded."""
     create_logger_file("load_exemplars")
@@ -43,7 +45,7 @@ def load_exemplars(config: str, input: Path, dry_run: bool, label: str, batch_si
         redi_port = config_dict["redis"]["port"]
         info(f"Connecting to REDIS server at {redi_host}:{redi_port}")
         r = redis.Redis(host=redi_host, port=redi_port)
-        vits_processor = ProcessVITS(r, reset=reset, batch_size=batch_size)
+        vits_processor = ProcessVITS(r, device=device, reset=reset, batch_size=batch_size)
 
         info(f"Loading exemplars from {input}")
         # If input is a directory, load the first CSV file found
@@ -52,11 +54,12 @@ def load_exemplars(config: str, input: Path, dry_run: bool, label: str, batch_si
         df = extract_sdcat_csv(input)
 
         if dry_run:
-            info("Dry run mode. No data will be loaded. Found {len(df)} exemplars")
+            info(f"Dry run mode. No data will be loaded. Found {len(df)} exemplars")
             return len(df)
 
         info(f"Processing {len(df)} exemplars")
         image_paths = df.image_path.unique().tolist()  # noqa
+        info(f"Found {len(image_paths)} unique exemplar images")
 
         # If image paths are relative, prepend the base path to the image paths
         if not Path(image_paths[0]).is_absolute():
@@ -66,6 +69,7 @@ def load_exemplars(config: str, input: Path, dry_run: bool, label: str, batch_si
         # Class names are indexed, e.g. Otter_0, Otter_1, etc.
         # Each class name corresponds to an exemplar image that represents a subcluster
         class_names = [f"{label}_{i}" for i in range(len(image_paths))]
+        info(f"Loading {len(image_paths)} exemplar images with class names {class_names}")
         vits_processor.load(image_paths, class_names)
         num_exemplars = len(image_paths)
     except Exception as e:

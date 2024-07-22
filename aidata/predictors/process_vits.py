@@ -18,16 +18,18 @@ class ProcessVITS:
     MODEL_NAME = "google/vit-base-patch16-224"
     VECTOR_DIMENSIONS = 768
 
-    def __init__(self, r: redis.Redis, reset: bool = False, batch_size: int = 32):
+    def __init__(self, r: redis.Redis, device: str = "cpu", reset: bool = False, batch_size: int = 32):
         self.r = r
         self.batch_size = batch_size
         self.vs = VectorSimilarity(r, vector_dimensions=self.VECTOR_DIMENSIONS, reset=reset)
 
         # Load the model and processor
-        self.device = "cuda" if torch.cuda.is_available() else "cpu"
-
-        if self.device == "cuda":
-            torch.cuda.set_device(self.device)
+        if 'cuda' in device and torch.cuda.is_available():
+            device_num = int(device.split(":")[-1])
+            torch.cuda.set_device(device_num)
+            self.device = "gpu"
+        else:
+            self.device = "cpu"
 
         self.model = ViTModel.from_pretrained(self.MODEL_NAME)
         self.processor = ViTImageProcessor.from_pretrained(self.MODEL_NAME)
@@ -37,20 +39,25 @@ class ProcessVITS:
         return self.MODEL_NAME
 
     def preprocess_images(self, image_paths: List[str]):
+        info(f"Preprocessing {len(image_paths)} images")
         images = [Image.open(image_path).convert("RGB") for image_path in image_paths]
         inputs = self.processor(images=images, return_tensors="pt").to(self.device)
         return inputs
 
     def get_image_embeddings(self, inputs: torch.Tensor):
+        info(f"Getting embeddings for {inputs['pixel_values'].shape[0]} images")
         """get embeddings for a batch of images"""
         with torch.no_grad():
             embeddings = self.model(**inputs)
         batch_embeddings = embeddings.last_hidden_state[:, 0, :].cpu().numpy()
         return np.array(batch_embeddings)
 
+        batch_embeddings = embeddings.last_hidden_state[:, 0, :].cpu().numpy()
+        return np.array(batch_embeddings)
+
     def load(self, image_paths: List[str], class_names: List[str]):
         """Load and preprocess batch of images and add to the vector similarity index"""
-
+        info(f"Loading {len(image_paths)} images")
         unique_class_names = list(set(class_names))
         info(f"Found {len(image_paths)} images to load")
 
@@ -68,7 +75,7 @@ class ProcessVITS:
         predictions = []
         scores = []
 
-        info(f"Found {len(image_paths)} images to load")
+        info(f"Found {len(image_paths)} images to predict")
         for i in range(0, len(image_paths), self.batch_size):
             batch = image_paths[i : i + self.batch_size]
             images = self.preprocess_images(batch)
