@@ -1,5 +1,11 @@
 # CHANGELOG
 
+## v1.6.3 (2024-07-22)
+
+### Fix
+
+* fix: minor fix in exemplar args and more logging ([`2153af9`](https://github.com/mbari-org/aidata/commit/2153af9275a30751689025013297494f899af8f4))
+
 ## v1.6.2 (2024-07-19)
 
 ### Fix
