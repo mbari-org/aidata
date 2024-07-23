@@ -1,5 +1,11 @@
 # CHANGELOG
 
+## v1.7.1 (2024-07-23)
+
+### Fix
+
+* fix: correct handling of version arg ([`7ee9a42`](https://github.com/mbari-org/aidata/commit/7ee9a42b0d00d8f3aac363663903ca25fdd70f2a))
+
 ## v1.7.0 (2024-07-23)
 
 ### Feature
