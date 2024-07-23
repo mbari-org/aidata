@@ -74,14 +74,9 @@ def download(
         project = find_project(api, project)
         info(f"Found project id: {project.name} for project {project}")
 
-        # Download a dataset by its version
-        if len(version) > 1:
-            version_final = "combined"
-            info(f"Combining datasets {version} into {version_final}")
-        else:
-            version_final = version[0]
-            info(f"Downloading dataset {version_final}")
-        data_path = base_p / version_final
+        # Download a dataset by its version 
+        info(f"Downloading dataset {version}")
+        data_path = base_p / version
         data_path.mkdir(exist_ok=True)
 
         # Convert comma separated list of concepts to a list
