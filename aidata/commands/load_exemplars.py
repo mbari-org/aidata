@@ -3,6 +3,7 @@
 # Description: Load image embedding vectors from a SDCAT formatted CSV exemplar file
 import click
 import redis
+import os
 
 from aidata import common_args
 from aidata.logger import create_logger_file, info, err
@@ -42,16 +43,27 @@ def load_exemplars(config: str, input: Path, dry_run: bool, label: str, device: 
         # Each project needs a separate redis server for exemplar embeddings - this
         # is done through separate ports
         config_dict = init_yaml_config(config)
-        redi_host = config_dict["redis"]["host"]
-        redi_port = config_dict["redis"]["port"]
-        info(f"Connecting to REDIS server at {redi_host}:{redi_port}")
-        r = redis.Redis(host=redi_host, port=redi_port, password=password)
+        redis_host = config_dict["redis"]["host"]
+        redis_port = config_dict["redis"]["port"]
+        info(f"Connecting to REDIS server at {redis_host}:{redis_port}")
+        r = redis.Redis(host=redis_host, port=redis_port, password=password)
         vits = ViTWrapper(r, device=device, reset=reset, batch_size=batch_size)
 
         info(f"Loading exemplars from {input}")
         # If input is a directory, load the first CSV file found
         if Path(input).is_dir():
-            input = list(Path(input).rglob("*.csv"))[0]
+            info(f"Input is a directory. Searching for CSV files found")
+            csv_files = list(Path(input).rglob("*.csv"))
+            if len(csv_files) == 0:
+                err(f"No CSV files found in {input}")
+                return 0
+            input = csv_files[0]
+        else:
+            info(f"Input is a file: {input}")
+            if not Path(input).exists():
+                err(f"File {input} does not exist")
+                return 0
+
         df = extract_sdcat_csv(input)
 
         if dry_run:
@@ -73,11 +85,13 @@ def load_exemplars(config: str, input: Path, dry_run: bool, label: str, device: 
         info(f"Loading {len(image_paths)} exemplar images with class names {class_names}")
         vits.load(image_paths, class_names)
         num_exemplars = len(image_paths)
+        return num_exemplars
     except Exception as e:
         err(f"Error: {e}")
         raise e
 
-    return num_exemplars
+    return 0
+
 
 
 if __name__ == "__main__":
