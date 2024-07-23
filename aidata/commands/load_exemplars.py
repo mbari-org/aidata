@@ -25,13 +25,14 @@ from pathlib import Path
 @click.option("--label", type=str, help="Class label for the exemplars")
 @click.option("--batch-size", type=int, default=32, help="Batch size for loading embeddings")
 @click.option("--reset", is_flag=True, help="Reset the database before loading. Use with caution!")
+@click.option("--password", type=str, required=True, help="Password for the REDIS server")
 @click.option(
     "--label",
     type=str,
     help="Class label for the exemplars. This is used as the base class name for the "
     "exemplar images, e.g. Otter_0, Otter_1, etc.",
 )
-def load_exemplars(config: str, input: Path, dry_run: bool, label: str, device: str, batch_size, reset: bool = False) -> int:
+def load_exemplars(config: str, input: Path, dry_run: bool, label: str, device: str, batch_size, password: str, reset: bool = False) -> int:
     """Load embeddings from a directory with SDCAT formatted exemplar CSV files. Returns the number of exemplar image
     embeddings loaded."""
     create_logger_file("load_exemplars")
@@ -44,7 +45,7 @@ def load_exemplars(config: str, input: Path, dry_run: bool, label: str, device: 
         redi_host = config_dict["redis"]["host"]
         redi_port = config_dict["redis"]["port"]
         info(f"Connecting to REDIS server at {redi_host}:{redi_port}")
-        r = redis.Redis(host=redi_host, port=redi_port)
+        r = redis.Redis(host=redi_host, port=redi_port, password=password)
         vits = ViTWrapper(r, device=device, reset=reset, batch_size=batch_size)
 
         info(f"Loading exemplars from {input}")
@@ -85,9 +86,10 @@ if __name__ == "__main__":
 
     # To run this script, uncomment all @click decorators above
     os.environ["ENVIRONMENT"] = "TESTING"
-
+    password = os.getenv("REDIS_PASSWORD")
     test_path = Path(__file__).parent.parent.parent / "tests" / "data" / "uav" / "otterexemplars.csv"
     yaml_path = Path(__file__).parent.parent.parent / "tests" / "config" / "config_uav.yml"
     load_exemplars(
-        config=yaml_path.as_posix(), dry_run=False, input=test_path.as_posix(), label="Otter", batch_size=32, reset=True
+        config=yaml_path.as_posix(), dry_run=False, input=test_path.as_posix(), label="Otter", batch_size=32, reset=True,
+        password=password, device="cpu",
     )
