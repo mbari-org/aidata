@@ -8,7 +8,7 @@ from aidata import common_args
 from aidata.logger import create_logger_file, info, err
 from aidata.plugins.extractors.tap_sdcat_csv import extract_sdcat_csv
 from aidata.plugins.loaders.tator.common import init_yaml_config
-from aidata.predictors.process_vits import ProcessVITS
+from aidata.predictors.process_vits import ViTWrapper
 from pathlib import Path
 
 
@@ -45,7 +45,7 @@ def load_exemplars(config: str, input: Path, dry_run: bool, label: str, device: 
         redi_port = config_dict["redis"]["port"]
         info(f"Connecting to REDIS server at {redi_host}:{redi_port}")
         r = redis.Redis(host=redi_host, port=redi_port)
-        vits_processor = ProcessVITS(r, device=device, reset=reset, batch_size=batch_size)
+        vits = ViTWrapper(r, device=device, reset=reset, batch_size=batch_size)
 
         info(f"Loading exemplars from {input}")
         # If input is a directory, load the first CSV file found
@@ -70,7 +70,7 @@ def load_exemplars(config: str, input: Path, dry_run: bool, label: str, device: 
         # Each class name corresponds to an exemplar image that represents a subcluster
         class_names = [f"{label}_{i}" for i in range(len(image_paths))]
         info(f"Loading {len(image_paths)} exemplar images with class names {class_names}")
-        vits_processor.load(image_paths, class_names)
+        vits.load(image_paths, class_names)
         num_exemplars = len(image_paths)
     except Exception as e:
         err(f"Error: {e}")
