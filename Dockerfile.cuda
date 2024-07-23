@@ -20,7 +20,7 @@ RUN apt-get update && apt-get install -y \
 ARG GIT_VERSION=latest
 ARG IMAGE_URI=mbari/aidata:${GIT_VERSION}
 
-ENV APP_HOME /app
+ENV APP_HOME=/app
 WORKDIR ${APP_HOME}
 ADD . ${APP_HOME}
 ENV PYTHONPATH=${APP_HOME}/aidata
