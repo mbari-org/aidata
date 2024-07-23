@@ -2,12 +2,10 @@
 [![Python](https://img.shields.io/badge/language-Python-blue.svg)](https://www.python.org/downloads/)
 
 *aidata* is a command line tool to do basic extract, transform, load and download operations
-on ai data for a number of projects at MBARI that require detection, clustering or classification
+on AI data for a number of projects at MBARI that require detection, clustering or classification
 workflows.
-
-This is a work in progress and more operations will be added as needed.
-This supports loading [sdcat](https://github.com/mbari-org/sdcat) formatted output
-and downloads from [Tator](https://www.tatorapp.com/) databases, although
+ 
+This supports loading [sdcat](https://github.com/mbari-org/sdcat) formatted output and downloads from [Tator](https://www.tatorapp.com/) databases, although
 support for other data sources is also possible, e.g. [FathomNet](https://fathomnet.org/).
 so we decided to keep the name generic.
 
@@ -24,7 +22,7 @@ conda activate aidata
 export PYTHONPATH=$PWD
 ```
 
-A docker version is also available at mbari:aidata, but that is a WIP.
+A docker version is also available at mbari/aidata, but that is a WIP.
 
 ## Commands
 

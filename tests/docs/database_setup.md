@@ -3,7 +3,8 @@
 
 This will start a local instance of the TATOR database  
 
-First checkout the 1.2.5 release of TATOR
+First checkout the 1.2.5 release of TATOR. This is the version that is currently supported by the tests.
+It is a modified version that supports locally hosted images, video and caching.
 
 ```shell
 git clone --recurse-submodules https://github.com/mbari-org/tator
