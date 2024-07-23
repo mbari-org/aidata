@@ -24,9 +24,12 @@ def setup():
     redis_port = config_dict["redis"]["port"]
     connection = redis.Redis(host=redis_host, port=redis_port, password="aidata")
 
-    if connection.ping():
-        global HAS_DATABASE
-        HAS_DATABASE = True
+    try:
+        if connection.ping():
+            global HAS_DATABASE
+            HAS_DATABASE = True
+    except redis.exceptions.ConnectionError:
+        pass
 
 setup()
 
