@@ -14,7 +14,7 @@ from aidata.logger import info
 from aidata.predictors.vector_similarity import VectorSimilarity
 
 
-class ProcessVITS:
+class ViTWrapper:
     MODEL_NAME = "google/vit-base-patch16-224"
     VECTOR_DIMENSIONS = 768
 
@@ -23,16 +23,17 @@ class ProcessVITS:
         self.batch_size = batch_size
         self.vs = VectorSimilarity(r, vector_dimensions=self.VECTOR_DIMENSIONS, reset=reset)
 
+        self.model = ViTModel.from_pretrained(self.MODEL_NAME)
+        self.processor = ViTImageProcessor.from_pretrained(self.MODEL_NAME)
+
         # Load the model and processor
         if 'cuda' in device and torch.cuda.is_available():
             device_num = int(device.split(":")[-1])
             torch.cuda.set_device(device_num)
             self.device = "gpu"
+            self.model.to("cuda")
         else:
             self.device = "cpu"
-
-        self.model = ViTModel.from_pretrained(self.MODEL_NAME)
-        self.processor = ViTImageProcessor.from_pretrained(self.MODEL_NAME)
 
     @property
     def model_name(self) -> str:
