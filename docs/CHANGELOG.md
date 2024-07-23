@@ -1,5 +1,19 @@
 # CHANGELOG
 
+## v1.7.2 (2024-07-23)
+
+### Build
+
+* build: remove legacy &#34;ENV key value&#34; in Dockerfile.cuda ([`d7fd3eb`](https://github.com/mbari-org/aidata/commit/d7fd3eb9164ba1b01e0be2dcacf087cab29122ce))
+
+* build: correct docker build path ([`2fedee1`](https://github.com/mbari-org/aidata/commit/2fedee1433fe49828304af87d2d36bde1f7dac91))
+
+* build: exclude py12 which is problematic with transformers library ([`1b2c09f`](https://github.com/mbari-org/aidata/commit/1b2c09f994f802946fbffed86997268606a114e8))
+
+### Fix
+
+* fix: correct handling of exemplars ([`a0ee097`](https://github.com/mbari-org/aidata/commit/a0ee09719719a2eff5044d7458b089033778500f))
+
 ## v1.7.1 (2024-07-23)
 
 ### Fix
