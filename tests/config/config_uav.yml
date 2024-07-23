@@ -7,8 +7,8 @@ mounts:
     nginx_root: "/uav"
 
 redis:
-    host: "doris.shore.mbari.org"
-    port: 6380
+    host: "ada.local"
+    port: 6379
 
 plugins:
   - name: "extractor"
