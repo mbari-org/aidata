@@ -1,5 +1,11 @@
 # CHANGELOG
 
+## v1.6.4 (2024-07-23)
+
+### Performance
+
+* perf: move model to gpu and some minor refactoring for clarity ([`999e59c`](https://github.com/mbari-org/aidata/commit/999e59c54b00eb9063db2daed779e9bd8f0bf3cc))
+
 ## v1.6.3 (2024-07-22)
 
 ### Fix
