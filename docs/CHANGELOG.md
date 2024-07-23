@@ -1,5 +1,11 @@
 # CHANGELOG
 
+## v1.7.0 (2024-07-23)
+
+### Feature
+
+* feat: added password pass through to redis ([`39b0726`](https://github.com/mbari-org/aidata/commit/39b07262437f9e9e3459c053924d42d4228d8348))
+
 ## v1.6.4 (2024-07-23)
 
 ### Performance
