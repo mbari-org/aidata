@@ -46,13 +46,9 @@ class ViTWrapper:
         return inputs
 
     def get_image_embeddings(self, inputs: torch.Tensor):
-        info(f"Getting embeddings for {inputs['pixel_values'].shape[0]} images")
         """get embeddings for a batch of images"""
         with torch.no_grad():
             embeddings = self.model(**inputs)
-        batch_embeddings = embeddings.last_hidden_state[:, 0, :].cpu().numpy()
-        return np.array(batch_embeddings)
-
         batch_embeddings = embeddings.last_hidden_state[:, 0, :].cpu().numpy()
         return np.array(batch_embeddings)
 
