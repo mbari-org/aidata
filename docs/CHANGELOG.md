@@ -1,5 +1,11 @@
 # CHANGELOG
 
+## v1.7.3 (2024-07-24)
+
+### Fix
+
+* fix: correct parsing of class names and cuda device enable ([`f339b18`](https://github.com/mbari-org/aidata/commit/f339b185643b008571ec55689b486ddeb9d4f31c))
+
 ## v1.7.2 (2024-07-23)
 
 ### Build
