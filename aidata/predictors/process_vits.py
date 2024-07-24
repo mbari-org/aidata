@@ -1,7 +1,7 @@
 # aidata, Apache-2.0 license
 # Filename: predictors/process_vits.py
 # Description: Process images with Vision Transformer (ViT) model and store/search in Redis
-from pathlib import Path
+import re
 
 import numpy as np
 import redis
@@ -13,6 +13,9 @@ from typing import List
 from aidata.logger import info
 from aidata.predictors.vector_similarity import VectorSimilarity
 
+def extract_name(input_str):
+    match = re.match(r"^(.*?)(?=_[0-9]+)", input_str)
+    return match.group(1) if match else None
 
 class ViTWrapper:
     MODEL_NAME = "google/vit-base-patch16-224"
@@ -29,8 +32,9 @@ class ViTWrapper:
         # Load the model and processor
         if 'cuda' in device and torch.cuda.is_available():
             device_num = int(device.split(":")[-1])
+            info(f"Using GPU device {device_num}")
             torch.cuda.set_device(device_num)
-            self.device = "gpu"
+            self.device = "cuda"
             self.model.to("cuda")
         else:
             self.device = "cpu"
@@ -81,7 +85,8 @@ class ViTWrapper:
                 r = self.vs.search_vector(emb.tobytes(), top_n=top_n)
                 # Only grab the top_n class names, not the scores or other metadata
                 r_class_cluster = [x["id"].split(":")[-1] for x in r]
-                r_class = [x.split("_")[0] for x in r_class_cluster]
+                # The class name is everything before the last underscore
+                r_class = [extract_name(x) for x in r_class_cluster]
                 predictions.append(r_class)
                 # Separate out the scores for each prediction - this is used later for voting
                 scores.append([x["score"] for x in r])
