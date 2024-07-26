@@ -1,5 +1,11 @@
 # CHANGELOG
 
+## v1.8.0 (2024-07-26)
+
+### Feature
+
+* feat: add load to exemplar bool which is helpful for visualization ([`10b9443`](https://github.com/mbari-org/aidata/commit/10b944374d1e3f9aff1648e99367c191dd47f737))
+
 ## v1.7.4 (2024-07-26)
 
 ### Fix
