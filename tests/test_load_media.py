@@ -22,9 +22,12 @@ def setup():
     import os
 
     # TODO: Add a check for the database presence
-    assert "TATOR_TOKEN" in os.environ, "TATOR_TOKEN environment variable must be set"
+    if "TATOR_TOKEN" in os.environ.keys():
+        global HAS_DATABASE
+        HAS_DATABASE = True
     os.environ["ENVIRONMENT"] = "TESTING"
 
+setup()
 
 @pytest.mark.skipif(not HAS_DATABASE, reason="This test is excluded because it requires a database")
 def test_load_media_dryrun():
@@ -96,3 +99,23 @@ def test_load_media_cfe():
     assert result.exit_code == 0
 
 
+@pytest.mark.skipif(not HAS_DATABASE, reason="This test is excluded because it requires a database")
+def test_load_media_uav():
+    runner = CliRunner()
+    """Test that the process command works when passing arguments with a single image"""
+    image_path = data_path / "uav"
+    config_yaml = config_path / "config_uav.yml"
+    print(config_yaml.as_posix())
+    result = runner.invoke(
+        cli,
+        [
+            "load",
+            "images",
+            "--input",
+            image_path.as_posix(),
+            "--config",
+            config_yaml.as_posix(),
+        ],
+    )
+    print(result.output)
+    assert result.exit_code == 0

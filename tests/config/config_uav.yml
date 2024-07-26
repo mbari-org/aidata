@@ -4,7 +4,8 @@ mounts:
   - name: "image"
     path: "./data/uav"
     host: "192.168.0.17"
-    nginx_root: "/uav"
+    nginx_root: "/data/uav"
+    port: 8082
 
 redis:
     host: "ada.local"
