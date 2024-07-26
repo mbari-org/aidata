@@ -1,5 +1,11 @@
 # CHANGELOG
 
+## v1.7.4 (2024-07-26)
+
+### Fix
+
+* fix: correct default for max-images to load all ([`5e5d10a`](https://github.com/mbari-org/aidata/commit/5e5d10aa0e65376b5d0f2408ce0daf29f51ec406))
+
 ## v1.7.3 (2024-07-24)
 
 ### Fix
