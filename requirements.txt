@@ -1,4 +1,4 @@
-redis==5.0.1
+redis==5.0.7
 tator==1.2.3
 ephem
 opencv-contrib-python
