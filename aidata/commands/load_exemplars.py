@@ -3,12 +3,11 @@
 # Description: Load image embedding vectors from a SDCAT formatted CSV exemplar file
 import click
 import redis
-import os
 
 from aidata import common_args
 from aidata.logger import create_logger_file, info, err
 from aidata.plugins.extractors.tap_sdcat_csv import extract_sdcat_csv
-from aidata.plugins.loaders.tator.common import init_yaml_config
+from aidata.plugins.loaders.tator.common import init_yaml_config, init_api_project, find_box_type
 from aidata.predictors.process_vits import ViTWrapper
 from pathlib import Path
 
@@ -16,6 +15,7 @@ from pathlib import Path
 @click.command("exemplars", help="Load exemplars from a SDCAT formatted CSV exemplar file into a REDIS server")
 @common_args.yaml_config
 @common_args.dry_run
+@common_args.token
 @click.option(
     "--input",
     type=Path,
@@ -33,7 +33,7 @@ from pathlib import Path
     help="Class label for the exemplars. This is used as the base class name for the "
     "exemplar images, e.g. Otter_0, Otter_1, etc.",
 )
-def load_exemplars(config: str, input: Path, dry_run: bool, label: str, device: str, batch_size, password: str, reset: bool = False) -> int:
+def load_exemplars(config: str, input: Path, dry_run: bool, label: str, device: str, batch_size, password: str, token: str, reset: bool = False) -> int:
     """Load embeddings from a directory with SDCAT formatted exemplar CSV files. Returns the number of exemplar image
     embeddings loaded."""
     create_logger_file("load_exemplars")
@@ -48,6 +48,12 @@ def load_exemplars(config: str, input: Path, dry_run: bool, label: str, device: 
         info(f"Connecting to REDIS server at {redis_host}:{redis_port}")
         r = redis.Redis(host=redis_host, port=redis_port, password=password)
         vits = ViTWrapper(r, device=device, reset=reset, batch_size=batch_size)
+
+        # Initialize the Tator API
+        project = config_dict["tator"]["project"]
+        host = config_dict["tator"]["host"]
+        api, tator_project = init_api_project(host, token, project)
+        box_type = find_box_type(api, tator_project.id, "Box")
 
         info(f"Loading exemplars from {input}")
         # If input is a directory, load the first CSV file found
@@ -85,6 +91,19 @@ def load_exemplars(config: str, input: Path, dry_run: bool, label: str, device: 
         info(f"Loading {len(image_paths)} exemplar images with class names {class_names}")
         vits.load(image_paths, class_names)
         num_exemplars = len(image_paths)
+
+        # Image names are indexed per the database id, 12467.jpg, 12468.jpg, etc.
+        # Search and flag the exemplar images in the tator database
+        df['id'] = df['image_path'].apply(lambda x: int(Path(x).stem))
+        ids = df['id'].unique().tolist()
+        params = {"type": box_type.id} 
+        id_bulk_patch = {
+            "attributes": {"exemplar": True},
+            "ids": ids,
+            "in_place": 1,
+        }
+        response = api.update_localization_list(project=tator_project.id, **params, localization_bulk_update=id_bulk_patch)
+        info(response)
         return num_exemplars
     except Exception as e:
         err(f"Error: {e}")
