@@ -21,7 +21,7 @@ from aidata.plugins.loaders.tator.common import init_api_project, find_media_typ
 @common_args.dry_run
 @click.option("--input", type=str, required=True, help="Path to directory with input images")
 @click.option("--section", type=str, default="All Media", help="Section to load images into. Default is 'All Media'")
-@click.option("--max-images", type=int, help="Only load up to max-images. Useful for testing. Default is to load all images")
+@click.option("--max-images", type=int, default=-1, help="Only load up to max-images. Useful for testing. Default is to load all images")
 def load_images(token: str, config: str, dry_run: bool, input: str, section: str, max_images: int) -> int:
     """Load images from a directory. Assumes the images are available via a web server. Returns the number of images loaded."""
     create_logger_file("load_images")
