@@ -67,6 +67,9 @@ class ViTWrapper:
             images = self.preprocess_images(batch)
             embeddings = self.get_image_embeddings(images)
             for j, emb in enumerate(embeddings):
+                # make sure the array matches the vector dimensions and type float32 otherwise indexing will fail
+                emb = emb.astype(np.float32)
+                assert emb.shape[0] == self.VECTOR_DIMENSIONS
                 self.vs.add_vector(doc_id=class_names[i + j], vector=emb.tobytes(), tag=self.MODEL_NAME)
 
         info(f"Finished processing {len(image_paths)} images for {unique_class_names}")

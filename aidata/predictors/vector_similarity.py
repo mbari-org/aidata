@@ -1,13 +1,13 @@
 # aidata, Apache-2.0 license
 # Filename: predictors/vector_similarity.py
 # Description: Runs operations on Redis database with RediSearch on embedded vectors
-
+import numpy as np
 import redis
 from redis.commands.search.field import TagField, VectorField
 from redis.commands.search.indexDefinition import IndexDefinition, IndexType
 from redis.commands.search.query import Query
 
-from aidata.logger import err, info
+from aidata.logger import err, info, debug
 
 
 class VectorSimilarity:
@@ -28,12 +28,12 @@ class VectorSimilarity:
                 self.r.ft(self.INDEX_NAME).dropindex(delete_documents=True)
                 self.r.flushall()
                 self.reset(vector_dimensions)
+                exit(0)
         except redis.exceptions.ResponseError:
             if reset_db:
                 self.reset(vector_dimensions)
 
     def reset(self, vector_dimensions: int):
-        # schema
         schema = (
             TagField("tag"),
             VectorField(
@@ -51,7 +51,8 @@ class VectorSimilarity:
 
     def add_vector(self, doc_id: str, vector: list, tag: str):
         doc_key = f"{self.DOC_PREFIX}{doc_id}"
-        self.r.ft(self.INDEX_NAME).add_document(doc_key, vector=vector, tag=tag)
+        debug(f"Adding vector for {doc_key} {len(vector)} dimensions tagged as {tag}")
+        self.r.hset(doc_key, mapping={"vector": vector, "tag": tag})
 
     def search_vector(self, vector: list, top_n: int):
         query = (
