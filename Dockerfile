@@ -26,4 +26,5 @@ ENV HF_HOME=/tmp/transformers_cache
 
 RUN python3.11 -m pip install --upgrade pip && \
     python3.11 -m pip install -r requirements.txt
+RUN chmod a+rwx -R /app
 ENTRYPOINT ["python3.11", "aidata"]
