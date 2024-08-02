@@ -13,7 +13,7 @@ mounts:
 
 redis:
   host: "doris.shore.mbari.org"
-  port: 6380
+  port: 6379
 
 tator:
   project: "901103-biodiversity"
