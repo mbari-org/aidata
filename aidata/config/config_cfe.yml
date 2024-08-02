@@ -11,6 +11,10 @@ plugins:
     module: "aidata.plugins.extractors.tap_cfe_media"
     function: "extract_media"
 
+redis:
+  host: "doris.shore.mbari.org"
+  port: 6380
+
 tator:
   project: "902111-CFE"
   host: "mantis.shore.mbari.org"
@@ -30,3 +34,5 @@ tator:
         type: float
       area:
         type: int
+      exemplar:
+        type: bool

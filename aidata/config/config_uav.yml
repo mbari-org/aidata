@@ -45,3 +45,5 @@ tator:
         type: float
       area:
         type: int
+      exemplar:
+        type: bool

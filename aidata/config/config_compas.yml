@@ -6,6 +6,9 @@ mounts:
     host: "mantis.shore.mbari.org"
     nginx_root: "/CoMPAS"
 
+redis:
+  host: "doris.shore.mbari.org"
+  port: 6380
 
 tator:
   project: "902204-CoMPAS"
@@ -32,3 +35,5 @@ tator:
         type: string
       score:
         type: float
+      exemplar:
+        type: bool

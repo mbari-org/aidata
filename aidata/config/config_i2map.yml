@@ -11,6 +11,10 @@ plugins:
     module: "aidata.plugins.extractors.tap_i2map_media"
     function: "extract_media"
 
+redis:
+  host: "doris.shore.mbari.org"
+  port: 6380
+
 tator:
   project: "i2map"
   host: "i2map.shore.mbari.org"
@@ -32,5 +36,7 @@ tator:
         type: string
       saliency:
         type: float
+      exemplar:
+        type: bool
 
 ffmpeg_path: "/opt/homebrew/bin/ffmpeg"

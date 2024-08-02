@@ -11,6 +11,9 @@ mounts:
     nginx_root: "/bio"
     port: 8081
 
+redis:
+  host: "doris.shore.mbari.org"
+  port: 6380
 
 tator:
   project: "901103-biodiversity"
@@ -41,5 +44,7 @@ tator:
         type: string
       obs_url:
         type: string
+      exemplar:
+        type: bool
 
 ffmpeg_path: "/usr/bin/ffmpeg"
