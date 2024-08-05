@@ -24,32 +24,4 @@ export PYTHONPATH=$PWD
 
 A docker version is also available at mbari/aidata, but that is a WIP.
 
-## Commands
-
-* [`aidata download --help` - Download data to COCO, CIFAR, or PASCAL VOC format](docs/commands/download.md) 
-* [`aidata load --help` - Load SDCAT formatted data or images from a directory/URL](docs/commands/load.md)
-* `aidata -h` - Print help message and exit.
-
-## Setup
-
-### Set your Tator token in an environment variable *or* pass it as an option with --token
-
-```
-export TATOR_TOKEN=15afoobaryouraccesstoken
-```
-
-![ Image link ](docs/imgs/apitoken.png)
-
-
-Choose your configuration file for the project, e.g. `config/config_cfe.yml`.
-Adjust if needed, e.g. to point to the correct mount point for the data
-on your local machine.  This is used to check the data before loading and
-to create a correct URL for reference in the database.
-
-```yaml
-mounts:
-  - name: "image"
-    path: "/Volumes/CFElab"
-    host: "192.168.0.17" # or a hostname 
-    ...
-```
+Full documentation is available at [https://docs.mbari.org/aidata/](https://docs.mbari.org/aidata/). 

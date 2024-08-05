@@ -1,15 +1,16 @@
-## *aidata* Download Command
+# Download Command
 
 Data can be downloaded in various formats, e.g. COCO, CIFAR, or PASCAL VOC.  The type of download
 depends on the model.
 
 Be sure to have a solid internet connection and enough disk space to download the data.
 
-*If your leave off the labels option*, the default is to fetch **all** labels.
+!!! note 
+    *If your leave off the labels option*, the default is to fetch **all** labels.
 
 *multiple versions* can be combined during download, e.g. to download both Baseline and Test
 `--version Baseline --version Test`
-
+    
 ```shell
 python aidata download  --token $TATOR_TOKEN --version Baseline --labels "Diatoms, Copepods"
 ```
