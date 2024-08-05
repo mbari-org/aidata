@@ -10,6 +10,9 @@ Be sure to have a solid internet connection and enough disk space to download th
 
 *multiple versions* can be combined during download, e.g. to download both Baseline and Test
 `--version Baseline --version Test`
+ 
+*by default*, all data is download. To only download verified data, use the `--verified` option. Verified data is data that has been reviewed and labeled by a human.
+
     
 ```shell
 python aidata download  --token $TATOR_TOKEN --version Baseline --labels "Diatoms, Copepods"
@@ -28,12 +31,9 @@ Baseline
     │   ├── image2.txt 
 ```
  
-## 
-Once data is downloaded. See more details on how to [prepare the data](https://docs.mbari.org/deepsea-ai/data/)
-and [train it](https://docs.mbari.org/deepsea-ai/commands/train/). This requires setting up the AWS account. 
-This should be done by a company AWS administrator.  Once the account is setup, you can train the model on the AWS cloud.
+##  Download data in various formats
 
-### PASCAL VOC data format
+### [PASCAL VOC data format](http://host.robots.ox.ac.uk/pascal/VOC/)
 
 If you want to download data also in the PASCAL VOC format, use the optional --voc flag, e.g.
 
@@ -50,7 +50,7 @@ Baseline
     │   ├── image2.xml 
 ```
  
-### COCO data format
+### [COCO data format](https://cocodataset.org/#home)
 
 Use the optional --coco flag to download data in the [COCO](https://cocodataset.org/#home) format, e.g.
 
@@ -65,7 +65,7 @@ Baseline
     ├── coco
     │   └── coco.json
 ```
-### CIFAR data format
+### [CIFAR data format](https://www.cs.toronto.edu/~kriz/cifar.html)
 
 Use the optional --cifar flag to download data in the [CIFAR](https://www.cs.toronto.edu/~kriz/cifar.html) format, e.g.
 

@@ -19,6 +19,7 @@ def download(
     project_id: int,
     group: str,
     version_list: List[str],
+    verified: bool,
     generator: str,
     output_path: Path,
     labels_list: List[str],
@@ -36,6 +37,7 @@ def download(
     :param project_id: project id
     :param group: group name
     :param version_list: version name(s), e.g. ['Baseline'] to download
+    :param verified: (optional) True if only verified annotations should be downloaded
     :param generator: generator name, e.g. 'vars-labelbot' or 'vars-annotation'
     :param output_path: output directory to save the dataset
     :param labels_list: (optional) list of labels to download
@@ -60,6 +62,7 @@ def download(
             return False
 
         attribute = []
+        attribute_bool = None
         num_concept_records = {}
         num_label_records = {}
         num_records = 0
@@ -67,31 +70,45 @@ def download(
             attribute = [f"generator::{generator}"]
         if group:
             attribute += [f"group::{group}"]
+        if verified:
+            attribute_bool = ["verified::true"]
 
         if len(concepts_list) > 0:
             for concept in concepts_list:
-                num_concept_records[concept] = api.get_localization_count(
-                    project=project_id, version=version_ids, attribute_contains=[f"concept::{concept}"] + attribute
-                )
+                if attribute_bool:
+                    num_concept_records[concept] = api.get_localization_count(
+                        project=project_id, version=version_ids, attribute_contains=[f"concept::{concept}"] + attribute,
+                        attribute_equals=attribute_bool
+                    )
+                else:
+                    num_concept_records[concept] = api.get_localization_count(
+                        project=project_id, version=version_ids, attribute_contains=[f"concept::{concept}"] + attribute
+                    )
                 num_records += num_concept_records[concept]
         if len(labels_list) > 0:
             for label in labels_list:
-                num_label_records[label] = api.get_localization_count(
-                    project=project_id, version=version_ids, attribute_contains=[f"Label::{label}"] + attribute
-                )
+                if attribute_bool:
+                    num_label_records[label] = api.get_localization_count(
+                        project=project_id, version=version_ids, attribute_contains=[f"Label::{label}"] + attribute,
+                        attribute=attribute_bool
+                    )
+                else:
+                    num_label_records[label] = api.get_localization_count(
+                        project=project_id, version=version_ids, attribute_contains=[f"Label::{label}"] + attribute,
+                    )
                 num_records += num_label_records[label]
         if len(concepts_list) == 0 and len(labels_list) == 0:
             num_records = api.get_localization_count(project=project_id, version=version_ids)
 
         info(
-            f'Found {num_records} records for version {version_list} and generator {generator}, group {group} and '
+            f'Found {num_records} records for version {version_list} and generator {generator}, group {group}, verified {verified} and '
             f"including {labels_list if labels_list else 'everything'} "
         )
 
         if num_records == 0:
             info(
-                f'Could not find any records for version {version_list} and generator {generator}, group {group} and '
-                f"including {labels_list if labels_list else 'everything'} "
+                f'Could not find any records for version {version_list} and generator {generator}, group {group},verified {verified} and '
+                f"including {labels_list if labels_list else 'everything'}"
             )
             return False
 
