@@ -1,0 +1,44 @@
+site_name: aidata
+site_description: Documentation for the aidata python tool
+site_author: Danelle Cline
+repo_url: "https://github.com/mbari-org/aidata/"
+theme:
+  name: material
+  logo: https://docs.mbari.org/imgs/mbari-logo.png
+  features:
+    - navigation.instant
+    - navigation.tabs
+    - navigation.sections
+    - navigation.indexes
+    - navigation.force
+    - navigation.tracking
+    - search.highlight
+    - search.share
+    - search.suggest
+    - toc.follow
+    - toc.integrate
+markdown_extensions:
+  - meta
+  - admonition
+  - footnotes
+  - pymdownx.inlinehilite
+  - pymdownx.tabbed
+  - toc:
+      permalink: True
+  - pymdownx.keys:
+      separator: "\uff0b"
+  - pymdownx.details:
+  - pymdownx.superfences:
+nav:
+  - Installation: 'index.md'
+  - Commands:
+      - commands/load.md
+      - commands/download.md
+      - commands/db.md
+  - Change Log: CHANGELOG.md
+
+
+copyright: Maintained by <a href="https://www.mbari.org/cline-danelle-e/">Danelle Cline</a>.
+
+plugins:
+  - search
