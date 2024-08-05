@@ -1,5 +1,11 @@
 # CHANGELOG
 
+## v1.9.0 (2024-08-05)
+
+### Feature
+
+* feat: added database reset and cleane up docs ([`f87387a`](https://github.com/mbari-org/aidata/commit/f87387aacfda0addece80cfc734baf6ca57c5e05))
+
 ## v1.8.0 (2024-07-26)
 
 ### Feature
