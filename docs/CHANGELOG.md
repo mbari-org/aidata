@@ -1,5 +1,17 @@
 # CHANGELOG
 
+## v1.10.0 (2024-08-05)
+
+### Documentation
+
+* docs: fixed links and added clickable link to mantis ([`7688bbe`](https://github.com/mbari-org/aidata/commit/7688bbef6d6444a57eface9a62430c7f15f4a008))
+
+* docs: added project image ([`c45e7ea`](https://github.com/mbari-org/aidata/commit/c45e7ea2d091a94d4fe77e5b89d6a27a22209b3b))
+
+### Feature
+
+* feat: added verified --verified to download ([`8c5f124`](https://github.com/mbari-org/aidata/commit/8c5f12475f3a5409c1fdfbe785155b8e5e6bd887))
+
 ## v1.9.0 (2024-08-05)
 
 ### Feature
