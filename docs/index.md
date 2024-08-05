@@ -5,9 +5,11 @@ description: aidata installation and usage
  
 *aidata* is a command line tool to do basic extract, transform, load and download operations from
 AI data for a number of projects at MBARI that require detection, clustering or classification.
-This assumes that your project has been setup on the MBARI mantis server and that you have a valid
-account and token for the Tator database.
- 
+This assumes that your project has been setup on the MBARI server mantis.
+
+Read only login with username `guest` and password `mbariguest`
+![http://mantis.shore.mbari.org](./imgs/mantisprojects.png)
+
 
 ## Installation 
 
