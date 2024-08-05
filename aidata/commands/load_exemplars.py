@@ -25,7 +25,6 @@ from pathlib import Path
 @click.option("--device", type=str, default="cpu", help="Device to use for processing, e.g. cuda:0 or cpu")
 @click.option("--label", type=str, help="Class label for the exemplars")
 @click.option("--batch-size", type=int, default=32, help="Batch size for loading embeddings")
-@click.option("--reset", is_flag=True, help="Reset the database before loading. Use with caution!")
 @click.option("--password", type=str, required=True, help="Password for the REDIS server")
 @click.option(
     "--label",
@@ -33,7 +32,7 @@ from pathlib import Path
     help="Class label for the exemplars. This is used as the base class name for the "
     "exemplar images, e.g. Otter_0, Otter_1, etc.",
 )
-def load_exemplars(config: str, input: Path, dry_run: bool, label: str, device: str, batch_size, password: str, token: str, reset: bool = False) -> int:
+def load_exemplars(config: str, input: Path, dry_run: bool, label: str, device: str, batch_size, password: str, token: str) -> int:
     """Load embeddings from a directory with SDCAT formatted exemplar CSV files. Returns the number of exemplar image
     embeddings loaded."""
     create_logger_file("load_exemplars")
@@ -47,7 +46,7 @@ def load_exemplars(config: str, input: Path, dry_run: bool, label: str, device: 
         redis_port = config_dict["redis"]["port"]
         info(f"Connecting to REDIS server at {redis_host}:{redis_port}")
         r = redis.Redis(host=redis_host, port=redis_port, password=password)
-        vits = ViTWrapper(r, device=device, reset=reset, batch_size=batch_size)
+        vits = ViTWrapper(r, device=device, batch_size=batch_size)
 
         # Initialize the Tator API
         project = config_dict["tator"]["project"]
