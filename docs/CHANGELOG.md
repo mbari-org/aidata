@@ -1,5 +1,11 @@
 # CHANGELOG
 
+## v1.11.0 (2024-08-08)
+
+### Feature
+
+* feat: added label counts to /labels/{project_name} ([`dae93ed`](https://github.com/mbari-org/aidata/commit/dae93ede973c8d2395e4f239e952cf799b3272fe))
+
 ## v1.10.0 (2024-08-05)
 
 ### Documentation
