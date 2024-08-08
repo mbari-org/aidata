@@ -2,9 +2,8 @@
 line-length = 170
 
 [tool.semantic_release]
-version_variable = [
-"aidata/__init__.py:__version__"
-]
+version_variable = ["aidata/__init__.py:__version__"]
+
 major_on_zero = false
 branch = "main"
 
