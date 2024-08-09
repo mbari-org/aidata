@@ -5,8 +5,8 @@
 on AI data for a number of projects at MBARI that require detection, clustering or classification
 workflows.
  
-This supports loading [sdcat](https://github.com/mbari-org/sdcat) formatted output and downloads from [Tator](https://www.tatorapp.com/) databases, although
-support for other data sources is also possible, e.g. [FathomNet](https://fathomnet.org/).
+This supports loading [sdcat](https://github.com/mbari-org/sdcat) formatted output and downloads from [Tator](https://www.tatorapp.com/) and 
+[Redis](https://redis.io) databases, although support for other data sources is also possible, e.g. [FathomNet](https://fathomnet.org/).
 so we decided to keep the name generic.
 
 ## Installation 
@@ -24,4 +24,4 @@ export PYTHONPATH=$PWD
 
 A docker version is also available at mbari/aidata, but that is a WIP.
 
-Full documentation is available at [https://docs.mbari.org/internal/ai/aidata/commands](https://docs.mbari.org/internal/ai/aidata/commands). 
+Full documentation is available at [https://docs.mbari.org/internal/ai/data](https://docs.mbari.org/internal/ai/aidata/commands). 
