@@ -8,7 +8,6 @@ import pytz
 import click
 import sys
 
-
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
 from pathlib import Path
@@ -17,6 +16,7 @@ from aidata.commands.download import download
 from aidata.commands.load_images import load_images
 from aidata.commands.load_exemplars import load_exemplars
 from aidata.commands.db_utils import reset_redis
+from aidata.commands.transform import transform
 from aidata.logger import err, info
 
 from aidata import __version__
@@ -66,7 +66,7 @@ cli_download.add_command(download)
 @click.group(name="db")
 def cli_db():
     """
-     Commands related to database management
+    Commands related to database management
     """
     pass
 
@@ -74,6 +74,17 @@ def cli_db():
 cli.add_command(cli_db)
 cli_db.add_command(reset_redis)
 
+
+@click.group(name="transform")
+def cli_transform():
+    """
+    Commands related to transforming downloaded data
+    """
+    pass
+
+
+cli.add_command(cli_transform)
+cli_transform.add_command(transform)
 
 if __name__ == "__main__":
     try:
