@@ -4,8 +4,7 @@
 from typing import List
 from tator.openapi.tator_openapi import Localization  # type: ignore
 import pandas as pd
-
-from aidata.logger import debug
+import xml.etree.ElementTree as ET
 
 
 def combine_localizations(boxes: List[Localization]) -> List[Localization]:
@@ -50,3 +49,33 @@ def combine_localizations(boxes: List[Localization]) -> List[Localization]:
         )
 
     return max_boxes
+
+
+def parse_voc_xml(xml_file) -> List:
+    """
+    Parse a VOC XML file and return the bounding boxes, labels, poses, and ids
+    """
+    tree = ET.parse(xml_file)
+    root = tree.getroot()
+
+    boxes = []
+    labels = []
+    poses = []
+    ids = []
+
+    for obj in root.findall('object'):
+        label = obj.find('name').text
+        pose = obj.find('pose').text if obj.find('pose') is not None else "Unspecified"
+        id = obj.find('id').text if obj.find('id') is not None else ""
+        bbox = obj.find('bndbox')
+        xmin = int(bbox.find('xmin').text)
+        ymin = int(bbox.find('ymin').text)
+        xmax = int(bbox.find('xmax').text)
+        ymax = int(bbox.find('ymax').text)
+
+        boxes.append([xmin, ymin, xmax, ymax])
+        labels.append(label)
+        poses.append(pose)
+        ids.append(id)
+
+    return boxes, labels, poses, ids
