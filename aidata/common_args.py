@@ -15,7 +15,7 @@ token = click.option(
 yaml_config = click.option(
     "--config",
     required=True,
-    type=click.Path(exists=True),
+    type=str,
     help="Path to a YAML file with project configuration",
 )
 force = click.option("--force", is_flag=True, help="Force load and skip over check")
