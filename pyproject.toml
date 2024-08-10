@@ -11,7 +11,7 @@ branch = "main"
 env = "GITHUB_TOKEN"
 
 [tool.semantic_release.changelog]
-changelog_file = "docs/CHANGELOG.md"
+changelog_file = "CHANGELOG.md"
 exclude_commit_patterns = [
   '''chore(?:\([^)]*?\))?: .+''',
   '''ci(?:\([^)]*?\))?: .+''',
