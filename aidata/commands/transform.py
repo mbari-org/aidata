@@ -178,6 +178,84 @@ def transform(base_path: str, crop_size: int, crop_overlap: float, min_area: int
         exception(f"Error: {e}")
         raise e
 
+@click.command(name="voc-to-yolo", help="Transform a downloaded VOC dataset for training detection models")
+@click.option(
+    "--base-path",
+    default=DEFAULT_BASE_DIR,
+    type=Path,
+    help=f"Path to the base directory to save all data to. Defaults to {DEFAULT_BASE_DIR}",
+)
+def voc_to_yolo(base_path: str):
+    """Transform a downloaded dataset for training detection models from VOC to YOLO format"""
+    try:
+        create_logger_file("transform")
+        info(f"Transforming dataset at {base_path} from VOC to YOLO format")
+
+        # Check if the base path exists and a voc dataset exists:
+        if not Path(base_path).exists():
+            exception(f"Base path {base_path} does not exist.")
+            return
+
+        # Check if the base path has a VOC dataset - this should
+        # be a directory with the following structure:
+        # base_path
+        # ├── images
+        # │   ├── image1.png
+        # │   ├── image2.png
+        # ├── voc
+        # │   ├── image1.xml
+        # │   ├── image2.xml
+        if not Path(base_path / "voc").exists():
+            exception(f"VOC dataset not found in {base_path}")
+            return
+
+        if not Path(base_path / "images").exists():
+            exception(f"Images directory not found in {base_path}")
+            return
+
+        # Create the YOLO directory if it does not exist
+        # This output will be a directory with the following structure:
+        # base_path
+        # ├── images
+        # │   ├── image1.png
+        # │   ├── image2.png
+        # ├── labels
+        # │   ├── image1.txt
+        # │   ├── image2.txt
+        # labels.txt
+        yolo_path = base_path / "labels"
+        yolo_path.mkdir(exist_ok=True)
+
+        for xml_path in Path(base_path / "voc").glob("*.xml"):
+            # Load the annotations from the VOC XML file
+            boxes, labels, poses, ids = parse_voc_xml(xml_path)
+
+            # Get image dimensions for normalization
+            allowed_extensions = [".png", ".jpg", ".jpeg", ".JPEG", ".JPG", ".PNG"]
+            for ext in allowed_extensions:
+                image_path = base_path / "images" / (xml_path.stem + ext)
+                if image_path.exists():
+                    break
+            image = cv2.imread(str(image_path))
+            if image is None:
+                exception(f"Could not read image {image_path}")
+                continue
+            image_height, image_width, _ = image.shape
+
+            # Write the YOLO format file
+            yolo_out_path = yolo_path / (xml_path.stem + ".txt")
+            with yolo_out_path.open("w") as file:
+                for box, label in zip(boxes, labels):
+                    x1, y1, x2, y2 = map(int, box)
+                    x_center = (x1 + x2) / 2 / image_width
+                    y_center = (y1 + y2) / 2 / image_height
+                    width = (x2 - x1) / image_width
+                    height = (y2 - y1) / image_height
+                    file.write(f"{labels.index(label)} {x_center} {y_center} {width} {height}\n")
+
+    except Exception as e:
+        exception(f"Error: {e}")
+        raise e
 
 if __name__ == "__main__":
     base_path = Path(__file__).parent.parent.parent / "Baseline"

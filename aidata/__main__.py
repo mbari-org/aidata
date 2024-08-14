@@ -16,7 +16,7 @@ from aidata.commands.download import download
 from aidata.commands.load_images import load_images
 from aidata.commands.load_exemplars import load_exemplars
 from aidata.commands.db_utils import reset_redis
-from aidata.commands.transform import transform
+from aidata.commands.transform import transform, voc_to_yolo
 from aidata.logger import err, info
 
 from aidata import __version__
@@ -85,6 +85,7 @@ def cli_transform():
 
 cli.add_command(cli_transform)
 cli_transform.add_command(transform)
+cli_transform.add_command(voc_to_yolo)
 
 if __name__ == "__main__":
     try:
