@@ -63,6 +63,10 @@ def parse_voc_xml(xml_file) -> List:
     poses = []
     ids = []
 
+    image_size = root.find('size')
+    image_width = int(image_size.find('width').text)
+    image_height = int(image_size.find('height').text)
+
     for obj in root.findall('object'):
         label = obj.find('name').text
         pose = obj.find('pose').text if obj.find('pose') is not None else "Unspecified"
@@ -72,6 +76,20 @@ def parse_voc_xml(xml_file) -> List:
         ymin = int(bbox.find('ymin').text)
         xmax = int(bbox.find('xmax').text)
         ymax = int(bbox.find('ymax').text)
+
+        # Make sure to bound the coordinates are within the image
+        if xmin < 0:
+            xmin = 0
+        if ymin < 0:
+            ymin = 0
+        if xmax < 0:
+            xmax = 0
+        if ymax < 0:
+            ymax = 0
+        if xmax > image_width:
+            xmax = image_width
+        if ymax > image_height:
+            ymax = image_height
 
         boxes.append([xmin, ymin, xmax, ymax])
         labels.append(label)

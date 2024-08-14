@@ -42,12 +42,14 @@ DEFAULT_BASE_DIR = Path.home() / "aidata" / "datasets"
 )
 @click.option("--max-images", type=int, default=-1, help="Only load up to max-images. Useful for testing. "
                                                          "Default is to load all images")
-def transform(base_path: str, crop_size: int, crop_overlap: float, min_area: int, min_visibility: float, max_images: int):
+def transform(base_path: str, crop_size: int, crop_overlap: float, min_area: int, min_visibility: float,
+              max_images: int):
     """Transform a downloaded dataset for training detection models"""
     try:
         create_logger_file("transform")
-        info(f"Transforming dataset at {base_path} with crop size {crop_size} and overlap {crop_overlap} and min area {min_area}"
-             f" and min visibility {min_visibility} and max images {max_images}")
+        info(
+            f"Transforming dataset at {base_path} with crop size {crop_size} and overlap {crop_overlap} and min area {min_area}"
+            f" and min visibility {min_visibility} and max images {max_images}")
 
         # Check if the base path exists and a voc dataset exists:
         if not Path(base_path).exists():
@@ -75,7 +77,8 @@ def transform(base_path: str, crop_size: int, crop_overlap: float, min_area: int
 
         allowed_extensions = [".png", ".jpg", ".jpeg", ".JPEG", ".JPG", ".PNG"]
 
-        image_paths = [image_path for image_path in Path(base_path / "images").glob("*") if image_path.suffix in allowed_extensions]
+        image_paths = [image_path for image_path in Path(base_path / "images").glob("*") if
+                       image_path.suffix in allowed_extensions]
         if len(image_paths) == 0:
             exception(f"No images found in {base_path / 'images'}")
             return
@@ -132,7 +135,8 @@ def transform(base_path: str, crop_size: int, crop_overlap: float, min_area: int
                             crop,
                             albu.LongestMaxSize(max_size=crop_size),
                         ],
-                        bbox_params=albu.BboxParams(format="pascal_voc", min_visibility=min_visibility, min_area=min_area, label_fields=["labels", "ids"]),
+                        bbox_params=albu.BboxParams(format="pascal_voc", min_visibility=min_visibility,
+                                                    min_area=min_area, label_fields=["labels", "ids"]),
                     )
                     # Apply the transformation
                     transformed = transform(image=image, bboxes=boxes, labels=labels, ids=ids)
@@ -177,6 +181,7 @@ def transform(base_path: str, crop_size: int, crop_overlap: float, min_area: int
     except Exception as e:
         exception(f"Error: {e}")
         raise e
+
 
 @click.command(name="voc-to-yolo", help="Transform a downloaded VOC dataset for training detection models")
 @click.option(
@@ -251,11 +256,22 @@ def voc_to_yolo(base_path: str):
                     y_center = (y1 + y2) / 2 / image_height
                     width = (x2 - x1) / image_width
                     height = (y2 - y1) / image_height
+                    # Make sure to bound the x_center + width and
+                    # y_center + height to 1 by reducing the width and height
+                    if x_center + width > 1:
+                        width = 1 - x_center
+                    if y_center + height > 1:
+                        height = 1 - y_center
                     file.write(f"{labels.index(label)} {x_center} {y_center} {width} {height}\n")
+
+        # Report an error is there are no .txt files generated
+        if len(list(yolo_path.glob("*.txt"))) == 0:
+            exception(f"No YOLO files generated in {yolo_path}")
 
     except Exception as e:
         exception(f"Error: {e}")
         raise e
+
 
 if __name__ == "__main__":
     base_path = Path(__file__).parent.parent.parent / "Baseline"
