@@ -7,6 +7,7 @@ from pathlib import Path
 import albumentations as albu
 import click
 import cv2
+import pandas as pd
 from tqdm import tqdm
 import shutil
 
@@ -148,8 +149,15 @@ def transform(base_path: str, crop_size: int, crop_overlap: float, min_area: int
                         voc_xml_path = output_base_path_xml / f"{image_path_final.stem}.xml"
                         writer = Writer(voc_xml_path.as_posix(), crop_size, crop_size)
 
+                        # Remove any duplicate boxes
+                        df = pd.DataFrame({'bboxes': transformed["bboxes"], 'labels': transformed["labels"], 'ids': transformed["ids"]})
+                        df = df.drop_duplicates(subset=['bboxes', 'labels', 'ids'])
+
                         # Store the cropped image and adjusted bounding boxes
-                        for bbox, label, id in zip(transformed["bboxes"], transformed["labels"], transformed["ids"]):
+                        for idx, row in df.iterrows():
+                            label = row["labels"]
+                            bbox = row["bboxes"]
+                            id = row["ids"]
                             if label not in label_cnt_transformed:
                                 label_cnt_transformed[label] = 0
                             label_cnt_transformed[label] += 1
@@ -210,6 +218,7 @@ def voc_to_yolo(base_path: str):
         # ├── voc
         # │   ├── image1.xml
         # │   ├── image2.xml
+        # labels.txt
         if not Path(base_path / "voc").exists():
             exception(f"VOC dataset not found in {base_path}")
             return
@@ -217,6 +226,14 @@ def voc_to_yolo(base_path: str):
         if not Path(base_path / "images").exists():
             exception(f"Images directory not found in {base_path}")
             return
+
+        # Create a mapping of label names to label indices, starting from 0 in sorted order from the labels.txt file
+        label_map = {}
+        with open(base_path.parent / "labels.txt", "r") as file:
+            labels = file.read().splitlines()
+        labels.sort()
+        for i, label in enumerate(labels):
+            label_map[label] = i
 
         # Create the YOLO directory if it does not exist
         # This output will be a directory with the following structure:
@@ -262,7 +279,8 @@ def voc_to_yolo(base_path: str):
                         width = 1 - x_center
                     if y_center + height > 1:
                         height = 1 - y_center
-                    file.write(f"{labels.index(label)} {x_center} {y_center} {width} {height}\n")
+                    label_index = label_map[label]
+                    file.write(f"{label_index} {x_center} {y_center} {width} {height}\n")
 
         # Report an error is there are no .txt files generated
         if len(list(yolo_path.glob("*.txt"))) == 0:
