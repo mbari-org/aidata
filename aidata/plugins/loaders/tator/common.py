@@ -44,6 +44,7 @@ def init_api_project(host: str, token: str, project: str) -> Tuple[TatorApi, tat
     :return:
     """
     try:
+        info(f"Connecting to Tator at {host}")
         api = tator.get_api(host, token)
     except Exception as e:
         raise (e)
