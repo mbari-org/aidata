@@ -1,5 +1,39 @@
 # CHANGELOG
 
+## v1.12.0 (2024-08-16)
+
+### Build
+
+* build: added missing albumentations library ([`523f4a9`](https://github.com/mbari-org/aidata/commit/523f4a99b9811effadff3dc9cf43a91e5208b1e1))
+
+### Documentation
+
+* docs: removed docs which are now in another repo and added commands for ref in README.md ([`428d319`](https://github.com/mbari-org/aidata/commit/428d319d2a925acf830b52da7cc95a83501fb4c1))
+
+* docs: moved CHANGELOG ([`e5e564d`](https://github.com/mbari-org/aidata/commit/e5e564da9b172d6815964d6fec8f3309ec969c6e))
+
+* docs: added detail on .env file ([`dcd3137`](https://github.com/mbari-org/aidata/commit/dcd313773c84e1f57a8504b0a1365212cf435d70))
+
+* docs: resolve conflict ([`5c44451`](https://github.com/mbari-org/aidata/commit/5c44451a1d94824394515c2b37320f597ddb0a4c))
+
+* docs: correct link to internal docs ([`208c6a8`](https://github.com/mbari-org/aidata/commit/208c6a8c1e2550fb5e81a492a65fa19542322ce6))
+
+* docs: updated with correct link to docs ([`2c65a57`](https://github.com/mbari-org/aidata/commit/2c65a57020d923d6bb63179bea04cadee694971f))
+
+### Feature
+
+* feat: addded voc_to_yolo ([`4646d14`](https://github.com/mbari-org/aidata/commit/4646d143d9c356e0cd6776ff8747e46bf017146b))
+
+* feat: added transform for voc only ([`3b1dc6d`](https://github.com/mbari-org/aidata/commit/3b1dc6db4c6ae55919d157afaf3e781621f777df))
+
+* feat: added transform for voc only ([`54b72d0`](https://github.com/mbari-org/aidata/commit/54b72d0224f0df7a13b20e41c7256bf5eead777a))
+
+### Fix
+
+* fix: correct handling of label map ([`828c7d4`](https://github.com/mbari-org/aidata/commit/828c7d48560760bb8a11920731ce1c72294fa4af))
+
+* fix: handle conversion errors outside of normalized 0-1 coordinates ([`c210ab2`](https://github.com/mbari-org/aidata/commit/c210ab2d2c59c095ca4d890898cd368ac2225313))
+
 ## v1.11.0 (2024-08-08)
 
 ### Feature
