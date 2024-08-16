@@ -25,6 +25,13 @@ conda activate aidata
 export PYTHONPATH=$PWD
 ```
 
+Then create a .env file with the following contents in the root directory of the project:
+```shell
+TATOR_TOKEN=your_api_token
+REDIS_PASSWORD=your_redis_password
+ENVIRONMENT=testing or production
+```
+
 A docker version is also available at mbari/aidata, but that is a WIP.
 
 Full documentation is available at [https://docs.mbari.org/internal/ai/data](https://docs.mbari.org/internal/ai/data/). 
