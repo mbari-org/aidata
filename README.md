@@ -24,4 +24,4 @@ export PYTHONPATH=$PWD
 
 A docker version is also available at mbari/aidata, but that is a WIP.
 
-Full documentation is available at [https://docs.mbari.org/internal/ai/data](https://docs.mbari.org/internal/ai/aidata/commands). 
+Full documentation is available at [https://docs.mbari.org/internal/ai/data](https://docs.mbari.org/internal/ai/data/). 
