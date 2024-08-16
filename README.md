@@ -9,6 +9,9 @@ This supports loading [sdcat](https://github.com/mbari-org/sdcat) formatted outp
 [Redis](https://redis.io) databases, although support for other data sources is also possible, e.g. [FathomNet](https://fathomnet.org/).
 so we decided to keep the name generic.
 
+This also supports loading media from a directory or URL, and transforming data into various 
+formats for machine learning, e.g. COCO, CIFAR, or PASCAL VOC format.
+
 ## Installation 
 
 ### Create the Anaconda environment
