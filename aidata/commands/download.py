@@ -24,6 +24,7 @@ DEFAULT_BASE_DIR = Path.home() / "aidata" / "datasets"
 @click.option(
     "--base-path",
     default=DEFAULT_BASE_DIR,
+    type=Path,
     help=f"Path to the base directory to save all data to. Defaults to {DEFAULT_BASE_DIR}",
 )
 @click.option("--group", help="Group name, e.g. VB250")
@@ -46,7 +47,7 @@ DEFAULT_BASE_DIR = Path.home() / "aidata" / "datasets"
 def download(
     token: str,
     config: str,
-    base_path: str,
+    base_path: Path,
     group: str,
     version: str,
     generator: str,
@@ -62,8 +63,7 @@ def download(
 ) -> bool:
     create_logger_file("download")
     try:
-        base_p = Path(base_path)
-        base_p.mkdir(exist_ok=True, parents=True)
+        base_path.mkdir(exist_ok=True, parents=True)
         # Load the configuration file
         config_dict = init_yaml_config(config)
         project = config_dict["tator"]["project"]
@@ -78,7 +78,7 @@ def download(
 
         # Download a dataset by its version 
         info(f"Downloading dataset {version}")
-        data_path = base_p / version
+        data_path = base_path / version
         data_path.mkdir(exist_ok=True)
 
         # Convert comma separated list of concepts to a list
@@ -144,7 +144,7 @@ if __name__ == "__main__":
         token=tator_token,
         config=yaml_path.as_posix(),
         version="dino_vits8_20240205_225539,dino_vits8_20240207_022529,dinov2_vits14_hdbscan_",
-        base_path=base_path.as_posix(),
+        base_path=base_path,
         voc=True,
         labels="Acanthamunnopsis milleri,Euphausiacea1,Pyrosoma1,Pyrosoma2",
         concepts="",
