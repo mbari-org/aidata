@@ -34,7 +34,7 @@ ENVIRONMENT=testing or production
 
 A docker version is also available at mbari/aidata, but that is a WIP.
 
-Full documentation is available at [https://docs.mbari.org/internal/ai/data](https://docs.mbari.org/internal/ai/aidata/). 
+Full documentation is available at [https://docs.mbari.org/internal/ai/data](https://docs.mbari.org/internal/ai/data/). 
 
 ## Commands
 
