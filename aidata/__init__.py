@@ -1,2 +1,2 @@
-#!/usr/bin/env python
+#aidata/__init__.py
 __version__ = "1.10.0"
