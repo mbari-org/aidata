@@ -1,5 +1,15 @@
 # CHANGELOG
 
+## v1.12.1 (2024-08-22)
+
+### Documentation
+
+* docs: minor correction to reflect correct path to docs ([`a0c5485`](https://github.com/mbari-org/aidata/commit/a0c54857003e2b9bb9c1258d819b6c32c2bc1e1c))
+
+### Fix
+
+* fix: trigger release to update __init__.py ([`553aa2d`](https://github.com/mbari-org/aidata/commit/553aa2ddeff37f75142007da2a02c9fa863ac9fb))
+
 ## v1.12.0 (2024-08-16)
 
 ### Build
