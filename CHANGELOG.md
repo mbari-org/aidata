@@ -1,5 +1,11 @@
 # CHANGELOG
 
+## v1.12.2 (2024-08-26)
+
+### Fix
+
+* fix: handle empty query operators ([`b9089b1`](https://github.com/mbari-org/aidata/commit/b9089b1e6a73c6e663183cc451d92dd8f5437989))
+
 ## v1.12.1 (2024-08-22)
 
 ### Documentation
