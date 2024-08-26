@@ -61,44 +61,43 @@ def download(
             err(f"Could not find all versions {version_list}")
             return False
 
-        attribute = []
-        attribute_bool = None
         num_concept_records = {}
         num_label_records = {}
         num_records = 0
+        # Prepare attributes based on provided values
+        attribute_equals = []
         if generator:
-            attribute = [f"generator::{generator}"]
+            attribute_equals.append(f"generator::{generator}")
         if group:
-            attribute += [f"group::{group}"]
+            attribute_equals.append(f"group::{group}")
         if verified:
-            attribute_bool = ["verified::true"]
+            attribute_equals.append("verified::true")
 
-        if len(concepts_list) > 0:
-            for concept in concepts_list:
-                if attribute_bool:
-                    num_concept_records[concept] = api.get_localization_count(
-                        project=project_id, version=version_ids, attribute_contains=[f"concept::{concept}"] + attribute,
-                        attribute_equals=attribute_bool
-                    )
-                else:
-                    num_concept_records[concept] = api.get_localization_count(
-                        project=project_id, version=version_ids, attribute_contains=[f"concept::{concept}"] + attribute
-                    )
-                num_records += num_concept_records[concept]
-        if len(labels_list) > 0:
-            for label in labels_list:
-                if attribute_bool:
-                    num_label_records[label] = api.get_localization_count(
-                        project=project_id, version=version_ids, attribute_contains=[f"Label::{label}"] + attribute,
-                        attribute=attribute_bool
-                    )
-                else:
-                    num_label_records[label] = api.get_localization_count(
-                        project=project_id, version=version_ids, attribute_contains=[f"Label::{label}"] + attribute,
-                    )
-                num_records += num_label_records[label]
-        if len(concepts_list) == 0 and len(labels_list) == 0:
-            num_records = api.get_localization_count(project=project_id, version=version_ids)
+        # Helper function to get localization count with common arguments
+        def get_localization_count(concept_or_label=None):
+            kwargs = {}
+            if concept_or_label:
+                kwargs["attribute_contains"] = [concept_or_label]
+            if attribute_equals:
+                kwargs["attribute"] = attribute_equals
+            return api.get_localization_count(
+                project=project_id,
+                version=version_ids,
+                **kwargs
+            )
+        # Process concepts list
+        for concept in concepts_list:
+            num_concept_records[concept] = get_localization_count(f"concept::{concept}")
+            num_records += num_concept_records[concept]
+
+        # Process labels list
+        for label in labels_list:
+            num_label_records[label] = get_localization_count(f"Label::{label}")
+            num_records += num_label_records[label]
+
+        # Handle case where both lists are empty
+        if not concepts_list and not labels_list:
+            num_records = get_localization_count()
 
         info(
             f'Found {num_records} records for version {version_list} and generator {generator}, group {group}, verified {verified} and '
@@ -139,15 +138,21 @@ def download(
             else:
                 inc = min(5000, max_records - 1)
 
+            kwargs = {}
             for start in range(0, max_records, inc):
-                info(f"Query records {start} to {start + inc} using attribute filter {attribute} {prefix} {query_str}")
+                info(f"Query records {start} to {start + inc} using attribute filter {attribute_equals} {prefix} {query_str}")
+
+                if attribute_equals:
+                    kwargs["attribute"] = attribute_equals
+                if prefix:
+                    kwargs["attribute_contains"] = [f"{prefix}::{query_str}"]
 
                 new_localizations = api.get_localization_list(
                     project=project_id,
-                    attribute_contains=[f"{prefix}::{query_str}"] + attribute,
-                    version=version_ids,
                     start=start,
                     stop=start + 5000,
+                    version=version_ids,
+                    **kwargs
                 )
                 if len(new_localizations) == 0:
                     break
