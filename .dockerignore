@@ -1,3 +1,8 @@
+data/
+.idea/
+.pytest_cache/
+.ruff_cache/
+.env
 __pycache__
 *.pyc
 *.log
