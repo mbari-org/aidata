@@ -6,12 +6,14 @@ LABEL license="Apache License 2.0"
 
 RUN apt-get update && apt-get install -y \
     software-properties-common \
-    && apt-get update && apt-get install -y \
     python3.11 \
     python3.11-dev \
     python3.11-distutils \
     python3-pip \
     curl \
+    ffmpeg \
+    libsm6 \
+    libxext6 \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
 
@@ -26,5 +28,7 @@ ENV HF_HOME=/tmp/transformers_cache
 
 RUN python3.11 -m pip install --upgrade pip && \
     python3.11 -m pip install -r requirements.txt
+
 RUN chmod a+rwx -R /app
+
 ENTRYPOINT ["python3.11", "aidata"]
