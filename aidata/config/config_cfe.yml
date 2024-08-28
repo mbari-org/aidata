@@ -13,7 +13,10 @@ plugins:
 
 redis:
   host: "doris.shore.mbari.org"
-  port: 6379
+  port: 6382
+
+vss:
+  project: "CFE"
 
 tator:
   project: "902111-CFE"

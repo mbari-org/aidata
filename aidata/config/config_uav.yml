@@ -11,6 +11,9 @@ plugins:
     module: "aidata.plugins.extractors.tap_sony_media"
     function: "extract_media"
 
+vss:
+  project: "uav"
+
 redis:
   host: "doris.shore.mbari.org"
   port: 6379

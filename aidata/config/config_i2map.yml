@@ -11,9 +11,12 @@ plugins:
     module: "aidata.plugins.extractors.tap_i2map_media"
     function: "extract_media"
 
+vss:
+  project: "i2map"
+
 redis:
   host: "doris.shore.mbari.org"
-  port: 6379
+  port: 6380
 
 tator:
   project: "i2map"
