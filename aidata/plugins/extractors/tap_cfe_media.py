@@ -4,7 +4,7 @@
 from enum import Enum
 import re
 from datetime import datetime
-from typing import Optional, List
+from typing import Optional
 
 import pytz
 
@@ -34,8 +34,8 @@ def extract_media(image_path: Path, max_images: Optional[int] = None) -> pd.Data
     if max_images:
         images_df = images_df.iloc[:max_images]
 
-    # 'CFE_ISIIS-010-2024-01-26 10-14-07.102_0835.png'
-    pattern = re.compile(r"CFE_(.*?)-(\d+)-(\d{4}-\d{2}-\d{2} \d{2}-\d{2}-\d{2}\.\d{3})_(\d{4})")
+    # 'CFE_ISIIS-010-2024-01-26 10-14-07.102_0835_8.3m.png'
+    pattern = re.compile(r"CFE_(.*?)-(\d+)-(\d{4}-\d{2}-\d{2} \d{2}-\d{2}-\d{2}\.\d{3})_(\d{4})_(\d+\.\d+)m\.(png|jpg|jpeg|JPEG|PNG)")
 
     # Grab any additional metadata from the image name,
     iso_datetime = {}
@@ -46,12 +46,10 @@ def extract_media(image_path: Path, max_images: Optional[int] = None) -> pd.Data
     fps = 17
     for group, df in images_df.groupby("image_path"):
         image_name = Path(str(group)).name
-        #: Argument 1 to "Path" has incompatible type "str | bytes | date | datetime | timedelta | datetime64 | timedelta64 | bool | int | float | Timestamp | Timedelta | complex"; expected "str | PathLike[str]"  [arg-type]
-        # aidata/generators/coco.py:11: error: Skipping analyzi
         info(image_name)
         matches = re.findall(pattern, image_name)
         if matches:
-            instrument, _, datetime_str, frame_num = matches[0]
+            instrument, _, datetime_str, frame_num, depth, ext = matches[0]
             datetime_str = datetime_str + "Z"
             dt = datetime.strptime(datetime_str, "%Y-%m-%d %H-%M-%S.%fZ")
             dt_utc = pytz.utc.localize(dt)
@@ -71,4 +69,5 @@ def extract_media(image_path: Path, max_images: Optional[int] = None) -> pd.Data
 
     images_df["instrument"] = instrument_type
     images_df["iso_datetime"] = iso_datetime
+    images_df["depth"] = depth
     return images_df
