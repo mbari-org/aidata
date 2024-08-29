@@ -1,5 +1,17 @@
 # CHANGELOG
 
+## v1.13.0 (2024-08-29)
+
+### Documentation
+
+* docs: updated docs and and config with better test setup ([`da554be`](https://github.com/mbari-org/aidata/commit/da554bef94c746536f0ef64828465393a01fbd42))
+
+* docs: updated docs and and config with better test setup ([`8a0c57c`](https://github.com/mbari-org/aidata/commit/8a0c57cc820d9e6cb0384f6faf70341c0eead21f))
+
+### Feature
+
+* feat: added support for depth parsing ([`7a0b61a`](https://github.com/mbari-org/aidata/commit/7a0b61a2a0c2fa1393912e69a1956d1458f72ae7))
+
 ## v1.12.2 (2024-08-26)
 
 ### Fix
