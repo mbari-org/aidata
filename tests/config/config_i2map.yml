@@ -14,7 +14,7 @@ plugins:
 
 tator:
   project: "i2map"
-  host: "ada.local"
+  host: "ada.local:8080"
   image:
     attributes:
       iso_datetime:

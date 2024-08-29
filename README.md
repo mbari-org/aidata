@@ -34,7 +34,7 @@ ENVIRONMENT=testing or production
 
 A docker version is also available at mbari/aidata, but that is a WIP.
 
-Full documentation is available at [https://docs.mbari.org/internal/ai/data](https://docs.mbari.org/internal/ai/data/). 
+Full documentation is available on commands at [https://docs.mbari.org/internal/ai/data](https://docs.mbari.org/internal/ai/data/). 
 
 ## Commands
 
@@ -45,3 +45,6 @@ Full documentation is available at [https://docs.mbari.org/internal/ai/data](htt
 * `python aidata  -h` - Print help message and exit.
  
 Source code is available at [github.com/mbari-org/aidata](https://github.com/mbari-org/aidata/). 
+
+## Development
+See the [Development Guide](DEVELOPMENT.md) for more information on how to setup the development environment.
