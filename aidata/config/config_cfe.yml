@@ -25,6 +25,8 @@ tator:
     attributes:
       iso_datetime:
         type: datetime
+      depth:
+        type: float
   box:
     attributes:
       Label:
