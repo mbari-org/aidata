@@ -63,7 +63,7 @@ Now that the containers are running, you can create a *superuser* to use for man
 
 Create a superuser
 ```shell
-cd tator && make superuser 
+make superuser 
 ```
   
 Open browser to your local tator instance and create a new (not superuser) user
