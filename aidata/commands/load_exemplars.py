@@ -91,18 +91,19 @@ def load_exemplars(config: str, input: Path, dry_run: bool, label: str, device: 
         vits.load(image_paths, class_names)
         num_exemplars = len(image_paths)
 
+        # Disable exemplar flagging for now - this overwrite the user who labeled the exemplar images
         # Image names are indexed per the database id, 12467.jpg, 12468.jpg, etc.
         # Search and flag the exemplar images in the tator database
-        df['id'] = df['image_path'].apply(lambda x: int(Path(x).stem))
-        ids = df['id'].unique().tolist()
-        params = {"type": box_type.id} 
-        id_bulk_patch = {
-            "attributes": {"exemplar": True},
-            "ids": ids,
-            "in_place": 1,
-        }
-        response = api.update_localization_list(project=tator_project.id, **params, localization_bulk_update=id_bulk_patch)
-        info(response)
+        # df['id'] = df['image_path'].apply(lambda x: int(Path(x).stem))
+        # ids = df['id'].unique().tolist()
+        # params = {"type": box_type.id}
+        # id_bulk_patch = {
+        #     "attributes": {"exemplar": True},
+        #     "ids": ids,
+        #     "in_place": 1,
+        # }
+        # response = api.update_localization_list(project=tator_project.id, **params, localization_bulk_update=id_bulk_patch)
+        # info(response)
         return num_exemplars
     except Exception as e:
         err(f"Error: {e}")
