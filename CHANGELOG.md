@@ -1,5 +1,11 @@
 # CHANGELOG
 
+## v1.14.0 (2024-08-30)
+
+### Feature
+
+* feat: disable flagging exexmplars ([`a193a74`](https://github.com/mbari-org/aidata/commit/a193a74a8e3d58b191ce225fd8d1b328e6f4bc9f))
+
 ## v1.13.0 (2024-08-29)
 
 ### Documentation
