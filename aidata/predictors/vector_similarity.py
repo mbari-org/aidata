@@ -22,9 +22,9 @@ class VectorSimilarity:
         try:
             # check to see if index exists
             self.r.ft(self.INDEX_NAME).info()
-            err(f"Database {self.INDEX_NAME} already exists!")
+            err(f"Index {self.INDEX_NAME} already exists!")
             if reset_db:
-                err("Existing index found. Dropping and recreating the index")
+                info("Existing index found. Dropping and recreating the index")
                 self.r.ft(self.INDEX_NAME).dropindex(delete_documents=True)
                 self.r.flushall()
                 self.reset(vector_dimensions)
@@ -64,3 +64,6 @@ class VectorSimilarity:
         )
         query_params = {"vec": vector}
         return self.r.ft(self.INDEX_NAME).search(query, query_params).docs
+
+    def get_all_keys(self):
+        return self.r.keys(f"{self.DOC_PREFIX}*")
