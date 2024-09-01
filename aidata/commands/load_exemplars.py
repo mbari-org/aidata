@@ -84,18 +84,19 @@ def load_exemplars(config: str, input: Path, dry_run: bool, label: str, device: 
             base_path = Path(input).parent
             image_paths = [os.path.join(base_path, p) for p in image_paths]
 
-        # Class names are indexed, e.g. Otter_0, Otter_1, etc.
+        # Class names are indexed, e.g. Otter_12467, Otter_12467, etc.
         # Each class name corresponds to an exemplar image that represents a subcluster
-        class_names = [f"{label}_{i}" for i in range(len(image_paths))]
+        # The image names are indexed per the database id, 12467.jpg, 12468.jpg, etc.
+        df['id'] = df['image_path'].apply(lambda x: int(Path(x).stem))
+        ids = df['id'].tolist()
+        class_names = [f"{label}_{i}" for i in ids]
         info(f"Loading {len(image_paths)} exemplar images with class names {class_names}")
         vits.load(image_paths, class_names)
         num_exemplars = len(image_paths)
 
-        # Disable exemplar flagging for now - this overwrite the user who labeled the exemplar images
+        # Disable exemplar flagging for now - this overwrites the user who labeled the exemplar images
         # Image names are indexed per the database id, 12467.jpg, 12468.jpg, etc.
         # Search and flag the exemplar images in the tator database
-        # df['id'] = df['image_path'].apply(lambda x: int(Path(x).stem))
-        # ids = df['id'].unique().tolist()
         # params = {"type": box_type.id}
         # id_bulk_patch = {
         #     "attributes": {"exemplar": True},
