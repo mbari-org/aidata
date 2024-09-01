@@ -1,5 +1,11 @@
 # CHANGELOG
 
+## v1.16.0 (2024-09-01)
+
+### Feature
+
+* feat: added redis document id fetch ([`04f1a7a`](https://github.com/mbari-org/aidata/commit/04f1a7a84cc68d713073bb494409a4d8998fe9f9))
+
 ## v1.15.0 (2024-09-01)
 
 ### Feature
@@ -96,7 +102,7 @@
 
 ### Feature
 
-* feat: added database create_new_index and cleane up docs ([`f87387a`](https://github.com/mbari-org/aidata/commit/f87387aacfda0addece80cfc734baf6ca57c5e05))
+* feat: added database reset and cleane up docs ([`f87387a`](https://github.com/mbari-org/aidata/commit/f87387aacfda0addece80cfc734baf6ca57c5e05))
 
 ## v1.8.0 (2024-07-26)
 
