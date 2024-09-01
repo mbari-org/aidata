@@ -96,7 +96,7 @@
 
 ### Feature
 
-* feat: added database reset and cleane up docs ([`f87387a`](https://github.com/mbari-org/aidata/commit/f87387aacfda0addece80cfc734baf6ca57c5e05))
+* feat: added database create_new_index and cleane up docs ([`f87387a`](https://github.com/mbari-org/aidata/commit/f87387aacfda0addece80cfc734baf6ca57c5e05))
 
 ## v1.8.0 (2024-07-26)
 

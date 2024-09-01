@@ -74,10 +74,11 @@ class ViTWrapper:
 
         info(f"Finished processing {len(image_paths)} images for {unique_class_names}")
 
-    def predict(self, image_paths: List[str], top_n: int = 1) -> tuple[list[list[str]], list[list[float]]]:
+    def predict(self, image_paths: List[str], top_n: int = 1) -> tuple[list[list[str]], list[list[float]], list[list[str]]]:
         """Search using KNN for embeddings for a batch of images"""
         predictions = []
         scores = []
+        ids = []
 
         info(f"Found {len(image_paths)} images to predict")
         for i in range(0, len(image_paths), self.batch_size):
@@ -91,7 +92,24 @@ class ViTWrapper:
                 # The class name is everything before the last underscore
                 r_class = [extract_name(x) for x in r_class_cluster]
                 predictions.append(r_class)
+                # The database id is everything after the class name, e.g. Otter_12467
+                ids.append(r_class_cluster)
                 # Separate out the scores for each prediction - this is used later for voting
                 scores.append([x["score"] for x in r])
 
-        return predictions, scores
+        return predictions, scores, ids
+
+    def get_ids(self):
+        """Get all the ids in the index"""
+        all_keys = self.vs.get_all_keys()
+        # Class names are indexed, e.g. doc:Otter_12467, doc:Otter_12467, etc.
+        classes = []
+        ids = []
+        for i, key in enumerate(all_keys):
+            # Name is everything before the first underscore
+            str  = key.decode("utf-8").split("doc:")
+            classname, id = str[1].split("_")
+            classes.append(classname)
+            ids.append(int(id))
+
+        return classes, ids
