@@ -1,5 +1,11 @@
 # CHANGELOG
 
+## v1.15.0 (2024-09-01)
+
+### Feature
+
+* feat: replace index id with database id for exemplars ([`0ce8e17`](https://github.com/mbari-org/aidata/commit/0ce8e171b777238e7d99b0f10a8772e1c121b3cf))
+
 ## v1.14.0 (2024-08-30)
 
 ### Feature
