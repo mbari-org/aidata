@@ -3,6 +3,7 @@
 # Description: Load image embedding vectors from a SDCAT formatted CSV exemplar file
 import click
 import redis
+import re
 
 from aidata import common_args
 from aidata.logger import create_logger_file, info, err
@@ -10,6 +11,12 @@ from aidata.plugins.extractors.tap_sdcat_csv import extract_sdcat_csv
 from aidata.plugins.loaders.tator.common import init_yaml_config, init_api_project, find_box_type
 from aidata.predictors.process_vits import ViTWrapper
 from pathlib import Path
+
+
+def parse_id(input_str):
+    """Parse the database id from the image name, e.g. 12467345 from 12467345.1.jpg or 12467345.jpg, etc."""
+    match = re.match(r"^\d+", input_str)
+    return match.group(0) if match else None
 
 
 @click.command("exemplars", help="Load exemplars from a SDCAT formatted CSV exemplar file into a REDIS server")
@@ -30,7 +37,7 @@ from pathlib import Path
     "--label",
     type=str,
     help="Class label for the exemplars. This is used as the base class name for the "
-    "exemplar images, e.g. Otter_0, Otter_1, etc.",
+    "exemplar images, e.g. Otter:0, Otter:1, etc.",
 )
 def load_exemplars(config: str, input: Path, dry_run: bool, label: str, device: str, batch_size, password: str, token: str) -> int:
     """Load embeddings from a directory with SDCAT formatted exemplar CSV files. Returns the number of exemplar image
@@ -84,12 +91,12 @@ def load_exemplars(config: str, input: Path, dry_run: bool, label: str, device: 
             base_path = Path(input).parent
             image_paths = [os.path.join(base_path, p) for p in image_paths]
 
-        # Class names are indexed, e.g. Otter_12467, Otter_12467, etc.
+        # Images are indexed by database id, e.g. 12467.1.jpg, 12467.1, etc.
         # Each class name corresponds to an exemplar image that represents a subcluster
-        # The image names are indexed per the database id, 12467.jpg, 12468.jpg, etc.
-        df['id'] = df['image_path'].apply(lambda x: int(Path(x).stem))
+        # The image names are indexed per the database id, 12467.jpg, 12468.jpg, 12468.1.jpg.
+        df['id'] = df['image_path'].apply(lambda x: parse_id(Path(x).stem))
         ids = df['id'].tolist()
-        class_names = [f"{label}_{i}" for i in ids]
+        class_names = [f"{label}:{i}" for i in ids]
         info(f"Loading {len(image_paths)} exemplar images with class names {class_names}")
         vits.load(image_paths, class_names)
         num_exemplars = len(image_paths)
@@ -109,8 +116,6 @@ def load_exemplars(config: str, input: Path, dry_run: bool, label: str, device: 
     except Exception as e:
         err(f"Error: {e}")
         raise e
-
-    return 0
 
 
 
