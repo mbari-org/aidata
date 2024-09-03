@@ -13,10 +13,6 @@ from typing import List
 from aidata.logger import info
 from aidata.predictors.vector_similarity import VectorSimilarity
 
-def extract_name(input_str):
-    match = re.match(r"^(.*?)(?=_[0-9]+)", input_str)
-    return match.group(1) if match else None
-
 class ViTWrapper:
     MODEL_NAME = "google/vit-base-patch16-224"
     VECTOR_DIMENSIONS = 768
@@ -87,13 +83,13 @@ class ViTWrapper:
             embeddings = self.get_image_embeddings(images)
             for j, emb in enumerate(embeddings):
                 r = self.vs.search_vector(emb.tobytes(), top_n=top_n)
-                # Only grab the top_n class names, not the scores or other metadata
-                r_class_cluster = [x["id"].split(":")[-1] for x in r]
-                # The class name is everything before the last underscore
-                r_class = [extract_name(x) for x in r_class_cluster]
-                predictions.append(r_class)
-                # The database id is everything after the class name, e.g. Otter_12467
-                ids.append(r_class_cluster)
+                # Data is doc:label:id - split it into parts
+                data = [x["id"].split(":") for x in r]
+                for d in data:
+                    if len(d) != 3:
+                        continue
+                    predictions.append(d[1])
+                    ids.append(d[2])
                 # Separate out the scores for each prediction - this is used later for voting
                 scores.append([x["score"] for x in r])
 
@@ -102,14 +98,12 @@ class ViTWrapper:
     def get_ids(self):
         """Get all the ids in the index"""
         all_keys = self.vs.get_all_keys()
-        # Class names are indexed, e.g. doc:Otter_12467, doc:Otter_12467, etc.
+        # Data is formatted <doc:label:id>, e.g. doc:Otter:12467, doc:Otter:12467, etc.
         classes = []
         ids = []
         for i, key in enumerate(all_keys):
-            # Name is everything before the first underscore
-            str  = key.decode("utf-8").split("doc:")
-            classname, id = str[1].split("_")
-            classes.append(classname)
-            ids.append(int(id))
-
+            str  = key.decode("utf-8").split(":")
+            if len(str) == 3:
+                classes.append(str[1])
+                ids.append(str[2])
         return classes, ids
