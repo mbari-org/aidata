@@ -1,5 +1,11 @@
 # CHANGELOG
 
+## v1.17.0 (2024-09-03)
+
+### Feature
+
+* feat: replace underscore with colon in redis hash store of exemplars ([`fb4363a`](https://github.com/mbari-org/aidata/commit/fb4363a18ea8d50dcf79847f012f1c12f082497b))
+
 ## v1.16.0 (2024-09-01)
 
 ### Feature
