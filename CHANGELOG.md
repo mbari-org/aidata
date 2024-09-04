@@ -1,5 +1,11 @@
 # CHANGELOG
 
+## v1.17.1 (2024-09-04)
+
+### Performance
+
+* perf: bump to better indexing ([`a24bfb7`](https://github.com/mbari-org/aidata/commit/a24bfb7e40814dd31c2991720df064f6d7e4b0a6))
+
 ## v1.17.0 (2024-09-03)
 
 ### Feature
