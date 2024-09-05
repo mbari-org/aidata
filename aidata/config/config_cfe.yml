@@ -17,6 +17,7 @@ redis:
 
 vss:
   project: "CFE"
+  model: "google/vit-base-patch16-224"
 
 tator:
   project: "902111-CFE"

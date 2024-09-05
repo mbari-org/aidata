@@ -51,9 +51,10 @@ def load_exemplars(config: str, input: Path, dry_run: bool, label: str, device: 
         config_dict = init_yaml_config(config)
         redis_host = config_dict["redis"]["host"]
         redis_port = config_dict["redis"]["port"]
+        model = config_dict["vss"]["model"]
         info(f"Connecting to REDIS server at {redis_host}:{redis_port}")
         r = redis.Redis(host=redis_host, port=redis_port, password=password)
-        vits = ViTWrapper(r, device=device, batch_size=batch_size)
+        vits = ViTWrapper(r, model_name=model, device=device, batch_size=batch_size)
 
         # Initialize the Tator API
         project = config_dict["tator"]["project"]

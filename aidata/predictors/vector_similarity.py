@@ -1,7 +1,6 @@
 # aidata, Apache-2.0 license
 # Filename: predictors/vector_similarity.py
 # Description: Runs operations on Redis database with RediSearch on embedded vectors
-import numpy as np
 import redis
 from redis.commands.search.field import TagField, VectorField
 from redis.commands.search.indexDefinition import IndexDefinition, IndexType

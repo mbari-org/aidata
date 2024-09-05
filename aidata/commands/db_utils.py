@@ -24,9 +24,10 @@ def reset_redis(redis_password: str, config: str) -> bool:
         config_dict = init_yaml_config(config)
         redis_host = config_dict["redis"]["host"]
         redis_port = config_dict["redis"]["port"]
+        vss_model = config_dict["vss"]["model"]
         info(f"Connecting to REDIS server at {redis_host}:{redis_port}")
         r = redis.Redis(host=redis_host, port=redis_port, password=redis_password)
-        ViTWrapper(r, reset=True)
+        ViTWrapper(r, model_name=vss_model, reset=True)
         info("Redis server reset")
         return True
     except Exception as e:

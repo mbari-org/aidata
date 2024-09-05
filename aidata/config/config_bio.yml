@@ -17,6 +17,7 @@ redis:
 
 vss:
   project: "bio"
+  model: "facebook/dino-vits8"
 
 tator:
   project: "901103-biodiversity"

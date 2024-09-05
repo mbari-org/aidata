@@ -13,6 +13,7 @@ plugins:
 
 vss:
   project: "uav"
+  model: "google/vit-base-patch16-224"
 
 redis:
   host: "doris.shore.mbari.org"
