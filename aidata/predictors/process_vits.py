@@ -13,17 +13,20 @@ from typing import List
 from aidata.logger import info
 from aidata.predictors.vector_similarity import VectorSimilarity
 
-class ViTWrapper:
-    MODEL_NAME = "google/vit-base-patch16-224"
-    VECTOR_DIMENSIONS = 768
 
-    def __init__(self, r: redis.Redis, device: str = "cpu", reset: bool = False, batch_size: int = 32):
+class ViTWrapper:
+    DEFAULT_MODEL_NAME = "google/vit-base-patch16-224"
+
+    def __init__(self, r: redis.Redis,
+                 device: str = "cpu",
+                 model_name: str = DEFAULT_MODEL_NAME,
+                 reset: bool = False,
+                 batch_size: int = 32):
         self.r = r
         self.batch_size = batch_size
-        self.vs = VectorSimilarity(r, vector_dimensions=self.VECTOR_DIMENSIONS, reset=reset)
-
-        self.model = ViTModel.from_pretrained(self.MODEL_NAME)
-        self.processor = ViTImageProcessor.from_pretrained(self.MODEL_NAME)
+        self.model = ViTModel.from_pretrained(model_name)
+        self.processor = ViTImageProcessor.from_pretrained(model_name)
+        self.vs = VectorSimilarity(r, vector_dimensions=self.vector_dimensions, reset=reset)
 
         # Load the model and processor
         if 'cuda' in device and torch.cuda.is_available():
@@ -37,7 +40,11 @@ class ViTWrapper:
 
     @property
     def model_name(self) -> str:
-        return self.MODEL_NAME
+        return self.model.config._name_or_path
+
+    @property
+    def vector_dimensions(self) -> int:
+        return self.model.config.hidden_size
 
     def preprocess_images(self, image_paths: List[str]):
         info(f"Preprocessing {len(image_paths)} images")
@@ -59,18 +66,19 @@ class ViTWrapper:
         info(f"Found {len(image_paths)} images to load")
 
         for i in range(0, len(image_paths), self.batch_size):
-            batch = image_paths[i : i + self.batch_size]
+            batch = image_paths[i: i + self.batch_size]
             images = self.preprocess_images(batch)
             embeddings = self.get_image_embeddings(images)
             for j, emb in enumerate(embeddings):
                 # make sure the array matches the vector dimensions and type float32 otherwise indexing will fail
                 emb = emb.astype(np.float32)
-                assert emb.shape[0] == self.VECTOR_DIMENSIONS
-                self.vs.add_vector(doc_id=class_names[i + j], vector=emb.tobytes(), tag=self.MODEL_NAME)
+                assert emb.shape[0] == self.model.config.hidden_size
+                self.vs.add_vector(doc_id=class_names[i + j], vector=emb.tobytes(), tag=self.model_name)
 
         info(f"Finished processing {len(image_paths)} images for {unique_class_names}")
 
-    def predict(self, image_paths: List[str], top_n: int = 1) -> tuple[list[list[str]], list[list[float]], list[list[str]]]:
+    def predict(self, image_paths: List[str], top_n: int = 1) -> tuple[
+        list[list[str]], list[list[float]], list[list[str]]]:
         """Search using KNN for embeddings for a batch of images"""
         predictions = []
         scores = []
@@ -78,7 +86,7 @@ class ViTWrapper:
 
         info(f"Found {len(image_paths)} images to predict")
         for i in range(0, len(image_paths), self.batch_size):
-            batch = image_paths[i : i + self.batch_size]
+            batch = image_paths[i: i + self.batch_size]
             images = self.preprocess_images(batch)
             embeddings = self.get_image_embeddings(images)
             for j, emb in enumerate(embeddings):
@@ -102,7 +110,7 @@ class ViTWrapper:
         classes = []
         ids = []
         for i, key in enumerate(all_keys):
-            str  = key.decode("utf-8").split(":")
+            str = key.decode("utf-8").split(":")
             if len(str) == 3:
                 classes.append(str[1])
                 ids.append(str[2])
