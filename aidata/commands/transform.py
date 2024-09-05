@@ -3,7 +3,6 @@
 # Description: Transform a downloaded dataset for training detection or classification models
 
 from pathlib import Path
-from typing import Any
 
 import albumentations as albu
 import click
@@ -94,8 +93,8 @@ def transform(base_path: str, resize: int, crop_size: int, crop_overlap: float, 
             image_paths = image_paths[:max_images]
 
         # A utility function for saving the transformed data
-        def save_transformed(voc_xml_path: Path, transformed):
-            writer = Writer(voc_xml_path.as_posix(), crop_size, crop_size)
+        def save_transformed(voc_xml_path: Path, width: int, height: int, transformed):
+            writer = Writer(voc_xml_path.as_posix(), width, height)
 
             # Remove any duplicate boxes
             df = pd.DataFrame(
@@ -180,9 +179,9 @@ def transform(base_path: str, resize: int, crop_size: int, crop_overlap: float, 
                 voc_xml_path = output_base_path_xml / f"{image_path_final.stem}.xml"
 
                 # Apply the transformation and save
-                transformed = transform(image=image, bboxes=boxes, labels=labels, ids=ids)
+                transformed = transform(image=image.copy(), bboxes=boxes, labels=labels, ids=ids)
                 cv2.imwrite(image_path_final.as_posix(), transformed["image"])
-                save_transformed(voc_xml_path, transformed)
+                save_transformed(voc_xml_path, resize, resize, transformed)
 
             # Iterate over the image to generate overlapping crops
             i = 0  # counter for indexing the transformed images to give them a unique name
@@ -204,12 +203,12 @@ def transform(base_path: str, resize: int, crop_size: int, crop_overlap: float, 
 
                     # Only keep the data if the cropped image contains at least one bounding box
                     if len(transformed["bboxes"]) > 0:
-                        # Save the transformed image with the same name with _r, e.g. image_r.png
+                        # Save the transformed image with the same name with _c, e.g. image_c.png
                         image_path_final = output_base_path_images / f"{image_path.stem}_c_{i}{image_path.suffix}"
                         voc_xml_path = output_base_path_xml / f"{image_path_final.stem}.xml"
                         num_transformed_labels += len(transformed["bboxes"])
                         cv2.imwrite(image_path_final.as_posix(), transformed["image"])
-                        save_transformed(voc_xml_path, transformed)
+                        save_transformed(voc_xml_path, crop_size, crop_size, transformed)
                         i += 1
 
         info(f"transformed dataset saved to {output_base_path}")
@@ -324,4 +323,5 @@ def voc_to_yolo(base_path: str):
 
 if __name__ == "__main__":
     base_path = Path(__file__).parent.parent.parent / "Baseline"
-    transform(base_path=base_path, crop_size=1280, crop_overlap=0.5, min_area=100, min_visibility=0.5, resize=1280, max_images=-1)
+    transform(base_path=base_path, crop_size=1500, crop_overlap=0.5, min_area=100, min_visibility=0.5, resize=None,
+              max_images=-1)
