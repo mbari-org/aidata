@@ -1,5 +1,11 @@
 # CHANGELOG
 
+## v1.18.0 (2024-09-05)
+
+### Feature
+
+* feat: add support to different models ([`b1f7c52`](https://github.com/mbari-org/aidata/commit/b1f7c52f3df5032c255d124b762eaa0a5a571a25))
+
 ## v1.17.1 (2024-09-04)
 
 ### Performance
