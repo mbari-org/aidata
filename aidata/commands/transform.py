@@ -207,8 +207,8 @@ def transform(base_path: str, resize: int, crop_size: int, crop_overlap: float, 
                         image_path_final = output_base_path_images / f"{image_path.stem}_c_{i}{image_path.suffix}"
                         voc_xml_path = output_base_path_xml / f"{image_path_final.stem}.xml"
                         num_transformed_labels += len(transformed["bboxes"])
-                        cv2.imwrite(image_path_final.as_posix(), transformed["image"])
                         save_transformed(voc_xml_path, crop_size, crop_size, transformed)
+                        cv2.imwrite(image_path_final.as_posix(), transformed["image"])
                         i += 1
 
         info(f"transformed dataset saved to {output_base_path}")
@@ -323,5 +323,5 @@ def voc_to_yolo(base_path: str):
 
 if __name__ == "__main__":
     base_path = Path(__file__).parent.parent.parent / "Baseline"
-    transform(base_path=base_path, crop_size=1500, crop_overlap=0.5, min_area=100, min_visibility=0.5, resize=None,
+    transform(base_path=base_path, crop_size=2000, crop_overlap=0.5, min_area=100, min_visibility=0.5, resize=None,
               max_images=-1)
