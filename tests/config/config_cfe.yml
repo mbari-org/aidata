@@ -22,7 +22,7 @@ vss:
 
 tator:
   project: "902111-CFE"
-  host: "ada.local"
+  host: "ada.local:8080"
   image:
     attributes:
       iso_datetime:

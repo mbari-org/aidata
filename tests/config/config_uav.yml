@@ -27,7 +27,7 @@ plugins:
 
 tator:
   project: "901902-uavs"
-  host: "ada.local"
+  host: "ada.local:8080"
   image:
     attributes:
       date:
