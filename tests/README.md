@@ -6,7 +6,7 @@ Setup a development server to run tests on your local machine with the following
 - [Docker](https://docs.docker.com/get-docker/)
 - [Just](https://github.com/casey/just)
 
-# 1. Launch a Tator system instructions are in [database_setup.md](database_setup.md)
+# 1. Launch a Tator system instructions are in [database_setup.md](./docs/database_setup.md)
 # 2. Setup the remaining services
 This will setup the remaining services needed for development, including redix and the nginx server.
 ```shell
