@@ -1,0 +1,38 @@
+# config_cfe.yml
+# Config file for planktivore project test
+mounts:
+  - name: "image"
+    path: "./data/planktivore"
+    host: "192.168.0.17" # Note: This is the IP address of the host machine which changes based on the network
+    nginx_root: "/data/planktivore"
+    port: 8082
+
+plugins:
+  - name: "extractor"
+    module: "aidata.plugins.extractors.tap_planktivore_media"
+    function: "extract_media"
+  - name: "extractor"
+    module: "aidata.plugins.extractors.tap_sdcat_media"
+    function: "extract_sdcat_csv"
+
+redis:
+  host: "localhost"
+  port: 6379
+
+vss:
+  project: "planktivore"
+  model: "google/vit-base-patch16-224"
+
+tator:
+  project: "902004-Planktivore"
+  host: "ada.local"
+  image:
+    attributes:
+      iso_datetime:
+        type: datetime
+  box:
+    attributes:
+      Label:
+        type: string
+      score:
+        type: float
