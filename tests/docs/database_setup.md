@@ -74,11 +74,11 @@ Use that new user to login and create a new project that matches what is in your
 
 [http://localhost:8080/accounts/login](http://localhost:8080/accounts/login)
 
-![tatornewproject](./imgs/newproject.png)
+![tatornewproject](newproject.png)
 
 Create an API token for the admin user and set it in your environment along with the host and the project name, e.g.
 
-![tatorAPItoken](./imgs/apitoken.png)
+![tatorAPItoken](apitoken.png)
 
 Set the environment variables for the API host, token, and project name, e.g.
 

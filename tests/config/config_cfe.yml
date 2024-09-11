@@ -4,7 +4,7 @@ mounts:
   - name: "image"
     path: "./data/cfe"
     nginx_root: "/data/cfe"
-    host: "134.89.114.8" # Note: This is the IP address of the host machine which changes based on the network
+    host: "192.168.0.17" # Note: This is the IP address of the host machine which changes based on the network
     port: 8082
 
 plugins:
@@ -12,9 +12,17 @@ plugins:
     module: "aidata.plugins.extractors.tap_cfe_media"
     function: "extract_media"
 
+redis:
+  host: "localhost"
+  port: 6379
+
+vss:
+  project: "cfe"
+  model: "google/vit-base-patch16-224"
+
 tator:
   project: "902111-CFE"
-  host: "ada.local:8080"
+  host: "ada.local"
   image:
     attributes:
       iso_datetime:
