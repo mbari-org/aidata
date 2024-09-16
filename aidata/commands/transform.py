@@ -96,10 +96,8 @@ def transform(base_path: str, resize: int, crop_size: int, crop_overlap: float, 
         def save_transformed(voc_xml_path: Path, width: int, height: int, transformed):
             writer = Writer(voc_xml_path.as_posix(), width, height)
 
-            # Remove any duplicate boxes
             df = pd.DataFrame(
                 {'bboxes': transformed["bboxes"], 'labels': transformed["labels"], 'ids': transformed["ids"]})
-            df = df.drop_duplicates(subset=['bboxes', 'labels', 'ids'])
 
             # Store the cropped image and adjusted bounding boxes
             for idx, row in df.iterrows():
