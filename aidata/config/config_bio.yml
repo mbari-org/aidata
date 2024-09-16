@@ -16,8 +16,8 @@ redis:
   port: 6381
 
 vss:
-  project: "bio"
-  model: "facebook/dino-vits8"
+  project: "901103-biodiversity"
+  model: "google/vit-base-patch16-224"
 
 tator:
   project: "901103-biodiversity"

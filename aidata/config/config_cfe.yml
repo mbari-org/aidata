@@ -16,7 +16,7 @@ redis:
   port: 6382
 
 vss:
-  project: "CFE"
+  project: "902111-CFE"
   model: "google/vit-base-patch16-224"
 
 tator:

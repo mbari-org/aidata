@@ -42,3 +42,13 @@ test-load-media:
     #!/usr/bin/env bash
     export PYTHONPATH=.
     time conda run -n aidata --no-capture-output python3 tests/test_load_media.py
+
+download-300m-data:
+    #!/usr/bin/env bash
+    export PYTHONPATH=.
+    time conda run -n aidata --no-capture-output python3 aidata download dataset --base-path ./data/i2map --version Baseline --depth 300  --labels "all" --config ./aidata/config/config_i2map.yml
+
+download-atolla-data:
+    #!/usr/bin/env bash
+    export PYTHONPATH=.
+    time conda run -n aidata --no-capture-output python3 aidata download dataset --version Baseline --labels "Atolla" --cifar --cifar-size 128 --config ./aidata/config/config_bio.yml

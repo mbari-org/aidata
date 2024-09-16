@@ -28,6 +28,7 @@ DEFAULT_BASE_DIR = Path.home() / "aidata" / "datasets"
     help=f"Path to the base directory to save all data to. Defaults to {DEFAULT_BASE_DIR}",
 )
 @click.option("--group", help="Group name, e.g. VB250")
+@click.option("--depth", type=int, help="Depth, e.g. 200")
 @click.option("--generator", help="Generator name, e.g. vars-labelbot or vars-annotation")
 @click.option("--labels", default="all", help='Comma separated list of labels to download, or "all" for all labels.')
 @click.option(
@@ -49,6 +50,7 @@ def download(
     config: str,
     base_path: Path,
     group: str,
+    depth: int,
     version: str,
     generator: str,
     labels: str,
@@ -111,6 +113,7 @@ def download(
             api,
             project_id=project.id,
             group=group,
+            depth=depth,
             version_list=version_list,
             verified=verified,
             generator=generator,
@@ -153,6 +156,7 @@ if __name__ == "__main__":
         save_score=False,
         skip_image_download=False,
         group="",
+        depth="",
         generator="",
         cifar_size=32,
     )

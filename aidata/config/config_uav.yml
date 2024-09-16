@@ -12,12 +12,13 @@ plugins:
     function: "extract_media"
 
 vss:
-  project: "uav"
+  project: "901902-uavs"
   model: "google/vit-base-patch16-224"
 
 redis:
   host: "doris.shore.mbari.org"
   port: 6379
+  project: "901902-uavs"
 
 tator:
   project: "901902-uavs"

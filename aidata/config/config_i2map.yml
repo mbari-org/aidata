@@ -13,7 +13,7 @@ plugins:
 
 vss:
   project: "i2map"
-  model: "facebook/dino-vits8"
+  model: "google/vit-base-patch16-224"
 
 redis:
   host: "doris.shore.mbari.org"
