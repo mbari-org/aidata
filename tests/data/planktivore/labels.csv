@@ -1,0 +1,4 @@
+image_height,image_width,image_path,label,x,y,xx,xy
+244,272,./tests/data/planktivore/Radiolaria/LRAH13_20240430T135436.092559Z_PTVR02HM_333686_3_254_0_0_272_244_0.jpg,Radiolaria,0.,0.,1.,1
+368,332,./tests/data/planktivore/Radiolaria/LRAH14_20240509T024329.664902Z_PTVR02HM_129405_1_188_158_0_332_368_0.jpg,Radiolaria,0.,0.,1.,1
+164,272,./tests/data/planktivore/Radiolaria/LRAH13_20240430T123018.838913Z_PTVR02HM_283109_3_1202_264_0_272_164_0.jpg,Radiolaria,0.,0.,1.,1

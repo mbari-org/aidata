@@ -3,13 +3,17 @@
 mounts:
   - name: "image"
     path: "./data/uav"
-    host: "192.168.0.17"
+    host: "192.168.0.17" # Note: This is the IP address of the host machine which changes based on the network
     nginx_root: "/data/uav"
     port: 8082
 
 redis:
-    host: "ada.local"
-    port: 6379
+  host: "localhost"
+  port: 6379
+
+vss:
+  project: "planktivore"
+  model: "google/vit-base-patch16-224"
 
 plugins:
   - name: "extractor"
@@ -20,6 +24,7 @@ plugins:
     function: "predict"
     classes:
       [ "Buoy", "Seagull", "Otter" ]
+
 tator:
   project: "901902-uavs"
   host: "ada.local:8080"

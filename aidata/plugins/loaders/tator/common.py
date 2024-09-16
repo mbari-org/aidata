@@ -49,7 +49,7 @@ def init_api_project(host: str, token: str, project: str) -> Tuple[TatorApi, tat
     except Exception as e:
         raise (e)
 
-    info(f"Searching for project {project}.")
+    info(f"Searching for project {project} on {host}.")
     tator_project = find_project(api, project)
     info(f"Found project {tator_project.name} with id {tator_project.id}")
     if tator_project is None:

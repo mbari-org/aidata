@@ -119,3 +119,25 @@ def test_load_media_uav():
     )
     print(result.output)
     assert result.exit_code == 0
+
+
+@pytest.mark.skipif(not HAS_DATABASE, reason="This test is excluded because it requires a database")
+def test_load_media_planktivore():
+    runner = CliRunner()
+    """Test that the process command works when passing arguments with a single image"""
+    image_path = data_path / "planktivore"
+    config_yaml = config_path / "config_planktivore.yml"
+    print(config_yaml.as_posix())
+    result = runner.invoke(
+        cli,
+        [
+            "load",
+            "images",
+            "--input",
+            image_path.as_posix(),
+            "--config",
+            config_yaml.as_posix(),
+        ],
+    )
+    print(result.output)
+    assert result.exit_code == 0

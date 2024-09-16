@@ -18,6 +18,7 @@ def download(
     api: tator.api,
     project_id: int,
     group: str,
+    depth: int,
     version_list: List[str],
     verified: bool,
     generator: str,
@@ -36,6 +37,7 @@ def download(
     :param api: tator.api
     :param project_id: project id
     :param group: group name
+    :param depth: depth, e.g. 200
     :param version_list: version name(s), e.g. ['Baseline'] to download
     :param verified: (optional) True if only verified annotations should be downloaded
     :param generator: generator name, e.g. 'vars-labelbot' or 'vars-annotation'
@@ -66,12 +68,15 @@ def download(
         num_records = 0
         # Prepare attributes based on provided values
         attribute_equals = []
+        related_attribute_equals = []
         if generator:
             attribute_equals.append(f"generator::{generator}")
         if group:
             attribute_equals.append(f"group::{group}")
         if verified:
             attribute_equals.append("verified::true")
+        if depth:
+            related_attribute_equals.append(f"depth::{depth}")
 
         # Helper function to get localization count with common arguments
         def get_localization_count(concept_or_label=None):
@@ -80,6 +85,8 @@ def download(
                 kwargs["attribute_contains"] = [concept_or_label]
             if attribute_equals:
                 kwargs["attribute"] = attribute_equals
+            if related_attribute_equals:
+                kwargs["related_attribute"] = related_attribute_equals
             return api.get_localization_count(
                 project=project_id,
                 version=version_ids,
@@ -100,13 +107,15 @@ def download(
             num_records = get_localization_count()
 
         info(
-            f'Found {num_records} records for version {version_list} and generator {generator}, group {group}, verified {verified} and '
+            f'Found {num_records} records for version {version_list} and generator {generator}, '
+            f'group {group}, depth {depth}, verified {verified} and '
             f"including {labels_list if labels_list else 'everything'} "
         )
 
         if num_records == 0:
             info(
-                f'Could not find any records for version {version_list} and generator {generator}, group {group},verified {verified} and '
+                f'Could not find any records for version {version_list} and generator {generator}, '
+                f'group {group}, depth {depth}, verified {verified} and '
                 f"including {labels_list if labels_list else 'everything'}"
             )
             return False
@@ -146,6 +155,8 @@ def download(
                     kwargs["attribute"] = attribute_equals
                 if prefix:
                     kwargs["attribute_contains"] = [f"{prefix}::{query_str}"]
+                if related_attribute_equals:
+                    kwargs["related_attribute"] = related_attribute_equals
 
                 new_localizations = api.get_localization_list(
                     project=project_id,
@@ -156,6 +167,7 @@ def download(
                 )
                 if len(new_localizations) == 0:
                     break
+                debug(f"Found {len(new_localizations)} records")
                 localizations.extend(new_localizations)
 
         if concepts_list:
@@ -168,7 +180,8 @@ def download(
             query_localizations("", "", num_records)
 
         info(
-            f"Found {len(localizations)} records for version {version_list}, generator {generator}, group {group} and including {labels_list if labels_list else 'everything'}"
+            f"Found {len(localizations)} records for version {version_list}, generator {generator}, "
+            f"group {group}, depth {depth} and including {labels_list if labels_list else 'everything'}"
         )
         info(f"Creating output directory {output_path} in YOLO format")
 

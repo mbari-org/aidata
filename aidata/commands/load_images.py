@@ -93,7 +93,7 @@ def load_images(token: str, config: str, dry_run: bool, input: str, section: str
             image_url = f"{image_base_url}{file_loc_sans_root}"
 
             # Check if the URL is valid
-            info(f"Checking {image_url}")
+            info(f"Checking if the url {image_url} is valid")
             try:
                 r = requests.head(image_url)
                 if r.status_code != 200:

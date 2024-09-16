@@ -12,6 +12,14 @@ plugins:
     module: "aidata.plugins.extractors.tap_i2map_media"
     function: "extract_media"
 
+redis:
+  host: "localhost"
+  port: 6379
+
+vss:
+  project: "i2map"
+  model: "google/vit-base-patch16-224"
+
 tator:
   project: "i2map"
   host: "ada.local:8080"
