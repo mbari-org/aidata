@@ -12,7 +12,7 @@ from tqdm import tqdm
 import shutil
 
 from aidata.generators.utils import parse_voc_xml
-from aidata.logger import create_logger_file, info, exception
+from aidata.logger import create_logger_file, info, exception, warn
 from pascal_voc_writer import Writer  # type: ignore
 
 # Default values
@@ -178,6 +178,10 @@ def transform(base_path: str, resize: int, crop_size: int, crop_overlap: float, 
 
                 # Apply the transformation and save
                 transformed = transform(image=image.copy(), bboxes=boxes, labels=labels, ids=ids)
+                if len(transformed['bboxes']) != len(transformed['labels']):
+                    warn(f'Transform failed for {voc_xml_path}')
+                    continue
+
                 cv2.imwrite(image_path_final.as_posix(), transformed["image"])
                 save_transformed(voc_xml_path, resize, resize, transformed)
 
