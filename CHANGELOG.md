@@ -1,5 +1,21 @@
 # CHANGELOG
 
+## v1.19.0 (2024-09-16)
+
+### Feature
+
+* feat: add Planktivore media support  (#17)
+
+* feat: added test and config for loading planktivore
+
+* docs: more detail on test/dev setup and added in redis to test
+
+* test: correct tests conf that aligns to doc
+
+* docs: correct link to database
+
+* chore: added in more just recipes for testing ([`78a9de3`](https://github.com/mbari-org/aidata/commit/78a9de346578f884d64491fb0cd21bb350e6b18b))
+
 ## v1.18.0 (2024-09-05)
 
 ### Feature
