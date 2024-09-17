@@ -38,6 +38,12 @@ DEFAULT_BASE_DIR = Path.home() / "aidata" / "datasets"
          "smaller than min_area, it will be dropped.",
 )
 @click.option(
+    "--min-dim",
+    default=20,
+    help="Minimum dimension of a bounding box in pixels. If the area of a bounding box after augmentation becomes "
+         "smaller than min_area, it will be dropped.",
+)
+@click.option(
     "--min-visibility",
     default=0.5,
     help="Minimum visibility of a bounding box between 0-1.  If the ratio of the bounding box area after augmentation  "
@@ -45,8 +51,8 @@ DEFAULT_BASE_DIR = Path.home() / "aidata" / "datasets"
 )
 @click.option("--max-images", type=int, default=-1, help="Only load up to max-images. Useful for testing. "
                                                          "Default is to load all images")
-def transform(base_path: str, resize: int, crop_size: int, crop_overlap: float, min_area: int, min_visibility: float,
-              max_images: int):
+def transform(base_path: str, resize: int, crop_size: int, crop_overlap: float, min_area: int, min_dim: int,
+              min_visibility: float, max_images: int):
     """Transform a downloaded dataset for training detection models"""
     try:
         create_logger_file("transform")
@@ -91,6 +97,24 @@ def transform(base_path: str, resize: int, crop_size: int, crop_overlap: float, 
 
         if max_images > 0:
             image_paths = image_paths[:max_images]
+
+        # A utility function to remove the bounding boxes that are too small
+        def remove_small_boxes(transformed_data, transformed_xml_path) -> dict:
+            boxes_ = transformed_data["bboxes"]
+            labels_ = transformed_data["labels"]
+            ids_ = transformed_data["ids"]
+            new_boxes, new_labels, new_ids = [], [], []
+            for b, l, myid in zip(boxes_, labels_, ids_):
+                x1, y1, x2, y2 = map(int, b)
+                if x2 - x1 < min_dim or y2 - y1 < min_dim:
+                    info(f"Removing box {b} for {transformed_xml_path}")
+                    continue
+                new_boxes.append(b)
+                new_labels.append(l)
+                new_ids.append(myid)
+            transformed_data["bboxes"] = new_boxes
+            transformed_data["labels"] = new_labels
+            transformed_data["ids"] = new_ids
 
         # A utility function for saving the transformed data
         def save_transformed(voc_xml_path: Path, width: int, height: int, transformed):
@@ -182,6 +206,13 @@ def transform(base_path: str, resize: int, crop_size: int, crop_overlap: float, 
                     warn(f'Transform failed for {voc_xml_path}')
                     continue
 
+                # If the boxes are smaller than min_dim pixels in height or width, remove them
+                transformed = remove_small_boxes(transformed, voc_xml_path)
+
+                if len(transformed['bboxes']) == 0:
+                    warn(f'No bounding boxes left for {voc_xml_path}')
+                    continue
+
                 cv2.imwrite(image_path_final.as_posix(), transformed["image"])
                 save_transformed(voc_xml_path, resize, resize, transformed)
 
@@ -203,11 +234,15 @@ def transform(base_path: str, resize: int, crop_size: int, crop_overlap: float, 
                     # Apply the transformation
                     transformed = transform(image=image, bboxes=boxes, labels=labels, ids=ids)
 
+                    # Save the transformed image with the same name with _c, e.g. image_c.png
+                    image_path_final = output_base_path_images / f"{image_path.stem}_c_{i}{image_path.suffix}"
+                    voc_xml_path = output_base_path_xml / f"{image_path_final.stem}.xml"
+
+                    # If the boxes are smaller than min_dim pixels in height or width, remove them
+                    transformed = remove_small_boxes(transformed, voc_xml_path)
+
                     # Only keep the data if the cropped image contains at least one bounding box
                     if len(transformed["bboxes"]) > 0:
-                        # Save the transformed image with the same name with _c, e.g. image_c.png
-                        image_path_final = output_base_path_images / f"{image_path.stem}_c_{i}{image_path.suffix}"
-                        voc_xml_path = output_base_path_xml / f"{image_path_final.stem}.xml"
                         num_transformed_labels += len(transformed["bboxes"])
                         save_transformed(voc_xml_path, crop_size, crop_size, transformed)
                         cv2.imwrite(image_path_final.as_posix(), transformed["image"])
