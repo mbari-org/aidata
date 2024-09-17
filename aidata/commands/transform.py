@@ -26,9 +26,9 @@ DEFAULT_BASE_DIR = Path.home() / "aidata" / "datasets"
     type=Path,
     help=f"Path to the base directory to save all data to. Defaults to {DEFAULT_BASE_DIR}",
 )
-@click.option("--crop-size", help="Size of image crop from original.")
-@click.option("--crop-overlap", default=0.5, help="Overlap of image crop from original.")
-@click.option("--resize", help="Resize the image to a specific size, e.g. 640x480. "
+@click.option("--crop-size", type=int, help="Size of image crop from original.")
+@click.option("--crop-overlap", type=float, default=0.5, help="Overlap of image crop from original.")
+@click.option("--resize", type=int, help="Resize the image to a specific size, e.g. 640x480. "
                                "            Don't resize if not specified. Done in addition to crop.")
 @click.option(
     "--min-area",
