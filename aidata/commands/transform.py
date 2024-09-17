@@ -115,26 +115,21 @@ def transform(base_path: str, resize: int, crop_size: int, crop_overlap: float, 
             transformed_data["bboxes"] = new_boxes
             transformed_data["labels"] = new_labels
             transformed_data["ids"] = new_ids
+            return transformed_data
 
         # A utility function for saving the transformed data
-        def save_transformed(voc_xml_path: Path, width: int, height: int, transformed):
-            writer = Writer(voc_xml_path.as_posix(), width, height)
-
-            df = pd.DataFrame(
-                {'bboxes': transformed["bboxes"], 'labels': transformed["labels"], 'ids': transformed["ids"]})
+        def save_transformed(transformed_xml_path: Path, width: int, height: int, transformed_data: dict):
+            writer = Writer(transformed_xml_path.as_posix(), width, height)
 
             # Store the cropped image and adjusted bounding boxes
-            for idx, row in df.iterrows():
-                label = row["labels"]
-                bbox = row["bboxes"]
-                id = row["ids"]
+            for l, b, i in zip(transformed_data["labels"], transformed_data["bboxes"], transformed_data["ids"]):
                 if label not in label_cnt_transformed:
-                    label_cnt_transformed[label] = 0
-                label_cnt_transformed[label] += 1
-                x1, y1, x2, y2 = map(int, bbox)
-                writer.addObject(label, x1, y1, x2, y2, pose=str(id))
+                    label_cnt_transformed[l] = 0
+                label_cnt_transformed[l] += 1
+                x1, y1, x2, y2 = map(int, b)
+                writer.addObject(l, x1, y1, x2, y2, pose=str(i))
                 # To visualize the bounding boxes uncomment the following line
-                # cv2.rectangle(transformed['image'], (x1, y1), (x2, y2), (255, 0, 0), 2)
+                # cv2.rectangle(transformed_data['image'], (x1, y1), (x2, y2), (255, 0, 0), 2)
 
             # Write the file
             writer.save(voc_xml_path.as_posix())
