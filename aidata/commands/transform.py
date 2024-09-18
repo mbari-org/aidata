@@ -129,7 +129,7 @@ def transform(base_path: str, resize: int, crop_size: int, crop_overlap: float, 
 
             # Store the cropped image and adjusted bounding boxes
             for l, b, i in zip(transformed_data["labels"], transformed_data["bboxes"], transformed_data["ids"]):
-                if label not in label_cnt_transformed:
+                if l not in label_cnt_transformed:
                     label_cnt_transformed[l] = 0
                 label_cnt_transformed[l] += 1
                 x1, y1, x2, y2 = map(int, b)
