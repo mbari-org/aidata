@@ -1,0 +1,26 @@
+FROM python:3.11-slim
+
+LABEL vendor="MBARI"
+LABEL maintainer="dcline@mbari.org"
+LABEL license="Apache License 2.0"
+
+RUN apt-get update && apt-get install --no-install-recommends -y \
+        ffmpeg && \
+        apt clean && rm -rf /var/lib/apt/lists/*
+
+ARG GIT_VERSION=latest
+ARG IMAGE_URI=mbari/aidata:${GIT_VERSION}
+
+ENV APP_HOME=/app
+WORKDIR ${APP_HOME}
+ADD aidata ${APP_HOME}/aidata
+ADD requirements.txt ${APP_HOME}
+ENV PYTHONPATH=${APP_HOME}/aidata
+ENV HF_HOME=/tmp/transformers_cache
+
+RUN python3 -m pip install --no-cache-dir -r requirements.txt && \
+    python3 -m pip install --no-cache-dir torch torchvision --index-url https://download.pytorch.org/whl/cu121
+
+RUN chmod a+rwx -R /app
+
+ENTRYPOINT ["python3", "aidata"]
