@@ -4,14 +4,14 @@
 
 from pathlib import Path
 import pandas as pd
-
+import tqdm
 
 def extract_sdcat_csv(csv_path: Path) -> pd.DataFrame:
     """Extracts data from a SDCAT generated csv files."""
     dfs = []
 
     if csv_path.is_dir():
-        for det_csv_path in Path(csv_path).rglob("*.csv"):
+        for det_csv_path in tqdm.tqdm(list(csv_path.rglob("*.csv")), desc="Reading SDCAT CSVs"):
             try:
                 df = pd.read_csv(det_csv_path.as_posix())
                 dfs.append(df)
