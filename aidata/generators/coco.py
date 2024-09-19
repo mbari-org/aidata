@@ -19,6 +19,7 @@ def download(
     project_id: int,
     group: str,
     depth: int,
+    section: str,
     version_list: List[str],
     verified: bool,
     generator: str,
@@ -38,6 +39,7 @@ def download(
     :param project_id: project id
     :param group: group name
     :param depth: depth, e.g. 200
+    :param section: media section name, e.g. 25000_depth_v1
     :param version_list: version name(s), e.g. ['Baseline'] to download
     :param verified: (optional) True if only verified annotations should be downloaded
     :param generator: generator name, e.g. 'vars-labelbot' or 'vars-annotation'
@@ -77,6 +79,8 @@ def download(
             attribute_equals.append("verified::true")
         if depth:
             related_attribute_equals.append(f"depth::{depth}")
+        if section:
+            related_attribute_equals.append(f"section::{section}")
 
         # Helper function to get localization count with common arguments
         def get_localization_count(concept_or_label=None):
@@ -108,14 +112,14 @@ def download(
 
         info(
             f'Found {num_records} records for version {version_list} and generator {generator}, '
-            f'group {group}, depth {depth}, verified {verified} and '
+            f'group {group}, depth {depth}, section {section}, verified {verified} and '
             f"including {labels_list if labels_list else 'everything'} "
         )
 
         if num_records == 0:
             info(
                 f'Could not find any records for version {version_list} and generator {generator}, '
-                f'group {group}, depth {depth}, verified {verified} and '
+                f'group {group}, depth {depth}, section {section}, verified {verified} and '
                 f"including {labels_list if labels_list else 'everything'}"
             )
             return False
@@ -181,7 +185,7 @@ def download(
 
         info(
             f"Found {len(localizations)} records for version {version_list}, generator {generator}, "
-            f"group {group}, depth {depth} and including {labels_list if labels_list else 'everything'}"
+            f"group {group}, depth {depth}, section {section}, and including {labels_list if labels_list else 'everything'}"
         )
         info(f"Creating output directory {output_path} in YOLO format")
 
