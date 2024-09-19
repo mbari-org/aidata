@@ -1,5 +1,11 @@
 # CHANGELOG
 
+## v1.21.0 (2024-09-19)
+
+### Feature
+
+* feat: added support for --section in download ([`46754af`](https://github.com/mbari-org/aidata/commit/46754af01522cbf126911bbc1137eefdf496e858))
+
 ## v1.20.0 (2024-09-19)
 
 ### Documentation
