@@ -7,12 +7,11 @@ from pathlib import Path
 import albumentations as albu
 import click
 import cv2
-import pandas as pd
 from tqdm import tqdm
 import shutil
 
 from aidata.generators.utils import parse_voc_xml
-from aidata.logger import create_logger_file, info, exception
+from aidata.logger import create_logger_file, info, exception, warn
 from pascal_voc_writer import Writer  # type: ignore
 
 # Default values
@@ -27,12 +26,20 @@ DEFAULT_BASE_DIR = Path.home() / "aidata" / "datasets"
     type=Path,
     help=f"Path to the base directory to save all data to. Defaults to {DEFAULT_BASE_DIR}",
 )
-@click.option("--crop-size", default=640, help="Size of image crop from original.")
-@click.option("--crop-overlap", default=0.5, help="Overlap of image crop from original.")
+@click.option("--crop-size", type=int, help="Size of image crop from original.")
+@click.option("--crop-overlap", type=float, default=0.5, help="Overlap of image crop from original.")
+@click.option("--resize", type=int, help="Resize the image to a specific size, e.g. 640x480. "
+                               "            Don't resize if not specified. Done in addition to crop.")
 @click.option(
     "--min-area",
     default=100,
     help="Minimum area of a bounding box in pixels. If the area of a bounding box after augmentation becomes "
+         "smaller than min_area, it will be dropped.",
+)
+@click.option(
+    "--min-dim",
+    default=20,
+    help="Minimum dimension of a bounding box in pixels. If the area of a bounding box after augmentation becomes "
          "smaller than min_area, it will be dropped.",
 )
 @click.option(
@@ -43,14 +50,26 @@ DEFAULT_BASE_DIR = Path.home() / "aidata" / "datasets"
 )
 @click.option("--max-images", type=int, default=-1, help="Only load up to max-images. Useful for testing. "
                                                          "Default is to load all images")
-def transform(base_path: str, crop_size: int, crop_overlap: float, min_area: int, min_visibility: float,
-              max_images: int):
+def transform(base_path: str, resize: int, crop_size: int, crop_overlap: float, min_area: int, min_dim: int,
+              min_visibility: float, max_images: int):
     """Transform a downloaded dataset for training detection models"""
     try:
         create_logger_file("transform")
         info(
             f"Transforming dataset at {base_path} with crop size {crop_size} and overlap {crop_overlap} and min area {min_area}"
             f" and min visibility {min_visibility} and max images {max_images}")
+
+        if resize:
+            info(f"Resizing images to {resize}")
+
+        if crop_size:
+            info(f"Cropping images to {crop_size} with overlap {crop_overlap}")
+            step_size = int(crop_size * (1 - crop_overlap))
+
+        # Need to specify either crop_size or resize or both
+        if not crop_size and not resize:
+            exception("Either crop-size or resize must be specified")
+            return
 
         # Check if the base path exists and a voc dataset exists:
         if not Path(base_path).exists():
@@ -74,8 +93,6 @@ def transform(base_path: str, crop_size: int, crop_overlap: float, min_area: int
             exception(f"Images directory not found in {base_path}")
             return
 
-        step_size = int(crop_size * (1 - crop_overlap))
-
         allowed_extensions = [".png", ".jpg", ".jpeg", ".JPEG", ".JPG", ".PNG"]
 
         image_paths = [image_path for image_path in Path(base_path / "images").glob("*") if
@@ -87,6 +104,50 @@ def transform(base_path: str, crop_size: int, crop_overlap: float, min_area: int
         if max_images > 0:
             image_paths = image_paths[:max_images]
 
+        # A utility function to remove the bounding boxes that are too small
+        def remove_small_boxes(transformed_data, transformed_xml_path) -> dict:
+            boxes_ = transformed_data["bboxes"]
+            labels_ = transformed_data["labels"]
+            ids_ = transformed_data["ids"]
+            new_boxes, new_labels, new_ids = [], [], []
+            for b, l, myid in zip(boxes_, labels_, ids_):
+                x1, y1, x2, y2 = map(int, b)
+                if x2 - x1 < min_dim or y2 - y1 < min_dim:
+                    info(f"Removing box {b} for {transformed_xml_path}")
+                    continue
+                new_boxes.append(b)
+                new_labels.append(l)
+                new_ids.append(myid)
+            transformed_data["bboxes"] = new_boxes
+            transformed_data["labels"] = new_labels
+            transformed_data["ids"] = new_ids
+            return transformed_data
+
+        # A utility function for saving the transformed data
+        def save_transformed(transformed_xml_path: Path, width: int, height: int, transformed_data: dict, line_width=2):
+            writer = Writer(transformed_xml_path.as_posix(), width, height)
+
+            # Store the cropped image and adjusted bounding boxes
+            for l, b, i in zip(transformed_data["labels"], transformed_data["bboxes"], transformed_data["ids"]):
+                if l not in label_cnt_transformed:
+                    label_cnt_transformed[l] = 0
+                label_cnt_transformed[l] += 1
+                x1, y1, x2, y2 = map(int, b)
+                writer.addObject(l, x1, y1, x2, y2, pose=str(i))
+                # To visualize the bounding boxes uncomment the following line
+                # cv2.rectangle(transformed['image'], (x1, y1), (x2, y2), (255, 0, 0), 2)
+
+            # Write the file
+            writer.save(voc_xml_path.as_posix())
+
+            # Replace the xml tag pose with the database id
+            with open(voc_xml_path, "r") as file:
+                filedata = file.read()
+            filedata = filedata.replace("pose", "id")
+            with open(voc_xml_path, "w") as file:
+                file.write(filedata)
+
+        # Create the output directories
         output_base_path = base_path / "transformed"
         output_base_path_xml = output_base_path / "voc"
         output_base_path_images = output_base_path / "images"
@@ -96,10 +157,13 @@ def transform(base_path: str, crop_size: int, crop_overlap: float, min_area: int
         output_base_path.mkdir(exist_ok=True)
         output_base_path_xml.mkdir(exist_ok=True, parents=True)
         output_base_path_images.mkdir(exist_ok=True, parents=True)
+
+        # Initialize counters
         num_transformed_labels = 0
         label_cnt = {}
         label_cnt_transformed = {}
         num_images = 0
+
         for image_path in tqdm(image_paths, desc="transforming", unit="iteration"):
             image = cv2.imread(str(image_path))
             if image is None:
@@ -124,8 +188,39 @@ def transform(base_path: str, crop_size: int, crop_overlap: float, min_area: int
             # Get image dimensions for cropping
             image_height, image_width, _ = image.shape
 
+            if resize:
+                transform_resize = albu.Compose([
+                    albu.Resize(width=resize, height=resize),
+                ], bbox_params=albu.BboxParams(format='pascal_voc',
+                                               min_area=min_area,
+                                               min_visibility=min_visibility,
+                                               label_fields=["labels", "ids"]))
+
+                # Save the transformed image with the same name with _r, e.g. image_r.png
+                image_path_final = output_base_path_images / f"{image_path.stem}_r{image_path.suffix}"
+                voc_xml_path = output_base_path_xml / f"{image_path_final.stem}.xml"
+
+                # Apply the transformation and save
+                transformed = transform_resize(image=image, bboxes=boxes, labels=labels, ids=ids)
+                if len(transformed['bboxes']) != len(transformed['labels']):
+                    warn(f'Transform failed for {voc_xml_path}')
+                    continue
+
+                # If the boxes are smaller than min_dim pixels in height or width, remove them
+                transformed = remove_small_boxes(transformed, voc_xml_path)
+
+                if len(transformed['bboxes']) == 0:
+                    warn(f'No bounding boxes left for {voc_xml_path}')
+                    continue
+
+                save_transformed(voc_xml_path, resize, resize, transformed, line_width=10)
+                cv2.imwrite(image_path_final.as_posix(), transformed["image"])
+
+            if not crop_size:
+                continue
+
             # Iterate over the image to generate overlapping crops
-            i = 0  # counter for the cropped images
+            i = 0  # counter for indexing the transformed images to give them a unique name
             for y in range(0, image_height - crop_size + 1, step_size):
                 for x in range(0, image_width - crop_size + 1, step_size):
                     crop = albu.Crop(x_min=x, y_min=y, x_max=x + crop_size, y_max=y + crop_size)
@@ -142,43 +237,18 @@ def transform(base_path: str, crop_size: int, crop_overlap: float, min_area: int
                     # Apply the transformation
                     transformed = transform(image=image, bboxes=boxes, labels=labels, ids=ids)
 
+                    # Save the transformed image with the same name with _c, e.g. image_c.png
+                    image_path_final = output_base_path_images / f"{image_path.stem}_c_{i}{image_path.suffix}"
+                    voc_xml_path = output_base_path_xml / f"{image_path_final.stem}.xml"
+
+                    # If the boxes are smaller than min_dim pixels in height or width, remove them
+                    transformed = remove_small_boxes(transformed, voc_xml_path)
+
                     # Only keep the data if the cropped image contains at least one bounding box
                     if len(transformed["bboxes"]) > 0:
                         num_transformed_labels += len(transformed["bboxes"])
-                        image_path_final = output_base_path_images / f"{image_path.stem}_t_{i}{image_path.suffix}"
-                        voc_xml_path = output_base_path_xml / f"{image_path_final.stem}.xml"
-                        writer = Writer(voc_xml_path.as_posix(), crop_size, crop_size)
-
-                        # Remove any duplicate boxes
-                        df = pd.DataFrame({'bboxes': transformed["bboxes"], 'labels': transformed["labels"], 'ids': transformed["ids"]})
-                        df = df.drop_duplicates(subset=['bboxes', 'labels', 'ids'])
-
-                        # Store the cropped image and adjusted bounding boxes
-                        for idx, row in df.iterrows():
-                            label = row["labels"]
-                            bbox = row["bboxes"]
-                            id = row["ids"]
-                            if label not in label_cnt_transformed:
-                                label_cnt_transformed[label] = 0
-                            label_cnt_transformed[label] += 1
-                            x1, y1, x2, y2 = map(int, bbox)
-                            writer.addObject(label, x1, y1, x2, y2, pose=str(id))
-                            # To visualize the bounding boxes uncomment the following line
-                            # cv2.rectangle(transformed['image'], (x1, y1), (x2, y2), (255, 0, 0), 2)
-
-                        # Write the file
-                        writer.save(voc_xml_path.as_posix())
-
-                        # Replace the xml tag pose with id
-                        with open(voc_xml_path, "r") as file:
-                            filedata = file.read()
-                        filedata = filedata.replace("pose", "id")
-                        with open(voc_xml_path, "w") as file:
-                            file.write(filedata)
-
-                        # Save the image
+                        save_transformed(voc_xml_path, crop_size, crop_size, transformed, line_width=2)
                         cv2.imwrite(image_path_final.as_posix(), transformed["image"])
-
                         i += 1
 
         info(f"transformed dataset saved to {output_base_path}")
@@ -293,4 +363,5 @@ def voc_to_yolo(base_path: str):
 
 if __name__ == "__main__":
     base_path = Path(__file__).parent.parent.parent / "Baseline"
-    transform(base_path=base_path, crop_size=640, crop_overlap=0.5, min_area=100, min_visibility=0.5, max_images=-1)
+    transform(base_path=base_path, crop_size=2000, crop_overlap=0.5, min_area=100, min_visibility=0.5, resize=None,
+              max_images=-1)
