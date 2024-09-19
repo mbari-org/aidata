@@ -1,5 +1,21 @@
 # CHANGELOG
 
+## v1.20.0 (2024-09-19)
+
+### Documentation
+
+* docs: add missing images ([`7404156`](https://github.com/mbari-org/aidata/commit/74041564549641413e59d0bce877109e1d646cb3))
+
+* docs: correct link to docs ([`0ef4f4f`](https://github.com/mbari-org/aidata/commit/0ef4f4faca2dc754bbe61060a89561acb5320093))
+
+* docs: just some refactoring of setup docs ([`afe109f`](https://github.com/mbari-org/aidata/commit/afe109f9e7bad0808d60b68244f9f48b9b9404ae))
+
+### Feature
+
+* feat: transformresize (#18)
+
+Adds the option --resize to the transform to transform with a resize.  Useful for training models with scales of the same image.   For tiny boxes that may result in downsizing, the option --min-dim supports removal at them; this defaults to 10 pixels in any dimension ([`9a3e877`](https://github.com/mbari-org/aidata/commit/9a3e8777e12dbfd87c93a1c28b1a3eb0e6fff5ee))
+
 ## v1.19.0 (2024-09-16)
 
 ### Feature
