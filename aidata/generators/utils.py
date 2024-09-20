@@ -10,7 +10,7 @@ import xml.etree.ElementTree as ET
 def combine_localizations(boxes: List[Localization]) -> List[Localization]:
     """
     Combine localizations using a voting algorithm on a list of localizations
-    :param boxes: List of Localization objects
+    :param boxes: List of Localization objects with x, y, width, height, label, and score attributes
     :return: List of Localization objects
     """
     # First, convert the list of localizations to a DataFrame

@@ -8,7 +8,7 @@ import click
 
 from aidata import common_args
 from aidata.logger import create_logger_file, info, exception
-from aidata.generators.coco import download as download_full
+from aidata.generators.coco_voc import download as download_full
 
 from aidata.plugins.loaders.tator.common import init_yaml_config, init_api_project, find_project
 

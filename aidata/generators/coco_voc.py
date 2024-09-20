@@ -3,7 +3,7 @@
 # Description: Generate a COCO formatted dataset from a list of media and localizations
 import json
 from pathlib import Path
-from typing import List
+from typing import List, Dict
 
 import tator  # type: ignore
 from PIL import Image
@@ -140,7 +140,8 @@ def download(
             coco_path.mkdir(exist_ok=True)
             info(f"Creating COCO files in {coco_path}")
 
-        localizations = [tator.models.Localization]
+        localizations_by_media_id = {}
+        unique_labels = set()
 
         def query_localizations(prefix: str, query_str: str, max_records: int):
             # set inc to 5000 or max_records-1 or 1, whichever is larger
@@ -172,7 +173,28 @@ def download(
                 if len(new_localizations) == 0:
                     break
                 debug(f"Found {len(new_localizations)} records")
-                localizations.extend(new_localizations)
+
+                for l in new_localizations:
+                    # Remove any localization objects that are not tator.models.Localization; this is a bug in the api?
+                    if not isinstance(l, tator.models.Localization):
+                        continue
+
+                    # Only keep x, y, width, height, media, and attributes
+                    loc = tator.models.Localization(
+                        x=l.x,
+                        y=l.y,
+                        width=l.width,
+                        height=l.height,
+                        media=l.media,
+                        attributes=l.attributes,
+                    )
+                    # To capture unique labels
+                    unique_labels.add(l.attributes["Label"])
+                    media_id = l.media
+                    if l.media in localizations_by_media_id:
+                        localizations_by_media_id[media_id].append(loc)
+                    else:
+                        localizations_by_media_id[media_id] = [loc]
 
         if concepts_list:
             for concept in concepts_list:
@@ -183,42 +205,36 @@ def download(
         if not concepts_list and not labels_list:
             query_localizations("", "", num_records)
 
+        # Count the number of localizations which is the sum of all the localizations for each media
+        num_localizations = sum([len(locs) for locs in localizations_by_media_id.values()])
+
         info(
-            f"Found {len(localizations)} records for version {version_list}, generator {generator}, "
+            f"Found {num_localizations} records for version {version_list}, generator {generator}, "
             f"group {group}, depth {depth}, section {section}, and including {labels_list if labels_list else 'everything'}"
         )
         info(f"Creating output directory {output_path} in YOLO format")
 
         media_lookup_by_id = {}
 
-        # Remove any localization objects that are not tator.models.Localization; this is a bug in the api?
-        localizations = [l for l in localizations if isinstance(l, tator.models.Localization)]
-
-        # Get all the unique media ids in the localizations
-        media_ids = list(set([l.media for l in localizations]))
-
         # Get all the media objects at those ids
+        media_ids = list(localizations_by_media_id.keys())
         all_media = get_media(api, project_id, media_ids)
 
-        # Remove any localization objects that are not tator.models.Media; this is a bug in the api?
+        # Remove any objects that are not tator.models.Media; this is a bug in the api?
         all_media = [m for m in all_media if isinstance(m, tator.models.Media)]
 
-        media_names = list(set([m.name for m in all_media]))
-
-        # Get all the unique Label attributes and sort them alphabetically
-        labels = list(sorted(set([l.attributes["Label"] for l in localizations])))
-
         # Write the labels to a file called labels.txt
+        labels = list(unique_labels)
         with (output_path / "labels.txt").open("w") as f:
             for label in labels:
                 f.write(f"{label}\n")
 
         if not skip_image_download:
-            # Download all the media files - this needs to be done before we can create the VOC/CIFAR files which reference the
-            # media file size
+            # Download all the media files - this needs to be done before we can create the
+            # VOC/CIFAR files which reference the media file size
             for media in tqdm(all_media, desc="Downloading", unit="iteration"):
                 out_path = media_path / media.name
-                if not out_path.exists():
+                if not out_path.exists() or out_path.stat().st_size == 0:
                     info(f"Downloading {media.name} to {out_path}")
                     num_tries = 0
                     success = False
@@ -233,22 +249,24 @@ def download(
                     if num_tries == 3:
                         err(f"Could not download {media.name}")
                         exit(-1)
+                else:
+                    info(f"Skipping download of {media.name}")
 
         # Create YOLO, and optionally COCO, CIFAR, or VOC formatted files
         info(f"Creating YOLO files in {label_path}")
         json_content = {}
 
-        for media in tqdm(all_media, desc="Creating VOC formats", unit="iteration"):
+        for m in tqdm(all_media, desc="Creating VOC formats", unit="iteration"):
             # Get all the localizations for this media
-            media_localizations = [l for l in localizations if l.media == media.id]
+            media_localizations = localizations_by_media_id[m.id]
 
             # If there is more than one version, we need to combine the localizations
             if len(version_ids) > 1:
                 media_localizations = combine_localizations(media_localizations)
 
-            media_lookup_by_id[media.id] = media_path / media.name
-            yolo_path = label_path / f"{media.name}.txt"
-            image_path = media_path / media.name
+            media_lookup_by_id[m.id] = media_path / m.name
+            yolo_path = label_path / f"{m.name}.txt"
+            image_path = media_path / m.name
 
             # Get the image size from the image using PIL
             image = Image.open(image_path)
@@ -272,8 +290,8 @@ def download(
             # optionally create VOC files
             if voc:
                 # Paths to the VOC file and the image
-                voc_xml_path = voc_path / f"{media.name}.xml"
-                image_path = (media_path / media.name).as_posix()
+                voc_xml_path = voc_path / f"{m.name}.xml"
+                image_path = (media_path / m.name).as_posix()
 
                 writer = Writer(image_path, image_width, image_height)
 
@@ -346,7 +364,7 @@ def download(
             cifar_path.mkdir(exist_ok=True)
             info(f"Creating CIFAR data in {cifar_path}")
 
-            success = create_cifar_dataset(cifar_size, cifar_path, media_lookup_by_id, localizations, labels)
+            success = create_cifar_dataset(cifar_size, cifar_path, media_lookup_by_id, localizations_by_media_id, labels)
             if not success:
                 err("Could not create CIFAR data")
                 return False

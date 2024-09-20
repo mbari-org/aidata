@@ -17,14 +17,14 @@ from PIL import Image
 
 
 def create_cifar_dataset(
-    size: int, data_path: Path, media_lookup_by_id, localizations: List[tator.models.Localization], class_names: List[str]
+    size: int, data_path: Path, media_lookup_by_id, localizations_by_media: dict, class_names: List[str]
 ) -> bool:
     """
     Create CIFAR formatted data from a list of media and localizations
     :param size: Size to resize the images to, e.g. 32 for 32x32, 224 for 224x224
     :param data_path: Path to save the data
     :param media_lookup_by_id: Media id to media path lookup
-    :param localizations: List of localizations
+    :param localizations_by_media: Dictionary of localizations by media id
     :param class_names: List of class names
     :return: True if the dataset was created successfully, False otherwise
     """
@@ -40,8 +40,8 @@ def create_cifar_dataset(
             info(f"Using {num_processes} processes to crop images...")
             with multiprocessing.Pool(num_processes) as pool:
                 args = [
-                    [size, temp_path, Path(media_path), [l for l in localizations if l.media == media_id]]
-                    for media_id, media_path in media_lookup_by_id.items()
+                    [size, temp_path, Path(media_lookup_by_id[media_id]), localizations]
+                    for media_id, localizations in localizations_by_media.items()
                 ]
                 pool.starmap(crop, args)
                 pool.close()
@@ -72,7 +72,7 @@ def create_cifar_dataset(
     return True
 
 
-def crop(size: int, temp_path: Path, image_path: Path, localizations) -> bool:
+def crop(size: int, temp_path: Path, image_path: Path, localizations:dict) -> bool:
     """
     Crop the image for a localization
     :param size: Size to resize the image to, e.g. 32 for 32x32, 224 for 224x224
@@ -129,5 +129,3 @@ def crop(size: int, temp_path: Path, image_path: Path, localizations) -> bool:
     except Exception as e:
         err(f"Error processing {image_path}: {e}. Skipping...")
         return False
-
-    return False
