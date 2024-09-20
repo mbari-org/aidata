@@ -1,5 +1,11 @@
 # CHANGELOG
 
+## v1.21.1 (2024-09-20)
+
+### Performance
+
+* perf: slimmer memory footprint for downloads. working for 360k download and export for CFE ROIs ([`1fd1e37`](https://github.com/mbari-org/aidata/commit/1fd1e37ad367c0e20016e533c519b119de977661))
+
 ## v1.21.0 (2024-09-19)
 
 ### Feature
