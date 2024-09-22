@@ -12,3 +12,4 @@ torchvision==0.18.1
 requests
 pascal-voc-writer>=0.1.4
 albumentations
+albucore==0.0.16
