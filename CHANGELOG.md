@@ -1,5 +1,15 @@
 # CHANGELOG
 
+## v1.22.0 (2024-09-22)
+
+### Feature
+
+* feat: add support for --min-saliency in download dataset ([`6b26110`](https://github.com/mbari-org/aidata/commit/6b26110d663fed6fcddda02bbe20816807722102))
+
+### Fix
+
+* fix: albumentations dependency break ([`272dbad`](https://github.com/mbari-org/aidata/commit/272dbad703ced81aae3d4c21595fce7662ed4291))
+
 ## v1.21.1 (2024-09-20)
 
 ### Performance
