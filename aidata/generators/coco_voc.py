@@ -28,6 +28,7 @@ def download(
     concepts_list: List[str],
     cifar_size: int = 32,
     skip_image_download: bool = False,
+    min_saliency: int = 0,
     save_score: bool = False,
     voc: bool = False,
     coco: bool = False,
@@ -40,6 +41,7 @@ def download(
     :param group: group name
     :param depth: depth, e.g. 200
     :param section: media section name, e.g. 25000_depth_v1
+    :param min_saliency: minimum saliency score, e.g. 500
     :param version_list: version name(s), e.g. ['Baseline'] to download
     :param verified: (optional) True if only verified annotations should be downloaded
     :param generator: generator name, e.g. 'vars-labelbot' or 'vars-annotation'
@@ -70,6 +72,7 @@ def download(
         num_records = 0
         # Prepare attributes based on provided values
         attribute_equals = []
+        attribute_gt = []
         related_attribute_equals = []
         if generator:
             attribute_equals.append(f"generator::{generator}")
@@ -81,6 +84,8 @@ def download(
             related_attribute_equals.append(f"depth::{depth}")
         if section:
             related_attribute_equals.append(f"section::{section}")
+        if min_saliency:
+            attribute_gt.append(f"saliency::{min_saliency}")
 
         # Helper function to get localization count with common arguments
         def get_localization_count(concept_or_label=None):
@@ -91,6 +96,8 @@ def download(
                 kwargs["attribute"] = attribute_equals
             if related_attribute_equals:
                 kwargs["related_attribute"] = related_attribute_equals
+            if attribute_gt:
+                kwargs["attribute_gt"] = attribute_gt
             return api.get_localization_count(
                 project=project_id,
                 version=version_ids,
@@ -111,16 +118,16 @@ def download(
             num_records = get_localization_count()
 
         info(
-            f'Found {num_records} records for version {version_list} and generator {generator}, '
-            f'group {group}, depth {depth}, section {section}, verified {verified} and '
-            f"including {labels_list if labels_list else 'everything'} "
+            f"Found {num_records} records for version {version_list} and generator {generator}, "
+            f"group {group}, depth {depth}, section {section}, min_saliency {min_saliency},"
+            f" verified {verified} and including {labels_list if labels_list else 'everything'} "
         )
 
         if num_records == 0:
             info(
-                f'Could not find any records for version {version_list} and generator {generator}, '
-                f'group {group}, depth {depth}, section {section}, verified {verified} and '
-                f"including {labels_list if labels_list else 'everything'}"
+                f"Could not find any records for version {version_list} and generator {generator}, "
+                f"group {group}, depth {depth}, section {section}, min_saliency {min_saliency},"
+                f" verified {verified} and including {labels_list if labels_list else 'everything'}"
             )
             return False
 
@@ -162,6 +169,8 @@ def download(
                     kwargs["attribute_contains"] = [f"{prefix}::{query_str}"]
                 if related_attribute_equals:
                     kwargs["related_attribute"] = related_attribute_equals
+                if attribute_gt:
+                    kwargs["attribute_gt"] = attribute_gt
 
                 new_localizations = api.get_localization_list(
                     project=project_id,
@@ -187,6 +196,7 @@ def download(
                         height=l.height,
                         media=l.media,
                         attributes=l.attributes,
+                        id=l.id,
                     )
                     # To capture unique labels
                     unique_labels.add(l.attributes["Label"])
