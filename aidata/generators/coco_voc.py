@@ -29,6 +29,7 @@ def download(
     cifar_size: int = 32,
     skip_image_download: bool = False,
     min_saliency: int = 0,
+    min_score: float = 0.0,
     save_score: bool = False,
     voc: bool = False,
     coco: bool = False,
@@ -42,6 +43,7 @@ def download(
     :param depth: depth, e.g. 200
     :param section: media section name, e.g. 25000_depth_v1
     :param min_saliency: minimum saliency score, e.g. 500
+    :param min_score: minimum model score, e.g. 0.5
     :param version_list: version name(s), e.g. ['Baseline'] to download
     :param verified: (optional) True if only verified annotations should be downloaded
     :param generator: generator name, e.g. 'vars-labelbot' or 'vars-annotation'
@@ -86,6 +88,8 @@ def download(
             related_attribute_equals.append(f"section::{section}")
         if min_saliency:
             attribute_gt.append(f"saliency::{min_saliency}")
+        if min_score:
+            attribute_gt.append(f"score::{min_score}")
 
         # Helper function to get localization count with common arguments
         def get_localization_count(concept_or_label=None):
@@ -119,14 +123,14 @@ def download(
 
         info(
             f"Found {num_records} records for version {version_list} and generator {generator}, "
-            f"group {group}, depth {depth}, section {section}, min_saliency {min_saliency},"
+            f"group {group}, depth {depth}, section {section}, min_saliency {min_saliency}, min_score {min_score},"
             f" verified {verified} and including {labels_list if labels_list else 'everything'} "
         )
 
         if num_records == 0:
             info(
                 f"Could not find any records for version {version_list} and generator {generator}, "
-                f"group {group}, depth {depth}, section {section}, min_saliency {min_saliency},"
+                f"group {group}, depth {depth}, section {section}, min_saliency {min_saliency}, min_score {min_score},"
                 f" verified {verified} and including {labels_list if labels_list else 'everything'}"
             )
             return False

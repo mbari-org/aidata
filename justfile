@@ -48,6 +48,11 @@ download-300m-data:
     export PYTHONPATH=.
     time conda run -n aidata --no-capture-output python3 aidata download dataset --base-path ./data/i2map --version Baseline --depth 300  --labels "all" --config ./aidata/config/config_i2map.yml
 
+download-300m-data-gtp97:
+    #!/usr/bin/env bash
+    export PYTHONPATH=.
+    time conda run -n aidata --no-capture-output python3 aidata download dataset --base-path ./data/i2map --version Baseline --depth 300  --min-score 0.97 --labels "all" --config ./aidata/config/config_i2map.yml
+
 download-atolla-data:
     #!/usr/bin/env bash
     export PYTHONPATH=.
