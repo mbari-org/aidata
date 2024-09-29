@@ -1,5 +1,11 @@
 # CHANGELOG
 
+## v1.23.0 (2024-09-29)
+
+### Feature
+
+* feat: add support for --min-score in download dataset ([`ecefeff`](https://github.com/mbari-org/aidata/commit/ecefeffe1932af3f7dba2e6d109d3908fa8e3a16))
+
 ## v1.22.0 (2024-09-22)
 
 ### Feature
