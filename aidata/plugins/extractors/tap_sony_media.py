@@ -1,10 +1,12 @@
 # aidata, Apache-2.0 license
 # Filename: plugins/extractor/tap_sony_media.py
 # Description: Extracts data from SONY image meta data
+from datetime import datetime
 
 import pandas as pd
 from pathlib import Path
 import piexif  # type: ignore
+import pytz
 
 from aidata.logger import info, err
 
@@ -35,9 +37,7 @@ def extract_media(image_path: Path, max_images: int = -1) -> pd.DataFrame:
     latitude = []
     longitude = []
     date = []
-    time = []
     failed_indexes = []
-    # TODO: save date/time as iso_datetime object instead of separate date and time columns strings
     sorted_df = images_df.sort_values(by="image_path")
     for i, row in sorted_df.iterrows():
         info(f"Reading {row.image_path}")
@@ -45,10 +45,10 @@ def extract_media(image_path: Path, max_images: int = -1) -> pd.DataFrame:
             exif = piexif.load(row.image_path)
             # Get the date and time the image was taken
             date_time = exif["Exif"][piexif.ExifIFD.DateTimeOriginal].decode("utf-8")
-            # Get the date the image was taken
-            date.append(date_time.split(" ")[0])
-            # Get the time the image was taken
-            time.append(date_time.split(" ")[1])
+            date_time_str = exif["Exif"][piexif.ExifIFD.DateTimeOriginal].decode("utf-8")
+            dt = datetime.strptime(date_time_str, "%Y:%m:%d %H:%M:%S")
+            dt_utc = pytz.utc.localize(dt)
+            date.append(dt_utc)
             # Get the latitude and longitude the image was taken
             lat = exif["GPS"][piexif.GPSIFD.GPSLatitude]
             lon = exif["GPS"][piexif.GPSIFD.GPSLongitude]
@@ -68,6 +68,7 @@ def extract_media(image_path: Path, max_images: int = -1) -> pd.DataFrame:
             # Get the camera make
             make.append(exif["0th"][piexif.ImageIFD.Make].decode("utf-8"))
             model.append(exif["0th"][piexif.ImageIFD.Model].decode("utf-8"))
+
         except Exception as e:
             err(str(e))
             failed_indexes.append(i)
@@ -81,6 +82,5 @@ def extract_media(image_path: Path, max_images: int = -1) -> pd.DataFrame:
     modified_df["latitude"] = latitude
     modified_df["longitude"] = longitude
     modified_df["date"] = date
-    modified_df["time"] = time
     info(f"Done")
-    return images_df
+    return modified_df
