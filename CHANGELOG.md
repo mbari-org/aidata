@@ -1,5 +1,11 @@
 # CHANGELOG
 
+## v1.23.1 (2024-10-01)
+
+### Fix
+
+* fix(uav): correct media date ([`6336d05`](https://github.com/mbari-org/aidata/commit/6336d05134accd3afa464fe7d91f62813bcbeb41))
+
 ## v1.23.0 (2024-09-29)
 
 ### Feature
