@@ -44,7 +44,6 @@ def extract_media(image_path: Path, max_images: int = -1) -> pd.DataFrame:
         try:
             exif = piexif.load(row.image_path)
             # Get the date and time the image was taken
-            date_time = exif["Exif"][piexif.ExifIFD.DateTimeOriginal].decode("utf-8")
             date_time_str = exif["Exif"][piexif.ExifIFD.DateTimeOriginal].decode("utf-8")
             dt = datetime.strptime(date_time_str, "%Y:%m:%d %H:%M:%S")
             dt_utc = pytz.utc.localize(dt)
