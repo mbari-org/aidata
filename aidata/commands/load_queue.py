@@ -8,6 +8,7 @@ from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 
 import click
+import os
 import redis
 from aidata import common_args
 from aidata.logger import info, create_logger_file
@@ -41,7 +42,9 @@ def load_queue(token: str, config: str) -> None:
         return
 
     # Connect to Redis
-    r = redis.Redis(host=host, port=6379, db=1)
+    redis_host = config_dict["redis"]["host"]
+    redis_port = config_dict["redis"]["port"]
+    r = redis.Redis(host=redis_host, port=redis_port, password=os.getenv("REDIS_PASSWORD"))
 
     # Get the mount path from the configuration
     mounts = config_dict["mounts"]
