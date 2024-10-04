@@ -9,7 +9,7 @@ Setup a development server to run tests on your local machine with the following
 # 1. Launch a Tator stack
 Instructions are in [database_setup.md](docs/database_setup.md)
 # 2. Setup the remaining services
-This will setup the remaining services needed for development, including redix and the nginx server.
+This will setup the remaining services needed for development, including redis and the nginx server.
 ```shell
 just setup-docker-dev
 ```
