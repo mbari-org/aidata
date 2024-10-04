@@ -1,5 +1,11 @@
 # CHANGELOG
 
+## v1.23.2 (2024-10-04)
+
+### Fix
+
+* fix: support redis port/host/password ([`f7863eb`](https://github.com/mbari-org/aidata/commit/f7863eb9826758e43a240c79c5fcb54c18fbba4b))
+
 ## v1.23.1 (2024-10-01)
 
 ### Fix
