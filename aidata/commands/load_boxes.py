@@ -17,9 +17,10 @@ from aidata.plugins.loaders.tator.common import init_yaml_config, find_box_type,
 @common_args.yaml_config
 @common_args.dry_run
 @common_args.version
+@click.option("--exclude", type=str, help="Exclude boxes with this label")
 @click.option("--input", type=Path, required=True, help="input CSV file or path with CSV detection files to load")
 @click.option("--max-num", type=int, help="Maximum number of boxes to load")
-def load_boxes(token: str, config: str, version: str, input: Path, dry_run: bool, max_num: int) -> int:
+def load_boxes(token: str, config: str, version: str, input: Path, dry_run: bool, max_num: int, exclude: str) -> int:
     """Load boxes from a directory with SDCAT formatted CSV files. Returns the number of boxes loaded."""
     try:
         create_logger_file("load_boxes")
@@ -63,6 +64,8 @@ def load_boxes(token: str, config: str, version: str, input: Path, dry_run: bool
             # Create a box for each row in the group
             for index, row in group.iterrows():
                 obj = row.to_dict()
+                if exclude is not None and obj["label"] == exclude:
+                    continue
                 attributes = format_attributes(obj, box_attributes)
                 specs.append(
                     gen_localization_spec(
