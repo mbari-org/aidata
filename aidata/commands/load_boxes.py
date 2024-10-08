@@ -22,7 +22,7 @@ from aidata.plugins.loaders.tator.common import init_yaml_config, find_box_type,
 @click.option("--input", type=Path, required=True, help="input CSV file or VOC path with detection files to load")
 @click.option("--max-num", type=int, help="Maximum number of boxes to load")
 def load_boxes(token: str, config: str, version: str, input: Path, dry_run: bool, max_num: int, exclude: str) -> int:
-    """Load boxes from a directory with SDCAT formatted CSV files. Returns the number of boxes loaded."""
+    """Load boxes from a directory with VOC or SDCAT formatted CSV files. Returns the number of boxes loaded."""
 
     try:
         create_logger_file("load_boxes")
