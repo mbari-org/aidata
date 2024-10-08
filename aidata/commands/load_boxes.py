@@ -13,13 +13,13 @@ from aidata.plugins.loaders.tator.attribute_utils import format_attributes
 from aidata.plugins.loaders.tator.common import init_yaml_config, find_box_type, init_api_project, get_version_id
 
 
-@click.command("boxes", help="Load boxes from a directory with SDCAT formatted CSV files")
+@click.command("boxes", help="Load boxes from a directory with VOC or SDCAT formatted CSV files")
 @common_args.token
 @common_args.yaml_config
 @common_args.dry_run
 @common_args.version
 @click.option("--exclude", type=str, help="Exclude boxes with this label")
-@click.option("--input", type=Path, required=True, help="input CSV file or VOC path with detection files to load")
+@click.option("--input", type=Path, required=True, help=" VOC xml or SDCAT formatted CSV files")
 @click.option("--max-num", type=int, help="Maximum number of boxes to load")
 def load_boxes(token: str, config: str, version: str, input: Path, dry_run: bool, max_num: int, exclude: str) -> int:
     """Load boxes from a directory with VOC or SDCAT formatted CSV files. Returns the number of boxes loaded."""
