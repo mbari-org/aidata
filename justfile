@@ -57,3 +57,8 @@ download-atolla-data:
     #!/usr/bin/env bash
     export PYTHONPATH=.
     time conda run -n aidata --no-capture-output python3 aidata download dataset --version Baseline --labels "Atolla" --cifar --cifar-size 128 --config ./aidata/config/config_bio.yml
+
+download-single-class-data:
+    #!/usr/bin/env bash
+    export PYTHONPATH=.
+    time conda run -n aidata --no-capture-output python3 aidata download dataset --single-class "marineorganism" --version Baseline --labels "Atolla,Gymnopraia lapislazula" --voc  --config ./aidata/config/config_bio.yml

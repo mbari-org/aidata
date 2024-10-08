@@ -1,6 +1,7 @@
 # aidata, Apache-2.0 license
 # Filename: plugins/loaders/tator/attribute_utils.py
 # Description:  Database types
+from datetime import datetime
 
 import pytz
 
@@ -17,11 +18,14 @@ def format_attributes(attributes: dict, attribute_mapping: dict) -> dict:
             a_key = a_key.lower()
             m_key = m_key.lower()
             if a_key == m_key:
-                # Truncate datetime to milliseconds, convert to UTC, and format as ISO 8601
                 if m_value["type"] == "datetime":
-                    dt_utc = attributes[a_key].astimezone(pytz.utc)
-                    dt_str = dt_utc.strftime("%Y-%m-%dT%H:%M:%S.%fZ")
-                    dt_str = dt_str[:-3] + "Z"
+                    # Truncate datetime to milliseconds, convert to UTC, and format as ISO 8601
+                    if isinstance(attributes[a_key], datetime):
+                        dt_utc = attributes[a_key].astimezone(pytz.utc)
+                        dt_str = dt_utc.strftime("%Y-%m-%dT%H:%M:%S.%fZ")
+                        dt_str = dt_str[:-3] + "Z"
+                    else:
+                        dt_str = attributes[a_key]
                     attributes[a_key] = dt_str
                 # Convert boolean to string
                 if m_value["type"] == "bool":

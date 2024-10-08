@@ -102,6 +102,8 @@ def gen_thumbnail(ffmpeg_path: str, num_frames: int, fps: float, video_path: str
 
     # We play each 1 second sample at 64x speed
     speed_up = 64 * max(1, round(video_duration / thumb_duration))
+
+    debug(f"Creating {thumb_gif_path} frame_select={frame_select} speed_up={speed_up}")
     cmd = [
         ffmpeg_path,
         "-y",
@@ -119,14 +121,20 @@ def gen_thumbnail(ffmpeg_path: str, num_frames: int, fps: float, video_path: str
 def get_video_metadata(video_name):
     try:
         query = f"http://m3.shore.mbari.org/vam/v1/media/videoreference/filename/{video_name}"
+
         info(f"query: {query}")
         # Get the video reference uuid from the rest query JSON response
         resp = requests.get(query)
         info(f"resp: {resp}")
         data = json.loads(resp.text)[0]
         info(f"data: {data}")
+        # Add a reasonable default for the code if it is not present
+        if "codec" not in data:
+            data["codec"] = "h264"
+        if data['frame_rate'] == 0:
+            data['frame_rate'] = 29.97
         metadata = {
-            "codec": data["video_codec"],
+            "codec": data["codec"],
             "mime": data["container"],
             "resolution": (data["width"], data["height"]),
             "size": data["size_bytes"],
@@ -183,6 +191,7 @@ def load(ffmpeg_path: str, project_id: int, api: tatorapi, media_path: str, spec
         possible_extensions = [".mp4", ".mov", ".avi", ".mkv"]
         if Path(media_path).suffix.lower() in possible_extensions:
             is_video = True
+
         if is_video:
             metadata = get_video_metadata(spec["name"])
             media_spec = {
