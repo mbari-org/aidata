@@ -6,6 +6,7 @@ from aidata import common_args
 from pathlib import Path
 from aidata.logger import create_logger_file, info, err
 from aidata.plugins.extractors.tap_sdcat_csv import extract_sdcat_csv
+from aidata.plugins.extractors.tap_voc import extract_voc
 from aidata.plugins.loaders.tator.localization import gen_spec as gen_localization_spec
 from aidata.plugins.loaders.tator.localization import load_bulk_boxes
 from aidata.plugins.loaders.tator.attribute_utils import format_attributes
@@ -18,10 +19,11 @@ from aidata.plugins.loaders.tator.common import init_yaml_config, find_box_type,
 @common_args.dry_run
 @common_args.version
 @click.option("--exclude", type=str, help="Exclude boxes with this label")
-@click.option("--input", type=Path, required=True, help="input CSV file or path with CSV detection files to load")
+@click.option("--input", type=Path, required=True, help="input CSV file or VOC path with detection files to load")
 @click.option("--max-num", type=int, help="Maximum number of boxes to load")
 def load_boxes(token: str, config: str, version: str, input: Path, dry_run: bool, max_num: int, exclude: str) -> int:
     """Load boxes from a directory with SDCAT formatted CSV files. Returns the number of boxes loaded."""
+
     try:
         create_logger_file("load_boxes")
         # Load the configuration file
@@ -37,7 +39,23 @@ def load_boxes(token: str, config: str, version: str, input: Path, dry_run: bool
         assert box_type is not None, f"No box type found in project {project}"
         assert version_id is not None, f"No version found in project {project}"
 
-        df_boxes = extract_sdcat_csv(input)
+        # Determine whether to use sdcat or voc format based on the file extension
+        valid_extensions = [".csv", ".xml"]
+        extractors = {"csv": extract_sdcat_csv, 'xml': extract_voc}
+        df_boxes = []
+        if input.is_dir():
+            # Search for files with valid extensions
+            files = list(input.rglob("*"))
+            valid_files = [f for f in files if f.suffix in valid_extensions]
+            if len(valid_files) == 0:
+                err(f"No valid files found in {input}")
+                return 0
+            # Use the first valid file and its extension to determine the extractor
+            first_file = valid_files[0]
+            if first_file.suffix in valid_extensions:
+                extractor = extractors[first_file.suffix[1:]]
+                df_boxes = extractor(input)
+
         if len(df_boxes) == 0:
             info(f"No boxes found in {input}")
             return 0
