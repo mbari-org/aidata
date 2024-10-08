@@ -27,6 +27,7 @@ def download(
     labels_list: List[str],
     concepts_list: List[str],
     cifar_size: int = 32,
+    single_class: str = None,
     skip_image_download: bool = False,
     min_saliency: int = 0,
     min_score: float = 0.0,
@@ -51,6 +52,7 @@ def download(
     :param labels_list: (optional) list of labels to download
     :param concepts_list: (optional) list of labels to download
     :param cifar_size: (optional) size of the CIFAR images
+    :param single_class: (optional) set to collapse all classes into a single class, e.g. 'marine organism'
     :param skip_image_download: (optional) True if the images should not be downloaded
     :param save_score: (optional) True if the score should be saved in the YOLO format
     :param voc: (optional) True if the dataset should also be stored in VOC format
@@ -96,11 +98,11 @@ def download(
             kwargs = {}
             if concept_or_label:
                 kwargs["attribute_contains"] = [concept_or_label]
-            if attribute_equals:
+            if len(attribute_equals) > 0:
                 kwargs["attribute"] = attribute_equals
-            if related_attribute_equals:
+            if len(related_attribute_equals) > 0:
                 kwargs["related_attribute"] = related_attribute_equals
-            if attribute_gt:
+            if len(attribute_gt) > 0:
                 kwargs["attribute_gt"] = attribute_gt
             return api.get_localization_count(
                 project=project_id,
@@ -165,7 +167,6 @@ def download(
 
             kwargs = {}
             for start in range(0, max_records, inc):
-                info(f"Query records {start} to {start + inc} using attribute filter {attribute_equals} {prefix} {query_str}")
 
                 if attribute_equals:
                     kwargs["attribute"] = attribute_equals
@@ -175,6 +176,8 @@ def download(
                     kwargs["related_attribute"] = related_attribute_equals
                 if attribute_gt:
                     kwargs["attribute_gt"] = attribute_gt
+
+                info(f"Query records {start} to {start + inc} using {kwargs} {prefix} {query_str}")
 
                 new_localizations = api.get_localization_list(
                     project=project_id,
@@ -202,6 +205,8 @@ def download(
                         attributes=l.attributes,
                         id=l.id,
                     )
+                    if single_class:
+                        loc.attributes["Label"] = single_class
                     # To capture unique labels
                     unique_labels.add(l.attributes["Label"])
                     media_id = l.media
@@ -232,10 +237,14 @@ def download(
 
         # Get all the media objects at those ids
         media_ids = list(localizations_by_media_id.keys())
-        all_media = get_media(api, project_id, media_ids)
 
-        # Remove any objects that are not tator.models.Media; this is a bug in the api?
-        all_media = [m for m in all_media if isinstance(m, tator.models.Media)]
+        # Get the media objects in chunks of 200
+        all_media = []
+        for start in range(0, len(media_ids), 200):
+            media = get_media(api, project_id, media_ids[start: start + 200])
+            # Remove any objects that are not tator.models.Media; this is a bug in the api?
+            new_media = [m for m in media if isinstance(m, tator.models.Media)]
+            all_media += new_media
 
         # Write the labels to a file called labels.txt
         labels = list(unique_labels)

@@ -45,6 +45,7 @@ DEFAULT_BASE_DIR = Path.home() / "aidata" / "datasets"
 @click.option("--cifar-size", default=32, help="Size of CIFAR images.")
 @click.option("--save-score", is_flag=True, help="True to save score in YOLO output, False if not.")
 @click.option("--verified", is_flag=True, help="True if only download verified annotations, False if not.")
+@click.option("--single-class", type=str, help="Set to collapse all classes into a single class, e.g. 'marine organism'")
 @click.option(
     "--skip-image-download", is_flag=True, help="Skip image download, only download annotations. CIFAR requires images."
 )
@@ -66,6 +67,7 @@ def download(
     coco: bool,
     cifar_size: int,
     save_score: bool,
+    single_class: str,
     skip_image_download: bool,
     verified: bool,
 ) -> bool:
@@ -129,6 +131,7 @@ def download(
             output_path=data_path,
             labels_list=labels_list,
             concepts_list=concepts_list,
+            single_class=single_class,
             skip_image_download=skip_image_download,
             save_score=save_score,
             cifar_size=cifar_size,
