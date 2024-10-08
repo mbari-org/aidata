@@ -1,6 +1,17 @@
 # CHANGELOG
 
 
+## v1.25.0 (2024-10-08)
+
+### Documentation
+
+* docs: added update to README.md ([`d327cfd`](https://github.com/mbari-org/aidata/commit/d327cfd11bd684307565d8cc04300a006056f502))
+
+### Features
+
+* feat: added support to load from voc ([`8752165`](https://github.com/mbari-org/aidata/commit/8752165706a836d697156114062eb71a5904662b))
+
+
 ## v1.24.0 (2024-10-07)
 
 ### Documentation
