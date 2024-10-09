@@ -1,6 +1,23 @@
 # CHANGELOG
 
 
+## v1.26.0 (2024-10-09)
+
+### Documentation
+
+* docs: minor update to command help to include voc ([`827e3d6`](https://github.com/mbari-org/aidata/commit/827e3d677318c79589fd1a6ce52ba021e0b35626))
+
+* docs: minor update to command help to include voc ([`540b24e`](https://github.com/mbari-org/aidata/commit/540b24ef44bc82fa7ee4517445d79e77e81ba8f5))
+
+### Features
+
+* feat: added support for collapsing to a single class during download with --single-class ([`d915e3b`](https://github.com/mbari-org/aidata/commit/d915e3b25c1986555894d4b45889614b089a8a4f))
+
+### Performance Improvements
+
+* perf: handle missing video frame rate/codec, more performant queue based loads and handle different timecode payloads ([`c2e1209`](https://github.com/mbari-org/aidata/commit/c2e120928878803d51f811d53f244fca6ea6b460))
+
+
 ## v1.25.0 (2024-10-08)
 
 ### Documentation
