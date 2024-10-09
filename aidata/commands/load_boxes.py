@@ -55,6 +55,10 @@ def load_boxes(token: str, config: str, version: str, input: Path, dry_run: bool
             if first_file.suffix in valid_extensions:
                 extractor = extractors[first_file.suffix[1:]]
                 df_boxes = extractor(input)
+        else:
+            # Use the extension of the file to determine the extractor
+            extractor = extractors[input.suffix[1:]]
+            df_boxes = extractor(input)
 
         if len(df_boxes) == 0:
             info(f"No boxes found in {input}")
