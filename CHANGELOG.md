@@ -1,6 +1,13 @@
 # CHANGELOG
 
 
+## v1.26.1 (2024-10-09)
+
+### Fixes
+
+* fix: correctly load single voc/sdcat file ([`96fe1dc`](https://github.com/mbari-org/aidata/commit/96fe1dc4451ddf96c614d66cbdecadb9bfcd28cd))
+
+
 ## v1.26.0 (2024-10-09)
 
 ### Documentation
