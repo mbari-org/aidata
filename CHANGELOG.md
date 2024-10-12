@@ -1,6 +1,13 @@
 # CHANGELOG
 
 
+## v1.26.2 (2024-10-12)
+
+### Fixes
+
+* fix: handle missing float/int attributes ([`58aa320`](https://github.com/mbari-org/aidata/commit/58aa320650e97f61f181b8f12b72258daa31a009))
+
+
 ## v1.26.1 (2024-10-09)
 
 ### Fixes
