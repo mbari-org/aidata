@@ -34,9 +34,15 @@ def format_attributes(attributes: dict, attribute_mapping: dict) -> dict:
                     else:
                         attributes[m_key] = "False"
                 if m_value["type"] == "float":
-                    attributes[m_key] = float(attributes[m_key])
+                    if attributes[m_key] is None:
+                        attributes[m_key] = -1
+                    else:
+                        attributes[m_key] = float(attributes[m_key])
                 if m_value["type"] == "int":
-                    attributes[m_key] = int(attributes[m_key])
+                    if attributes[m_key] is None:
+                        attributes[m_key] = -1
+                    else:
+                        attributes[m_key] = int(attributes[m_key])
                 if m_value["type"] == "string":
                     if m_key == "cluster":
                         attributes[m_key] = f"Unknown C{attributes[m_key]}"
