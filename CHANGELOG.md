@@ -1,6 +1,13 @@
 # CHANGELOG
 
 
+## v1.27.0 (2024-10-16)
+
+### Features
+
+* feat: added --max-saliency option to download ([`af6a0df`](https://github.com/mbari-org/aidata/commit/af6a0df30396395dbc344e37343495f6cdf4f433))
+
+
 ## v1.26.2 (2024-10-12)
 
 ### Fixes
