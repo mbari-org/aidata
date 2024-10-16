@@ -29,7 +29,8 @@ def download(
     cifar_size: int = 32,
     single_class: str = None,
     skip_image_download: bool = False,
-    min_saliency: int = 0,
+    min_saliency: int = None,
+    max_saliency: int = None,
     min_score: float = 0.0,
     save_score: bool = False,
     voc: bool = False,
@@ -44,6 +45,7 @@ def download(
     :param depth: depth, e.g. 200
     :param section: media section name, e.g. 25000_depth_v1
     :param min_saliency: minimum saliency score, e.g. 500
+    :param max_saliency: maximum saliency score, e.g. 500
     :param min_score: minimum model score, e.g. 0.5
     :param version_list: version name(s), e.g. ['Baseline'] to download
     :param verified: (optional) True if only verified annotations should be downloaded
@@ -77,6 +79,7 @@ def download(
         # Prepare attributes based on provided values
         attribute_equals = []
         attribute_gt = []
+        attribute_lt = []
         related_attribute_equals = []
         if generator:
             attribute_equals.append(f"generator::{generator}")
@@ -90,6 +93,8 @@ def download(
             related_attribute_equals.append(f"section::{section}")
         if min_saliency:
             attribute_gt.append(f"saliency::{min_saliency}")
+        if max_saliency:
+            attribute_lt.append(f"saliency::{max_saliency}")
         if min_score:
             attribute_gt.append(f"score::{min_score}")
 
@@ -104,6 +109,8 @@ def download(
                 kwargs["related_attribute"] = related_attribute_equals
             if len(attribute_gt) > 0:
                 kwargs["attribute_gt"] = attribute_gt
+            if len(attribute_lt) > 0:
+                kwargs["attribute_lt"] = attribute_lt
             return api.get_localization_count(
                 project=project_id,
                 version=version_ids,
@@ -176,6 +183,8 @@ def download(
                     kwargs["related_attribute"] = related_attribute_equals
                 if attribute_gt:
                     kwargs["attribute_gt"] = attribute_gt
+                if attribute_lt:
+                    kwargs["attribute_lt"] = attribute_lt
 
                 info(f"Query records {start} to {start + inc} using {kwargs} {prefix} {query_str}")
 

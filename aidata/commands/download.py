@@ -31,6 +31,7 @@ DEFAULT_BASE_DIR = Path.home() / "aidata" / "datasets"
 @click.option("--depth", type=int, help="Depth, e.g. 200")
 @click.option("--section", help="Media section name, e.g. 25000_depth_v1")
 @click.option("--min-saliency", type=int, help="Minimum saliency score")
+@click.option("--max-saliency", type=int, help="Maximum saliency score")
 @click.option("--min-score", type=float, help="Minimum model score")
 @click.option("--generator", help="Generator name, e.g. vars-labelbot or vars-annotation")
 @click.option("--labels", default="all", help='Comma separated list of labels to download, or "all" for all labels.')
@@ -57,6 +58,7 @@ def download(
     depth: int,
     section: str,
     min_saliency: int,
+    max_saliency: int,
     min_score: float,
     version: str,
     generator: str,
@@ -124,6 +126,7 @@ def download(
             depth=depth,
             section=section,
             min_saliency=min_saliency,
+            max_saliency=max_saliency,
             min_score=min_score,
             version_list=version_list,
             verified=verified,
