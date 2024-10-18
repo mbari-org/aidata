@@ -14,9 +14,12 @@ from pathlib import Path
 
 
 def parse_id(input_str):
-    """Parse the database id from the image name, e.g. 12467345 from 12467345.1.jpg or 12467345.jpg, etc."""
+    """Parse the database id from the image name, e.g. 12467345 from 12467345.1.jpg or 12467345.jpg, etc.
+    If no id is found, return the input string"""
     match = re.match(r"^\d+", input_str)
-    return match.group(0) if match else None
+    if match:
+        return match.group(0)
+    return input_str
 
 
 @click.command("exemplars", help="Load exemplars from a SDCAT formatted CSV exemplar file into a REDIS server")
@@ -92,9 +95,6 @@ def load_exemplars(config: str, input: Path, dry_run: bool, label: str, device: 
             base_path = Path(input).parent
             image_paths = [os.path.join(base_path, p) for p in image_paths]
 
-        # Images are indexed by database id, e.g. 12467.1.jpg, 12467.1, etc.
-        # Each class name corresponds to an exemplar image that represents a subcluster
-        # The image names are indexed per the database id, 12467.jpg, 12468.jpg, 12468.1.jpg.
         df['id'] = df['image_path'].apply(lambda x: parse_id(Path(x).stem))
         ids = df['id'].tolist()
         class_names = [f"{label}:{i}" for i in ids]
@@ -103,7 +103,7 @@ def load_exemplars(config: str, input: Path, dry_run: bool, label: str, device: 
         num_exemplars = len(image_paths)
 
         # Disable exemplar flagging for now - this overwrites the user who labeled the exemplar images
-        # Image names are indexed per the database id, 12467.jpg, 12468.jpg, etc.
+        # Image names that are indexed per the database id, 12467.jpg, 12468.jpg, etc.
         # Search and flag the exemplar images in the tator database
         # params = {"type": box_type.id}
         # id_bulk_patch = {
