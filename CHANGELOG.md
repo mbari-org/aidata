@@ -1,6 +1,13 @@
 # CHANGELOG
 
 
+## v1.28.0 (2024-10-18)
+
+### Features
+
+* feat: support any named exemplar ([`9846da2`](https://github.com/mbari-org/aidata/commit/9846da2fabcda60e5fe44f34af8d9a08afad42ce))
+
+
 ## v1.27.0 (2024-10-16)
 
 ### Features
@@ -10,14 +17,14 @@
 
 ## v1.26.2 (2024-10-12)
 
-### Fixes
+### Bug Fixes
 
 * fix: handle missing float/int attributes ([`58aa320`](https://github.com/mbari-org/aidata/commit/58aa320650e97f61f181b8f12b72258daa31a009))
 
 
 ## v1.26.1 (2024-10-09)
 
-### Fixes
+### Bug Fixes
 
 * fix: correctly load single voc/sdcat file ([`96fe1dc`](https://github.com/mbari-org/aidata/commit/96fe1dc4451ddf96c614d66cbdecadb9bfcd28cd))
 
@@ -63,14 +70,14 @@
 
 ## v1.23.2 (2024-10-04)
 
-### Fixes
+### Bug Fixes
 
 * fix: support redis port/host/password ([`f7863eb`](https://github.com/mbari-org/aidata/commit/f7863eb9826758e43a240c79c5fcb54c18fbba4b))
 
 
 ## v1.23.1 (2024-10-01)
 
-### Fixes
+### Bug Fixes
 
 * fix(uav): correct media date ([`6336d05`](https://github.com/mbari-org/aidata/commit/6336d05134accd3afa464fe7d91f62813bcbeb41))
 
@@ -84,13 +91,13 @@
 
 ## v1.22.0 (2024-09-22)
 
+### Bug Fixes
+
+* fix: albumentations dependency break ([`272dbad`](https://github.com/mbari-org/aidata/commit/272dbad703ced81aae3d4c21595fce7662ed4291))
+
 ### Features
 
 * feat: add support for --min-saliency in download dataset ([`6b26110`](https://github.com/mbari-org/aidata/commit/6b26110d663fed6fcddda02bbe20816807722102))
-
-### Fixes
-
-* fix: albumentations dependency break ([`272dbad`](https://github.com/mbari-org/aidata/commit/272dbad703ced81aae3d4c21595fce7662ed4291))
 
 
 ## v1.21.1 (2024-09-20)
@@ -198,23 +205,29 @@ Adds the option --resize to the transform to transform with a resize.  Useful fo
 
 ## v1.12.2 (2024-08-26)
 
-### Fixes
+### Bug Fixes
 
 * fix: handle empty query operators ([`b9089b1`](https://github.com/mbari-org/aidata/commit/b9089b1e6a73c6e663183cc451d92dd8f5437989))
 
 
 ## v1.12.1 (2024-08-22)
 
+### Bug Fixes
+
+* fix: trigger release to update __init__.py ([`553aa2d`](https://github.com/mbari-org/aidata/commit/553aa2ddeff37f75142007da2a02c9fa863ac9fb))
+
 ### Documentation
 
 * docs: minor correction to reflect correct path to docs ([`a0c5485`](https://github.com/mbari-org/aidata/commit/a0c54857003e2b9bb9c1258d819b6c32c2bc1e1c))
 
-### Fixes
-
-* fix: trigger release to update __init__.py ([`553aa2d`](https://github.com/mbari-org/aidata/commit/553aa2ddeff37f75142007da2a02c9fa863ac9fb))
-
 
 ## v1.12.0 (2024-08-16)
+
+### Bug Fixes
+
+* fix: correct handling of label map ([`828c7d4`](https://github.com/mbari-org/aidata/commit/828c7d48560760bb8a11920731ce1c72294fa4af))
+
+* fix: handle conversion errors outside of normalized 0-1 coordinates ([`c210ab2`](https://github.com/mbari-org/aidata/commit/c210ab2d2c59c095ca4d890898cd368ac2225313))
 
 ### Build System
 
@@ -241,12 +254,6 @@ Adds the option --resize to the transform to transform with a resize.  Useful fo
 * feat: added transform for voc only ([`3b1dc6d`](https://github.com/mbari-org/aidata/commit/3b1dc6db4c6ae55919d157afaf3e781621f777df))
 
 * feat: added transform for voc only ([`54b72d0`](https://github.com/mbari-org/aidata/commit/54b72d0224f0df7a13b20e41c7256bf5eead777a))
-
-### Fixes
-
-* fix: correct handling of label map ([`828c7d4`](https://github.com/mbari-org/aidata/commit/828c7d48560760bb8a11920731ce1c72294fa4af))
-
-* fix: handle conversion errors outside of normalized 0-1 coordinates ([`c210ab2`](https://github.com/mbari-org/aidata/commit/c210ab2d2c59c095ca4d890898cd368ac2225313))
 
 
 ## v1.11.0 (2024-08-08)
@@ -285,19 +292,23 @@ Adds the option --resize to the transform to transform with a resize.  Useful fo
 
 ## v1.7.4 (2024-07-26)
 
-### Fixes
+### Bug Fixes
 
 * fix: correct default for max-images to load all ([`5e5d10a`](https://github.com/mbari-org/aidata/commit/5e5d10aa0e65376b5d0f2408ce0daf29f51ec406))
 
 
 ## v1.7.3 (2024-07-24)
 
-### Fixes
+### Bug Fixes
 
 * fix: correct parsing of class names and cuda device enable ([`f339b18`](https://github.com/mbari-org/aidata/commit/f339b185643b008571ec55689b486ddeb9d4f31c))
 
 
 ## v1.7.2 (2024-07-23)
+
+### Bug Fixes
+
+* fix: correct handling of exemplars ([`a0ee097`](https://github.com/mbari-org/aidata/commit/a0ee09719719a2eff5044d7458b089033778500f))
 
 ### Build System
 
@@ -307,14 +318,10 @@ Adds the option --resize to the transform to transform with a resize.  Useful fo
 
 * build: exclude py12 which is problematic with transformers library ([`1b2c09f`](https://github.com/mbari-org/aidata/commit/1b2c09f994f802946fbffed86997268606a114e8))
 
-### Fixes
-
-* fix: correct handling of exemplars ([`a0ee097`](https://github.com/mbari-org/aidata/commit/a0ee09719719a2eff5044d7458b089033778500f))
-
 
 ## v1.7.1 (2024-07-23)
 
-### Fixes
+### Bug Fixes
 
 * fix: correct handling of version arg ([`7ee9a42`](https://github.com/mbari-org/aidata/commit/7ee9a42b0d00d8f3aac363663903ca25fdd70f2a))
 
@@ -335,38 +342,38 @@ Adds the option --resize to the transform to transform with a resize.  Useful fo
 
 ## v1.6.3 (2024-07-22)
 
-### Fixes
+### Bug Fixes
 
 * fix: minor fix in exemplar args and more logging ([`2153af9`](https://github.com/mbari-org/aidata/commit/2153af9275a30751689025013297494f899af8f4))
 
 
 ## v1.6.2 (2024-07-19)
 
-### Fixes
+### Bug Fixes
 
 * fix: handled empty labels, bad media, and more reporting of progress ([`a31ef83`](https://github.com/mbari-org/aidata/commit/a31ef83e2b72762b36e086cffd118ee517c3b84c))
 
 
 ## v1.6.1 (2024-07-18)
 
+### Bug Fixes
+
+* fix: bugs from typecheck ([`cf3020a`](https://github.com/mbari-org/aidata/commit/cf3020a8cbd428065edcc6925dbaaf700f5138ab))
+
 ### Build System
 
 * build: removed unused imports and bump torch to python3.11 compatible and ([`7d2d786`](https://github.com/mbari-org/aidata/commit/7d2d7866d21fd29823f55c24538c535a24ec8127))
 
-### Fixes
-
-* fix: bugs from typecheck ([`cf3020a`](https://github.com/mbari-org/aidata/commit/cf3020a8cbd428065edcc6925dbaaf700f5138ab))
-
 
 ## v1.6.0 (2024-07-05)
+
+### Bug Fixes
+
+* fix: remove whitespace and move exemplar to load ([`decd1e6`](https://github.com/mbari-org/aidata/commit/decd1e67fea4bb9e43d5162e1478ab4f4825cbf4))
 
 ### Features
 
 * feat: added sdcat exemplar load ([`a8e42f0`](https://github.com/mbari-org/aidata/commit/a8e42f071d5b3942b2bdb2d183112b8703167ad4))
-
-### Fixes
-
-* fix: remove whitespace and move exemplar to load ([`decd1e6`](https://github.com/mbari-org/aidata/commit/decd1e67fea4bb9e43d5162e1478ab4f4825cbf4))
 
 ### Unknown
 
@@ -386,7 +393,7 @@ Adds the option --resize to the transform to transform with a resize.  Useful fo
 
 ## v1.4.7 (2024-06-24)
 
-### Fixes
+### Bug Fixes
 
 * fix: handle fewer records correctly ([`aa25d62`](https://github.com/mbari-org/aidata/commit/aa25d62f1f137cd41af4a305c8ed106405b59b2b))
 
@@ -396,7 +403,7 @@ Adds the option --resize to the transform to transform with a resize.  Useful fo
 
 ## v1.4.5 (2024-05-22)
 
-### Fixes
+### Bug Fixes
 
 * fix: revert to original pass through of datetime object ([`45dcd1e`](https://github.com/mbari-org/aidata/commit/45dcd1e0ce238da023b62f209d17f60e2eeabbe9))
 
@@ -420,25 +427,25 @@ Adds the option --resize to the transform to transform with a resize.  Useful fo
 
 ## v1.4.3 (2024-05-21)
 
+### Bug Fixes
+
+* fix: correct key for datetime attribute format ([`84eabaf`](https://github.com/mbari-org/aidata/commit/84eabaf5041ed52e080196bf4af7975e437abce7))
+
 ### Documentation
 
 * docs: added in load/download docs and adding in  CHANGELOG.md ([`d228937`](https://github.com/mbari-org/aidata/commit/d228937ee7b08b321b5b73b091d3ce6465c6d1cc))
 
-### Fixes
-
-* fix: correct key for datetime attribute format ([`84eabaf`](https://github.com/mbari-org/aidata/commit/84eabaf5041ed52e080196bf4af7975e437abce7))
-
 
 ## v1.4.2 (2024-05-16)
 
-### Fixes
+### Bug Fixes
 
 * fix: correct import path ([`4c04a4d`](https://github.com/mbari-org/aidata/commit/4c04a4d5886ffa7bdb93b7ff65ee3fb4c3fab1dc))
 
 
 ## v1.4.1 (2024-05-16)
 
-### Fixes
+### Bug Fixes
 
 * fix: add missing files ([`b2fe084`](https://github.com/mbari-org/aidata/commit/b2fe084179145f2a81d0266e62412c6efeb3b80c))
 
@@ -458,40 +465,32 @@ Adds the option --resize to the transform to transform with a resize.  Useful fo
 
 ## v1.3.0 (2024-05-02)
 
+### Bug Fixes
+
+* fix: adjustments to match Fernandas generated test images ([`4cfcbff`](https://github.com/mbari-org/aidata/commit/4cfcbffe713abfbab4fcfefca4810fd905751927))
+
 ### Features
 
 * feat: added support to pass in max-images which is useful with --dry-run ([`617e011`](https://github.com/mbari-org/aidata/commit/617e0110e3c1874082f43dc719d4c10dd22ccf82))
 
-### Fixes
-
-* fix: adjustments to match Fernandas generated test images ([`4cfcbff`](https://github.com/mbari-org/aidata/commit/4cfcbffe713abfbab4fcfefca4810fd905751927))
-
 
 ## v1.2.3 (2024-05-01)
 
-### Fixes
+### Bug Fixes
 
 * fix: remove return to load all ([`bfe312f`](https://github.com/mbari-org/aidata/commit/bfe312f9939b861be3428eca4e14d776edd9be91))
 
 
 ## v1.2.2 (2024-04-29)
 
-### Fixes
+### Bug Fixes
 
 * fix: skip over images with no metadata and minor logging fix ([`4790efe`](https://github.com/mbari-org/aidata/commit/4790efede4ba0f1e6aed3303c51296b732063915))
 
 
 ## v1.2.1 (2024-04-29)
 
-### Build System
-
-* build: added missing dependency ([`8fad096`](https://github.com/mbari-org/aidata/commit/8fad0969a1e3b847f012047e36dab49982955b3a))
-
-### Documentation
-
-* docs: added hint for dry-run and hostname ([`e141d9f`](https://github.com/mbari-org/aidata/commit/e141d9ff99603da7264e3129313f4faad81d0e49))
-
-### Fixes
+### Bug Fixes
 
 * fix: return dataframe and process in sorted order for convenience ([`1069369`](https://github.com/mbari-org/aidata/commit/10693697b639d0d513470e7a9ff07718a79003ab))
 
@@ -501,18 +500,26 @@ Adds the option --resize to the transform to transform with a resize.  Useful fo
 
 * fix: added missing host for CFE ([`5bbf029`](https://github.com/mbari-org/aidata/commit/5bbf0296b6584b400e1d01aded6bd1f2747070f0))
 
+### Build System
+
+* build: added missing dependency ([`8fad096`](https://github.com/mbari-org/aidata/commit/8fad0969a1e3b847f012047e36dab49982955b3a))
+
+### Documentation
+
+* docs: added hint for dry-run and hostname ([`e141d9f`](https://github.com/mbari-org/aidata/commit/e141d9ff99603da7264e3129313f4faad81d0e49))
+
 
 ## v1.2.0 (2024-04-29)
+
+### Bug Fixes
+
+* fix: minor type ([`168d258`](https://github.com/mbari-org/aidata/commit/168d25882a18310900240c0f5dcf28caffa1a8d9))
 
 ### Features
 
 * feat: support both png and jpg uppercase SONY images ([`db59ee5`](https://github.com/mbari-org/aidata/commit/db59ee55ba9abdebb2fb2ce8a777c58737727b85))
 
 * feat: support both png and jpg SONY images ([`a02a46a`](https://github.com/mbari-org/aidata/commit/a02a46ad2c74903e621cb9f69ec9de97aeec7a70))
-
-### Fixes
-
-* fix: minor type ([`168d258`](https://github.com/mbari-org/aidata/commit/168d25882a18310900240c0f5dcf28caffa1a8d9))
 
 
 ## v1.1.0 (2024-04-29)
@@ -524,36 +531,36 @@ Adds the option --resize to the transform to transform with a resize.  Useful fo
 
 ## v1.0.4 (2024-04-25)
 
-### Fixes
+### Bug Fixes
 
 * fix: added missing host for UAV image load ([`0bc6cab`](https://github.com/mbari-org/aidata/commit/0bc6cab07b319fcdf18136c0b397a6d087a4deac))
 
 
 ## v1.0.3 (2024-03-26)
 
-### Fixes
+### Bug Fixes
 
 * fix: correct path to data in test database ([`b1fc26e`](https://github.com/mbari-org/aidata/commit/b1fc26e209e7c699b3731009173f7d461fd129ea))
 
 
 ## v1.0.2 (2024-03-26)
 
-### Fixes
+### Bug Fixes
 
 * fix: correct formatting for the cluster string ([`d934276`](https://github.com/mbari-org/aidata/commit/d9342769c5ab908b5b21eceabe0b6fcd947abbda))
 
 
 ## v1.0.1 (2024-03-25)
 
+### Bug Fixes
+
+* fix: fix bug that downloads everything ([`0d35dde`](https://github.com/mbari-org/aidata/commit/0d35ddee917f531c497b551c0e105a254268717f))
+
 ### Documentation
 
 * docs: consistent example ([`db608bf`](https://github.com/mbari-org/aidata/commit/db608bf739ea1429ba19132e1b580d1a8240b9f0))
 
 * docs: added missing doc images ([`5532f33`](https://github.com/mbari-org/aidata/commit/5532f33dcc3bf5400dfc27308ee677e760e151bb))
-
-### Fixes
-
-* fix: fix bug that downloads everything ([`0d35dde`](https://github.com/mbari-org/aidata/commit/0d35ddee917f531c497b551c0e105a254268717f))
 
 ### Unknown
 
