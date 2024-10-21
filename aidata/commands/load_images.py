@@ -61,9 +61,14 @@ def load_images(token: str, config: str, dry_run: bool, input: str, section: str
             err(f"{input_path} does not exist")
             return -1
 
-        # Make sure the image_path is a subdirectory of image_mount_path
-        if not input_path.is_relative_to(image_mount_path):
-            err(f"{input_path} is not a subdirectory of {image_mount_path}")
+        # If the input path is a directory, check if it is a subdirectory of the image mount path
+        if input_path.is_dir():
+            image_dir = input_path
+        else:
+            image_dir = input_path.parent
+
+        if not image_dir.is_relative_to(image_mount_path):
+            err(f"{image_dir} is not a subdirectory of {image_mount_path}")
             return -1
 
         p = [p for p in plugins if "extractor" in p["name"]][0]  # ruff: noqa
