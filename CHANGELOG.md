@@ -1,6 +1,13 @@
 # CHANGELOG
 
 
+## v1.29.0 (2024-10-21)
+
+### Features
+
+* feat(cfe): support loading individual cfe images ([`08480c3`](https://github.com/mbari-org/aidata/commit/08480c3ae3254e9bc344980799225d09d84b51e3))
+
+
 ## v1.28.0 (2024-10-18)
 
 ### Features
