@@ -25,6 +25,7 @@ class ConsumeLocalization:
             try:
                 keys = self.r.keys("locs:*")
                 for k in keys:
+                    info(f"Processing key {k}")
                     video_ref = k.decode("utf-8").split(":")[1]
                     load_key = self.r.keys(f"tator_ids_v:{video_ref}")
                     if len(load_key) == 1:
@@ -75,4 +76,4 @@ class ConsumeLocalization:
                 info(f"Error: {e}")
                 time.sleep(30)
 
-            time.sleep(5)
+            time.sleep(30)

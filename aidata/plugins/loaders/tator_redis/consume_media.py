@@ -138,4 +138,4 @@ class ConsumeVideo:
                 err(f"Error consuming video {e}")
                 time.sleep(30)
 
-            time.sleep(5)
+            time.sleep(30)
