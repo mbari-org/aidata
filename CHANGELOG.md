@@ -1,7 +1,14 @@
 # CHANGELOG
 
 
+## v1.29.1 (2024-10-21)
+
+
 ## v1.29.0 (2024-10-21)
+
+### Bug Fixes
+
+* fix: merge conflicts ([`a72ee0d`](https://github.com/mbari-org/aidata/commit/a72ee0d45d394a2a60ceb5e66a209274e63938ca))
 
 ### Features
 
