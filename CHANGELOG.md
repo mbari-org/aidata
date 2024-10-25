@@ -1,6 +1,13 @@
 # CHANGELOG
 
 
+## v1.30.0 (2024-10-25)
+
+### Features
+
+* feat: exclude more than one label, e.g. --exclude Unknown --exclude Batray in load boxes ([`7b2cfc9`](https://github.com/mbari-org/aidata/commit/7b2cfc948da847acdade39ea0c4980a3d93ded95))
+
+
 ## v1.29.1 (2024-10-21)
 
 
