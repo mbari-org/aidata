@@ -105,12 +105,11 @@ def download(
                 kwargs["attribute_contains"] = [concept_or_label]
             if len(attribute_equals) > 0:
                 kwargs["attribute"] = attribute_equals
-            if len(related_attribute_equals) > 0:
-                kwargs["related_attribute"] = related_attribute_equals
             if len(attribute_gt) > 0:
                 kwargs["attribute_gt"] = attribute_gt
             if len(attribute_lt) > 0:
                 kwargs["attribute_lt"] = attribute_lt
+            info(f"Getting localization count with {kwargs}")
             return api.get_localization_count(
                 project=project_id,
                 version=version_ids,
@@ -130,16 +129,17 @@ def download(
         if not concepts_list and not labels_list:
             num_records = get_localization_count()
 
+
         info(
             f"Found {num_records} records for version {version_list} and generator {generator}, "
-            f"group {group}, depth {depth}, section {section}, min_saliency {min_saliency}, min_score {min_score},"
+            f"group {group}, min_saliency {min_saliency}, min_score {min_score},"
             f" verified {verified} and including {labels_list if labels_list else 'everything'} "
         )
 
         if num_records == 0:
             info(
                 f"Could not find any records for version {version_list} and generator {generator}, "
-                f"group {group}, depth {depth}, section {section}, min_saliency {min_saliency}, min_score {min_score},"
+                f"group {group}, min_saliency {min_saliency}, min_score {min_score},"
                 f" verified {verified} and including {labels_list if labels_list else 'everything'}"
             )
             return False
@@ -160,8 +160,25 @@ def download(
             coco_path.mkdir(exist_ok=True)
             info(f"Creating COCO files in {coco_path}")
 
+        unique_labels = set() # To capture unique labels
+
+        # Get all the media objects that match the criteria
         localizations_by_media_id = {}
-        unique_labels = set()
+        kwargs = {}
+        if depth:
+            kwargs["attribute_contains"] = [f"depth::{depth}"]
+        if section:
+            if "attribute_contains" in kwargs:
+                kwargs["attribute_contains"].append(f"section::{section}")
+            kwargs["attribute_contains"] = [f"section::{section}"]
+        media_ids = api.get_media_list(project=project_id, **kwargs)
+        info(f"Found {len(media_ids)} media objects that match the criteria {kwargs}")
+        if len(media_ids) == 0:
+            return False
+
+        # Initialize the localizations by media id
+        for media in media_ids:
+            localizations_by_media_id[media.id] = []
 
         def query_localizations(prefix: str, query_str: str, max_records: int):
             # set inc to 5000 or max_records-1 or 1, whichever is larger
@@ -179,8 +196,6 @@ def download(
                     kwargs["attribute"] = attribute_equals
                 if prefix:
                     kwargs["attribute_contains"] = [f"{prefix}::{query_str}"]
-                if related_attribute_equals:
-                    kwargs["related_attribute"] = related_attribute_equals
                 if attribute_gt:
                     kwargs["attribute_gt"] = attribute_gt
                 if attribute_lt:
@@ -197,11 +212,13 @@ def download(
                 )
                 if len(new_localizations) == 0:
                     break
-                debug(f"Found {len(new_localizations)} records")
 
                 for l in new_localizations:
                     # Remove any localization objects that are not tator.models.Localization; this is a bug in the api?
                     if not isinstance(l, tator.models.Localization):
+                        continue
+
+                    if l.media not in localizations_by_media_id.keys():
                         continue
 
                     # Only keep x, y, width, height, media, and attributes
@@ -218,11 +235,8 @@ def download(
                         loc.attributes["Label"] = single_class
                     # To capture unique labels
                     unique_labels.add(l.attributes["Label"])
-                    media_id = l.media
-                    if l.media in localizations_by_media_id:
-                        localizations_by_media_id[media_id].append(loc)
-                    else:
-                        localizations_by_media_id[media_id] = [loc]
+                    # Append the localization to the media
+                    localizations_by_media_id[l.media].append(loc)
 
         if concepts_list:
             for concept in concepts_list:
@@ -270,10 +284,6 @@ def download(
                     info(f"Downloading {media.name} to {out_path}")
                     num_tries = 0
                     success = False
-                    # If the media does not have the attribute file, something went wrong
-                    if not hasattr(media, "file"):
-                        err(f"Media {media} does not have an attribute field called file")
-                        continue
                     while num_tries < 3 and not success:
                         try:
                             for progress in tator.util.download_media(api, media, out_path):
