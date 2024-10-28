@@ -1,5 +1,5 @@
 # aidata, Apache-2.0 license
-# Filename: generators/coco.py
+# Filename: generators/coco_voc.py
 # Description: Generate a COCO formatted dataset from a list of media and localizations
 import json
 from pathlib import Path
@@ -270,6 +270,10 @@ def download(
                     info(f"Downloading {media.name} to {out_path}")
                     num_tries = 0
                     success = False
+                    # If the media does not have the attribute file, something went wrong
+                    if not hasattr(media, "file"):
+                        err(f"Media {media} does not have an attribute field called file")
+                        continue
                     while num_tries < 3 and not success:
                         try:
                             for progress in tator.util.download_media(api, media, out_path):
