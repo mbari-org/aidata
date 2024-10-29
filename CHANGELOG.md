@@ -1,6 +1,13 @@
 # CHANGELOG
 
 
+## v1.30.2 (2024-10-29)
+
+### Bug Fixes
+
+* fix: correct handling of related media attributes, e.g. --depth 1000 or --section 1000m during download ([`4af87cc`](https://github.com/mbari-org/aidata/commit/4af87cc43245f427bb7fc14b1d1096416259f495))
+
+
 ## v1.30.1 (2024-10-28)
 
 ### Bug Fixes
