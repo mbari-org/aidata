@@ -164,21 +164,39 @@ def download(
 
         # Get all the media objects that match the criteria
         localizations_by_media_id = {}
-        kwargs = {}
-        if depth:
-            kwargs["attribute_contains"] = [f"depth::{depth}"]
-        if section:
-            if "attribute_contains" in kwargs:
-                kwargs["attribute_contains"].append(f"section::{section}")
-            kwargs["attribute_contains"] = [f"section::{section}"]
-        media_ids = api.get_media_list(project=project_id, **kwargs)
-        info(f"Found {len(media_ids)} media objects that match the criteria {kwargs}")
-        if len(media_ids) == 0:
-            return False
+        def get_medias(concept_or_label=None):
+            kwargs = {}
+            if concept_or_label:
+                kwargs["related_attribute_contains"] = [concept_or_label]
+            if len(attribute_equals) > 0:
+                kwargs["related_attribute"] = attribute_equals
+            if len(attribute_gt) > 0:
+                kwargs["related_attribute_gt"] = attribute_gt
+            if len(attribute_lt) > 0:
+                kwargs["related_attribute_lt"] = attribute_lt
+            if depth:
+                kwargs["attribute_contains"] = [f"depth::{depth}"]
+            if section:
+                if "attribute_contains" in kwargs:
+                    kwargs["attribute_contains"].append(f"section::{section}")
+                kwargs["attribute_contains"] = [f"section::{section}"]
+            info(f"Getting media with {kwargs}")
+            medias = api.get_media_list(project=project_id, **kwargs)
+            info(f"Found {len(medias)} media objects that match the criteria {kwargs}")
+            return medias
 
-        # Initialize the localizations by media id
-        for media in media_ids:
-            localizations_by_media_id[media.id] = []
+        for concept in concepts_list:
+            medias = get_medias(f"concept::{concept}")
+            for media in medias:
+                localizations_by_media_id[media.id] = []
+        for label in labels_list:
+            medias = get_medias(f"Label::{label}")
+            for media in medias:
+                localizations_by_media_id[media.id] = []
+        if not concepts_list and not labels_list:
+            medias = get_medias()
+            for media in medias:
+                localizations_by_media_id[media.id] = []
 
         def query_localizations(prefix: str, query_str: str, max_records: int):
             # set inc to 5000 or max_records-1 or 1, whichever is larger
@@ -246,6 +264,11 @@ def download(
                 query_localizations("Label", label, num_label_records[label])
         if not concepts_list and not labels_list:
             query_localizations("", "", num_records)
+
+        # Remove any media objects that do not have localizations
+        for media_id in list(localizations_by_media_id.keys()):
+            if len(localizations_by_media_id[media_id]) == 0:
+                localizations_by_media_id.pop(media_id)
 
         # Count the number of localizations which is the sum of all the localizations for each media
         num_localizations = sum([len(locs) for locs in localizations_by_media_id.values()])
