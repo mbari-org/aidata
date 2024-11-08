@@ -109,6 +109,8 @@ def download(
                 kwargs["attribute_gt"] = attribute_gt
             if len(attribute_lt) > 0:
                 kwargs["attribute_lt"] = attribute_lt
+            if len(related_attribute_equals) > 0:
+                kwargs["related_attribute_equals"] = related_attribute_equals
             info(f"Getting localization count with {kwargs}")
             return api.get_localization_count(
                 project=project_id,
@@ -175,7 +177,7 @@ def download(
             if len(attribute_lt) > 0:
                 kwargs["related_attribute_lt"] = attribute_lt
             if depth:
-                kwargs["attribute_contains"] = [f"depth::{depth}"]
+                kwargs["attribute_equals"] = [f"depth::{depth}"]
             if section:
                 if "attribute_contains" in kwargs:
                     kwargs["attribute_contains"].append(f"section::{section}")
