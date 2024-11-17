@@ -1,6 +1,14 @@
 # CHANGELOG
 
 
+## v1.31.0 (2024-11-17)
+
+### Features
+
+- Remove any duplicate localizations on redis load
+  ([`d3a54d2`](https://github.com/mbari-org/aidata/commit/d3a54d2c06a174cc3fc37a0305b9c9830abfd042))
+
+
 ## v1.30.3 (2024-11-08)
 
 ### Bug Fixes
@@ -45,7 +53,7 @@
 
 ### Features
 
-- Support loading individual cfe images
+- **cfe**: Support loading individual cfe images
   ([`08480c3`](https://github.com/mbari-org/aidata/commit/08480c3ae3254e9bc344980799225d09d84b51e3))
 
 
@@ -141,7 +149,7 @@
 
 ### Bug Fixes
 
-- Correct media date
+- **uav**: Correct media date
   ([`6336d05`](https://github.com/mbari-org/aidata/commit/6336d05134accd3afa464fe7d91f62813bcbeb41))
 
 
