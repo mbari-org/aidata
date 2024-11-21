@@ -183,7 +183,7 @@ def download(
                     kwargs["attribute_contains"].append(f"section::{section}")
                 kwargs["attribute_contains"] = [f"section::{section}"]
             info(f"Getting media with {kwargs}")
-            medias = api.get_media_list(project=project_id, **kwargs)
+            medias = api.get_media_list(project=project_id, dtype="image", **kwargs)
             info(f"Found {len(medias)} media objects that match the criteria {kwargs}")
             return medias
 
