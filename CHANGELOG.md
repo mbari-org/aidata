@@ -1,6 +1,14 @@
 # CHANGELOG
 
 
+## v1.31.1 (2024-11-21)
+
+### Bug Fixes
+
+- For coco/voc only download images and no video
+  ([`779a1f0`](https://github.com/mbari-org/aidata/commit/779a1f07d6f725dc7a142bdf37a0b05e9f213bcf))
+
+
 ## v1.31.0 (2024-11-17)
 
 ### Features
