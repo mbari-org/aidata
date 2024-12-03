@@ -2,17 +2,20 @@
 # Filename: generators/coco_voc.py
 # Description: Generate a COCO formatted dataset from a list of media and localizations
 import json
+import math
+from collections import defaultdict
 from pathlib import Path
-from typing import List, Dict
+from typing import List
 
 import tator  # type: ignore
+import pandas as pd
 from PIL import Image
 from tqdm import tqdm
 from pascal_voc_writer import Writer  # type: ignore
 from aidata.logger import debug, info, err, exception
 from aidata.generators.cifar import create_cifar_dataset
 from aidata.generators.utils import combine_localizations
-
+import subprocess
 
 def download(
     api: tator.api,
@@ -36,6 +39,8 @@ def download(
     voc: bool = False,
     coco: bool = False,
     cifar: bool = False,
+    crop_roi: bool = False,
+    resize: int = 0
 ) -> bool:
     """
     Download a dataset based on a version tag for training
@@ -43,6 +48,7 @@ def download(
     :param project_id: project id
     :param group: group name
     :param depth: depth, e.g. 200
+    :param media_type: media datatype, 'video' or 'image'
     :param section: media section name, e.g. 25000_depth_v1
     :param min_saliency: minimum saliency score, e.g. 500
     :param max_saliency: maximum saliency score, e.g. 500
@@ -60,6 +66,8 @@ def download(
     :param voc: (optional) True if the dataset should also be stored in VOC format
     :param coco: (optional) True if the dataset should also be stored in COCO format
     :param cifar: (optional) True if the dataset should also be stored in CIFAR format
+    :param crop_roi: (optional) True if the dataset should crop the ROI from the original images
+    :param resize: (optional) Resize images to this size after cropping thems
     :return: True if the dataset was created successfully, False otherwise
     """
     try:
@@ -154,6 +162,8 @@ def download(
         media_path.mkdir(exist_ok=True)
         voc_path = output_path / "voc"
         voc_path.mkdir(exist_ok=True)
+        crop_path = output_path / "crops"
+        crop_path.mkdir(exist_ok=True)
 
         if voc:
             info(f"Creating VOC files in {voc_path}")
@@ -183,7 +193,7 @@ def download(
                     kwargs["attribute_contains"].append(f"section::{section}")
                 kwargs["attribute_contains"] = [f"section::{section}"]
             info(f"Getting media with {kwargs}")
-            medias = api.get_media_list(project=project_id, dtype="image", **kwargs)
+            medias = api.get_media_list(project=project_id, **kwargs)
             info(f"Found {len(medias)} media objects that match the criteria {kwargs}")
             return medias
 
@@ -241,7 +251,7 @@ def download(
                     if l.media not in localizations_by_media_id.keys():
                         continue
 
-                    # Only keep x, y, width, height, media, and attributes
+                    # Only keep needed fields to reduce memory usage
                     loc = tator.models.Localization(
                         x=l.x,
                         y=l.y,
@@ -250,6 +260,7 @@ def download(
                         media=l.media,
                         attributes=l.attributes,
                         id=l.id,
+                        frame=l.frame
                     )
                     if single_class:
                         loc.attributes["Label"] = single_class
@@ -305,6 +316,9 @@ def download(
             # VOC/CIFAR files which reference the media file size
             for media in tqdm(all_media, desc="Downloading", unit="iteration"):
                 out_path = media_path / media.name
+                if '.mp4' in media.name:
+                    info(f"Video download not supported yet")
+                    continue
                 if not out_path.exists() or out_path.stat().st_size == 0:
                     info(f"Downloading {media.name} to {out_path}")
                     num_tries = 0
@@ -323,6 +337,135 @@ def download(
                 else:
                     info(f"Skipping download of {media.name}")
 
+        if crop_roi:
+            # Crop the ROI from the original images/video in batches of 30
+            batch_size = 30
+            scale_filter = ""
+            if resize:
+                scale_filter = f"scale={resize}:{resize}"
+            crop_filter = defaultdict(list)
+            output_maps = defaultdict(list)
+            for i in range(0, len(all_media), batch_size):
+                batch = all_media[i:i + batch_size]
+                for media in batch:
+                    in_media = localizations_by_media_id[media.id]
+                    df_localizations = pd.DataFrame([l.to_dict() for l in in_media])
+                    df_localizations = df_localizations.sort_values(by=['frame'], ascending=True)
+                    # Group by frame, then add arguments to crop the ROIs in each frame and map them to output files with unique database ids
+                    for frame, in_frame_loc in df_localizations.groupby('frame'):
+                        debug(f"Processing frame {frame} in {media.name}")
+                        for c in in_frame_loc.itertuples(): 
+                            x1 = int(media.width * c.x)
+                            y1 = int(media.height * c.y)
+                            x2 = int(media.width * (c.x + c.width))
+                            y2 = int(media.height * (c.y + c.height))
+                            width = x2 - x1
+                            height = y2 - y1
+                            shorter_side = min(height, width)
+                            longer_side = max(height, width)
+                            delta = abs(longer_side - shorter_side)
+
+                            # Divide the difference by 2 to determine how much padding is needed on each side
+                            padding = delta // 2
+
+                            # Add the padding to the shorter side of the image
+                            if width == shorter_side:
+                                x1 -= padding
+                                x2 += padding
+                            else:
+                                y1 -= padding
+                                y2 += padding
+
+                            # Make sure that the coordinates don't go outside the image
+                            # If they do, adjust by the overflow amount
+                            if y1 < 0:
+                                y1 = 0
+                                y2 += abs(y1)
+                                if y2 > media.height:
+                                    y2 = media.height
+                            elif y2 > media.height:
+                                y2 = media.height
+                                y1 -= abs(y2 - media.height)
+                                if y1 < 0:
+                                    y1 = 0
+                            if x1 < 0:
+                                x1 = 0
+                                x2 += abs(x1)
+                                if x2 > media.width:
+                                    x2 = media.width
+                            elif x2 > media.width:
+                                x2 = media.width
+                                x1 -= abs(x2 - media.width)
+                                if x1 < 0:
+                                    x1 = 0
+                            if resize:
+                                crop_filter[frame].append(f"[v:0]crop={x2-x1}:{y2-y1}:{x1}:{y1},{scale_filter}[v{c.id}]")
+                            else:
+                                crop_filter[frame].append(f"[v:0]crop={x2-x1}:{y2-y1}:{x1}:{y1}[v{c.id}]")
+                            output_file = crop_path / f"{c.id}.jpg"
+                            output_maps[frame].append(f"-map [v{c.id}] -update true {output_file}")
+
+                    if hasattr(media.media_files, "streaming") and (len(media.media_files.streaming) == 1
+                            and media.media_files.streaming[0].path.startswith("http")):
+                        local_media = media.media_files.streaming[0].path
+                        in_media = localizations_by_media_id[media.id]
+                        df_localizations = pd.DataFrame([l.to_dict() for l in in_media])
+                        df_localizations = df_localizations.sort_values(by=['frame'], ascending=True)
+                        for frame, in_frame_loc in df_localizations.groupby('frame'):
+                            debug(f"Cropping ROIS in {local_media} frame {frame}")
+                            args = ["ffmpeg"]
+                            inputs = [
+                                "-y",
+                                "-loglevel",
+                                "panic",
+                                "-nostats",
+                                "-hide_banner",
+                                "-ss",
+                                frame_to_timestamp(media, frame),
+                                "-i",
+                                local_media,
+                                ]
+                            # Remove any duplicates in the crop filter for this frame
+                            crop_filter[frame] = list(set(crop_filter[frame]))
+                            crops = f';'.join(crop_filter[frame])
+                            outputs = ["-frames:v", "1", "-q:v", "1", "-y", "-filter_complex", f'"{crops}"']
+                            outputs.extend(output_maps[frame])
+                            args.extend(inputs)
+                            args.extend(outputs)
+                            debug(' '.join(args))
+                            try:
+                                subprocess.run(' '.join(args), check=False, shell=True)
+                            except subprocess.CalledProcessError as e:
+                                err(str(e))
+                                return False
+                    else:
+                        args = ["ffmpeg"]
+                        local_media = (media_path / media.name).as_posix()
+                        inputs = [
+                            "-y",
+                            "-loglevel",
+                            "panic",
+                            "-nostats",
+                            "-hide_banner",
+                            "-i",
+                            local_media,
+                        ]
+                        debug(f"Cropping ROIS in {local_media} frame {frame}")
+                        # Remove any duplicates in the crop filter for this frame
+                        crop_filter[frame] = list(set(crop_filter[frame]))
+                        crops = f';'.join(crop_filter[frame])
+                        outputs = ["-frames:v", "1", "-q:v", "1", "-y", "-filter_complex", f'"{crops}"']
+                        outputs.extend(output_maps[frame])
+                        args.extend(inputs)
+                        args.extend(outputs)
+                        debug(' '.join(args))
+                        try:
+                            subprocess.run(' '.join(args), check=False, shell=True)
+                        except subprocess.CalledProcessError as e:
+                            err(str(e))
+                            return False
+
+
         # Create YOLO, and optionally COCO, CIFAR, or VOC formatted files
         info(f"Creating YOLO files in {label_path}")
         json_content = {}
@@ -340,6 +483,11 @@ def download(
             image_path = media_path / m.name
 
             # Get the image size from the image using PIL
+            # Skip over any media that are not images
+            if not image_path.exists():
+                err(f"Could not find {image_path}. Video media not supported yet")
+                continue
+
             image = Image.open(image_path)
             image_width, image_height = image.size
 
@@ -449,6 +597,14 @@ def download(
     except Exception as e:
         exception(str(e))
         return False
+
+def frame_to_timestamp(media: tator.models.Media, frame: int) -> str:
+    # Convert timestamp to hour:minute:second format
+    total_seconds = frame / media.fps
+    hours = math.floor(total_seconds / 3600)
+    minutes = math.floor((total_seconds % 3600) / 60)
+    seconds = total_seconds % 60
+    return f"{hours:02}:{minutes:02}:{seconds:02}"
 
 
 def get_media(api: tator.api, project_id: int, media_ids: List[int]) -> List[tator.models.Media]:

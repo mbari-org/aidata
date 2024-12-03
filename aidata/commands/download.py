@@ -40,6 +40,8 @@ DEFAULT_BASE_DIR = Path.home() / "aidata" / "datasets"
     default="all",
     help='Comma separated list of concepts to download, or "all" for all concepts. For legacy projects only',
 )
+@click.option("--crop-roi", is_flag=True, help="True to download the rois cropped from the original images/video.")
+@click.option("--resize", type=int, help="Resize images to this size after cropping them.")
 @click.option("--voc", is_flag=True, help="True if export as VOC dataset, False if not.")
 @click.option("--coco", is_flag=True, help="True if export as COCO dataset, False if not.")
 @click.option("--cifar", is_flag=True, help="True if export as CIFAR dataset, False if not.")
@@ -64,6 +66,8 @@ def download(
     generator: str,
     labels: str,
     concepts: str,
+    crop_roi: bool,
+    resize: int,
     voc: bool,
     cifar: bool,
     coco: bool,
@@ -71,7 +75,7 @@ def download(
     save_score: bool,
     single_class: str,
     skip_image_download: bool,
-    verified: bool,
+    verified: bool
 ) -> bool:
     create_logger_file("download")
     try:
@@ -141,6 +145,8 @@ def download(
             voc=voc,
             coco=coco,
             cifar=cifar,
+            crop_roi=crop_roi,
+            resize=resize
         )
         return success
     except Exception as e:
