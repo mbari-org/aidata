@@ -1,6 +1,15 @@
 # CHANGELOG
 
 
+## v1.32.0 (2024-12-03)
+
+### Features
+
+- Added support to download ROIs in optimized formats for training from either video or images with
+  python aidata download dataset --crop-roi --resize 224 etc.
+  ([`9469a49`](https://github.com/mbari-org/aidata/commit/9469a49fd0b0df137e4003cd18027a5f171c37c1))
+
+
 ## v1.31.1 (2024-11-21)
 
 ### Bug Fixes
@@ -341,20 +350,20 @@ Adds the option --resize to the transform to transform with a resize. Useful for
 
 ### Documentation
 
-- Removed docs which are now in another repo and added commands for ref in README.md
-  ([`428d319`](https://github.com/mbari-org/aidata/commit/428d319d2a925acf830b52da7cc95a83501fb4c1))
+- Added detail on .env file
+  ([`dcd3137`](https://github.com/mbari-org/aidata/commit/dcd313773c84e1f57a8504b0a1365212cf435d70))
+
+- Correct link to internal docs
+  ([`208c6a8`](https://github.com/mbari-org/aidata/commit/208c6a8c1e2550fb5e81a492a65fa19542322ce6))
 
 - Moved CHANGELOG
   ([`e5e564d`](https://github.com/mbari-org/aidata/commit/e5e564da9b172d6815964d6fec8f3309ec969c6e))
 
-- Added detail on .env file
-  ([`dcd3137`](https://github.com/mbari-org/aidata/commit/dcd313773c84e1f57a8504b0a1365212cf435d70))
+- Removed docs which are now in another repo and added commands for ref in README.md
+  ([`428d319`](https://github.com/mbari-org/aidata/commit/428d319d2a925acf830b52da7cc95a83501fb4c1))
 
 - Resolve conflict
   ([`5c44451`](https://github.com/mbari-org/aidata/commit/5c44451a1d94824394515c2b37320f597ddb0a4c))
-
-- Correct link to internal docs
-  ([`208c6a8`](https://github.com/mbari-org/aidata/commit/208c6a8c1e2550fb5e81a492a65fa19542322ce6))
 
 - Updated with correct link to docs
   ([`2c65a57`](https://github.com/mbari-org/aidata/commit/2c65a57020d923d6bb63179bea04cadee694971f))
@@ -383,11 +392,11 @@ Adds the option --resize to the transform to transform with a resize. Useful for
 
 ### Documentation
 
-- Fixed links and added clickable link to mantis
-  ([`7688bbe`](https://github.com/mbari-org/aidata/commit/7688bbef6d6444a57eface9a62430c7f15f4a008))
-
 - Added project image
   ([`c45e7ea`](https://github.com/mbari-org/aidata/commit/c45e7ea2d091a94d4fe77e5b89d6a27a22209b3b))
+
+- Fixed links and added clickable link to mantis
+  ([`7688bbe`](https://github.com/mbari-org/aidata/commit/7688bbef6d6444a57eface9a62430c7f15f4a008))
 
 ### Features
 
@@ -436,14 +445,14 @@ Adds the option --resize to the transform to transform with a resize. Useful for
 
 ### Build System
 
-- Remove legacy "ENV key value" in Dockerfile.cuda
-  ([`d7fd3eb`](https://github.com/mbari-org/aidata/commit/d7fd3eb9164ba1b01e0be2dcacf087cab29122ce))
-
 - Correct docker build path
   ([`2fedee1`](https://github.com/mbari-org/aidata/commit/2fedee1433fe49828304af87d2d36bde1f7dac91))
 
 - Exclude py12 which is problematic with transformers library
   ([`1b2c09f`](https://github.com/mbari-org/aidata/commit/1b2c09f994f802946fbffed86997268606a114e8))
+
+- Remove legacy "ENV key value" in Dockerfile.cuda
+  ([`d7fd3eb`](https://github.com/mbari-org/aidata/commit/d7fd3eb9164ba1b01e0be2dcacf087cab29122ce))
 
 
 ## v1.7.1 (2024-07-23)
@@ -540,19 +549,19 @@ Adds the option --resize to the transform to transform with a resize. Useful for
 
 ### Bug Fixes
 
-- Revert to original pass through of datetime object
-  ([`45dcd1e`](https://github.com/mbari-org/aidata/commit/45dcd1e0ce238da023b62f209d17f60e2eeabbe9))
-
 - Correct load_bulk_boxes args and attribute mapping for redis load
   ([`33497f5`](https://github.com/mbari-org/aidata/commit/33497f5156d745ff36666dc11c6d13943b117fd4))
 
-### Performance Improvements
+- Revert to original pass through of datetime object
+  ([`45dcd1e`](https://github.com/mbari-org/aidata/commit/45dcd1e0ce238da023b62f209d17f60e2eeabbe9))
 
-- Remove audio and reduce frame rate to 24 for .git
-  ([`2a5a9f9`](https://github.com/mbari-org/aidata/commit/2a5a9f972c1518a8dc96f3206590e13a06020188))
+### Performance Improvements
 
 - Handle variable case attribues
   ([`01db568`](https://github.com/mbari-org/aidata/commit/01db568e178fdf6f5c08971bcc3caf74a7886e42))
+
+- Remove audio and reduce frame rate to 24 for .git
+  ([`2a5a9f9`](https://github.com/mbari-org/aidata/commit/2a5a9f972c1518a8dc96f3206590e13a06020188))
 
 - Remove palette gen for speed-up of video gif creation
   ([`5adaa02`](https://github.com/mbari-org/aidata/commit/5adaa022f1e6609ffd09d4ee04ae571b902e5750))
@@ -644,17 +653,17 @@ Adds the option --resize to the transform to transform with a resize. Useful for
 
 ### Bug Fixes
 
-- Return dataframe and process in sorted order for convenience
-  ([`1069369`](https://github.com/mbari-org/aidata/commit/10693697b639d0d513470e7a9ff07718a79003ab))
-
-- Correct path to SONY plugin
-  ([`6a8ea75`](https://github.com/mbari-org/aidata/commit/6a8ea75a7d7477b753e4285d47a36115ffedecac))
+- Added missing host for CFE
+  ([`5bbf029`](https://github.com/mbari-org/aidata/commit/5bbf0296b6584b400e1d01aded6bd1f2747070f0))
 
 - Correct path for loading SONY images
   ([`6f8ce47`](https://github.com/mbari-org/aidata/commit/6f8ce47d59d7b5935d38af094b793fdbc9c0fc9b))
 
-- Added missing host for CFE
-  ([`5bbf029`](https://github.com/mbari-org/aidata/commit/5bbf0296b6584b400e1d01aded6bd1f2747070f0))
+- Correct path to SONY plugin
+  ([`6a8ea75`](https://github.com/mbari-org/aidata/commit/6a8ea75a7d7477b753e4285d47a36115ffedecac))
+
+- Return dataframe and process in sorted order for convenience
+  ([`1069369`](https://github.com/mbari-org/aidata/commit/10693697b639d0d513470e7a9ff07718a79003ab))
 
 ### Build System
 
@@ -676,11 +685,11 @@ Adds the option --resize to the transform to transform with a resize. Useful for
 
 ### Features
 
-- Support both png and jpg uppercase SONY images
-  ([`db59ee5`](https://github.com/mbari-org/aidata/commit/db59ee55ba9abdebb2fb2ce8a777c58737727b85))
-
 - Support both png and jpg SONY images
   ([`a02a46a`](https://github.com/mbari-org/aidata/commit/a02a46ad2c74903e621cb9f69ec9de97aeec7a70))
+
+- Support both png and jpg uppercase SONY images
+  ([`db59ee5`](https://github.com/mbari-org/aidata/commit/db59ee55ba9abdebb2fb2ce8a777c58737727b85))
 
 
 ## v1.1.0 (2024-04-29)
@@ -724,11 +733,11 @@ Adds the option --resize to the transform to transform with a resize. Useful for
 
 ### Documentation
 
-- Consistent example
-  ([`db608bf`](https://github.com/mbari-org/aidata/commit/db608bf739ea1429ba19132e1b580d1a8240b9f0))
-
 - Added missing doc images
   ([`5532f33`](https://github.com/mbari-org/aidata/commit/5532f33dcc3bf5400dfc27308ee677e760e151bb))
+
+- Consistent example
+  ([`db608bf`](https://github.com/mbari-org/aidata/commit/db608bf739ea1429ba19132e1b580d1a8240b9f0))
 
 
 ## v1.0.0 (2024-03-16)
