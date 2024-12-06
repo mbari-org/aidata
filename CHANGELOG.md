@@ -1,6 +1,14 @@
 # CHANGELOG
 
 
+## v1.33.0 (2024-12-06)
+
+### Features
+
+- Separate crops by label and output stats.json to compatible format as voc-cropper
+  ([`0d068d8`](https://github.com/mbari-org/aidata/commit/0d068d8ed97f2893d42cedb78eca238c98942870))
+
+
 ## v1.32.0 (2024-12-03)
 
 ### Features
