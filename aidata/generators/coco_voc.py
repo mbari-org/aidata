@@ -172,7 +172,7 @@ def download(
             coco_path.mkdir(exist_ok=True)
             info(f"Creating COCO files in {coco_path}")
 
-        unique_labels = set() # To capture unique labels
+        label_counts = {} # To capture label counts
 
         # Get all the media objects that match the criteria
         localizations_by_media_id = {}
@@ -264,8 +264,9 @@ def download(
                     )
                     if single_class:
                         loc.attributes["Label"] = single_class
-                    # To capture unique labels
-                    unique_labels.add(l.attributes["Label"])
+                    if l.attributes["Label"] not in label_counts.keys():
+                        label_counts[l.attributes["Label"]] = 0
+                    label_counts[l.attributes["Label"]] += 1
                     # Append the localization to the media
                     localizations_by_media_id[l.media].append(loc)
 
@@ -306,10 +307,18 @@ def download(
             all_media += new_media
 
         # Write the labels to a file called labels.txt
-        labels = list(unique_labels)
+        labels = list(label_counts.keys())
         with (output_path / "labels.txt").open("w") as f:
             for label in labels:
                 f.write(f"{label}\n")
+
+        # If cropping the ROI, create the output directories and write stats to a file
+        if crop_roi:
+            for label in label_counts.keys():
+                (crop_path / label).mkdir(exist_ok=True)
+
+            with (crop_path / "stats.json").open("w") as f:
+                json.dump({"total_labels": label_counts}, f, indent=4, sort_keys=True)
 
         if not skip_image_download:
             # Download all the media files - this needs to be done before we can create the
@@ -339,22 +348,29 @@ def download(
 
         if crop_roi:
             # Crop the ROI from the original images/video in batches of 30
+            num_created = 0
             batch_size = 30
             scale_filter = ""
             if resize:
                 scale_filter = f"scale={resize}:{resize}"
-            crop_filter = defaultdict(list)
-            output_maps = defaultdict(list)
             for i in range(0, len(all_media), batch_size):
                 batch = all_media[i:i + batch_size]
                 for media in batch:
+                    crop_filter = defaultdict(list)
+                    output_maps = defaultdict(list)
                     in_media = localizations_by_media_id[media.id]
                     df_localizations = pd.DataFrame([l.to_dict() for l in in_media])
                     df_localizations = df_localizations.sort_values(by=['frame'], ascending=True)
                     # Group by frame, then add arguments to crop the ROIs in each frame and map them to output files with unique database ids
                     for frame, in_frame_loc in df_localizations.groupby('frame'):
                         debug(f"Processing frame {frame} in {media.name}")
-                        for c in in_frame_loc.itertuples(): 
+                        for c in in_frame_loc.itertuples():
+                            if c.attributes["Label"]:
+                                output_file = crop_path / c.attributes["Label"] / f"{c.id}.jpg"
+                            else:
+                                output_file = crop_path / f"{c.id}.jpg"
+                            if output_file.exists():
+                                continue
                             x1 = int(media.width * c.x)
                             y1 = int(media.height * c.y)
                             x2 = int(media.width * (c.x + c.width))
@@ -402,18 +418,19 @@ def download(
                                 crop_filter[frame].append(f"[v:0]crop={x2-x1}:{y2-y1}:{x1}:{y1},{scale_filter}[v{c.id}]")
                             else:
                                 crop_filter[frame].append(f"[v:0]crop={x2-x1}:{y2-y1}:{x1}:{y1}[v{c.id}]")
-                            output_file = crop_path / f"{c.id}.jpg"
-                            output_maps[frame].append(f"-map [v{c.id}] -update true {output_file}")
+                            output_maps[frame].append(f'-map [v{c.id}] -update true "{output_file}"')
 
-                    if hasattr(media.media_files, "streaming") and (len(media.media_files.streaming) == 1
-                            and media.media_files.streaming[0].path.startswith("http")):
+                    if hasattr(media.media_files, "streaming") \
+                            and media.media_files.streaming  \
+                            and len(media.media_files.streaming) == 1 \
+                            and media.media_files.streaming[0].path.startswith("http"):
                         local_media = media.media_files.streaming[0].path
+                        # local_media = local_media.replace("http://media.media_files.streaming[0].path", "https://")
                         in_media = localizations_by_media_id[media.id]
                         df_localizations = pd.DataFrame([l.to_dict() for l in in_media])
                         df_localizations = df_localizations.sort_values(by=['frame'], ascending=True)
                         for frame, in_frame_loc in df_localizations.groupby('frame'):
                             debug(f"Cropping ROIS in {local_media} frame {frame}")
-                            args = ["ffmpeg"]
                             inputs = [
                                 "-y",
                                 "-loglevel",
@@ -425,16 +442,19 @@ def download(
                                 "-i",
                                 local_media,
                                 ]
-                            # Remove any duplicates in the crop filter for this frame
-                            crop_filter[frame] = list(set(crop_filter[frame]))
+                            if len(crop_filter[frame]) == 0:
+                                continue
                             crops = f';'.join(crop_filter[frame])
                             outputs = ["-frames:v", "1", "-q:v", "1", "-y", "-filter_complex", f'"{crops}"']
                             outputs.extend(output_maps[frame])
+                            args = ["ffmpeg"]
                             args.extend(inputs)
                             args.extend(outputs)
                             debug(' '.join(args))
                             try:
                                 subprocess.run(' '.join(args), check=False, shell=True)
+                                num_created += len(output_maps[frame])
+                                debug(f"Created {num_created} crops")
                             except subprocess.CalledProcessError as e:
                                 err(str(e))
                                 return False
@@ -451,14 +471,14 @@ def download(
                             local_media,
                         ]
                         debug(f"Cropping ROIS in {local_media} frame {frame}")
-                        # Remove any duplicates in the crop filter for this frame
-                        crop_filter[frame] = list(set(crop_filter[frame]))
+                        if len(crop_filter[frame]) == 0:
+                            continue
                         crops = f';'.join(crop_filter[frame])
                         outputs = ["-frames:v", "1", "-q:v", "1", "-y", "-filter_complex", f'"{crops}"']
                         outputs.extend(output_maps[frame])
                         args.extend(inputs)
                         args.extend(outputs)
-                        debug(' '.join(args))
+                        debug(f"Cropping {len(output_maps[frame])} ROIs in {local_media} frame {frame}")
                         try:
                             subprocess.run(' '.join(args), check=False, shell=True)
                         except subprocess.CalledProcessError as e:
