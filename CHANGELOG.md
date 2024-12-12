@@ -1,6 +1,14 @@
 # CHANGELOG
 
 
+## v1.34.0 (2024-12-12)
+
+### Features
+
+- Handle 2015-03-07T20:53:01.065Z media timestamp and different cases of label in redis load
+  ([`be97c0f`](https://github.com/mbari-org/aidata/commit/be97c0f0465e20e5c1e9905e13f1514d31e4ae3e))
+
+
 ## v1.33.0 (2024-12-06)
 
 ### Features
