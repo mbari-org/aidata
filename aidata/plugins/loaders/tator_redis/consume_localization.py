@@ -60,12 +60,17 @@ class ConsumeLocalization:
                                 for b in objects:
                                     obj = objects[b]
                                     debug(obj)
+                                    if 'label' in obj:
+                                        label = obj['label']
+                                    if 'Label' in obj:
+                                        label = obj['Label']
+                                    info(f"Formatting {b}")
                                     attributes = format_attributes(obj, self.attribute_mapping)
                                     boxes.append(
                                         gen_spec(
                                             box=[obj["x1"], obj["y1"], obj["x2"], obj["y2"]],
                                             version_id=obj["version_id"],
-                                            label=obj["label"],
+                                            label=label,
                                             width=obj["width"],
                                             height=obj["height"],
                                             attributes=attributes,
