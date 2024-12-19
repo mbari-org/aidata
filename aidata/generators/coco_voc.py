@@ -317,8 +317,13 @@ def download(
             for label in label_counts.keys():
                 (crop_path / label).mkdir(exist_ok=True)
 
+<<<<<<< Updated upstream
             with (crop_path / "stats.json").open("w") as f:
                 json.dump({"total_labels": label_counts}, f, indent=4, sort_keys=True)
+=======
+            with (output_path / "stats.json").open("w") as f:
+                json.dump(label_counts, f, indent=4, sort_keys=True)
+>>>>>>> Stashed changes
 
         if not skip_image_download:
             # Download all the media files - this needs to be done before we can create the
