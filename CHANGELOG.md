@@ -1,6 +1,17 @@
 # CHANGELOG
 
 
+## v1.34.1 (2024-12-19)
+
+### Bug Fixes
+
+- Merge conflict
+  ([`e876177`](https://github.com/mbari-org/aidata/commit/e87617733304a07666821d73f9d9cf427df6cc4a))
+
+- Merge conflict
+  ([`ccfdd89`](https://github.com/mbari-org/aidata/commit/ccfdd894a64d678ca82716ecb504654758dd5fd1))
+
+
 ## v1.34.0 (2024-12-12)
 
 ### Features
