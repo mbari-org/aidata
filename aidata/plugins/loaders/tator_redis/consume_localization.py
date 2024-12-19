@@ -47,12 +47,14 @@ class ConsumeLocalization:
                                 # Remove any duplicates. Duplicates have the same box coordinates and frame number
                                 # and are considered the same object
                                 for obj_id in list(objects):
+                                    if obj_id not in objects:
+                                        continue
                                     obj = objects[obj_id]
                                     for obj2_id in list(objects):
                                         obj2 = objects[obj2_id]
                                         if obj_id != obj2_id and obj["frame"] == obj2["frame"] and obj["x1"] == obj2["x1"] and obj["y1"] == obj2["y1"] and obj["x2"] == obj2["x2"] and obj["y2"] == obj2["y2"]:
                                             info(f"Removing duplicate localization {obj2_id}")
-                                            del objects[obj2_id]
+                                            #del objects[obj2_id]
 
                                 info(f"Loading {len(objects)} localization(s) for video ref {video_ref} load_id {tator_id}")
 
@@ -89,6 +91,6 @@ class ConsumeLocalization:
                                     self.r.hdel(f"locs:{video_ref}", obj_id)
             except Exception as e:
                 info(f"Error: {e}")
-                time.sleep(30)
+                time.sleep(5)
 
-            time.sleep(30)
+            time.sleep(5)

@@ -141,6 +141,6 @@ class ConsumeVideo:
 
             except Exception as e:
                 err(f"Error consuming video {e}")
-                time.sleep(30)
+                time.sleep(60)
 
-            time.sleep(30)
+            time.sleep(60)
