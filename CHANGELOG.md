@@ -1,6 +1,9 @@
 # CHANGELOG
 
 
+## v1.34.2 (2024-12-19)
+
+
 ## v1.34.1 (2024-12-19)
 
 ### Bug Fixes
@@ -10,6 +13,11 @@
 
 - Merge conflict
   ([`ccfdd89`](https://github.com/mbari-org/aidata/commit/ccfdd894a64d678ca82716ecb504654758dd5fd1))
+
+### Performance Improvements
+
+- Reduce delay for redis load and more robust handling of different label payload
+  ([`032d958`](https://github.com/mbari-org/aidata/commit/032d9588c4150eaacd8a6058ee03a0bab185f343))
 
 
 ## v1.34.0 (2024-12-12)
