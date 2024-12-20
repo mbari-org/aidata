@@ -68,6 +68,19 @@ setup-docker-dev:
       /bin/sh -c 'redis-stack-server --port 6382 --appendonly yes --appendfsync everysec --requirepass "${REDIS_PASSWD:?REDIS_PASSWD variable is not set}"'
 
 
+# Build the docker images for all platforms
+build-docker:
+    #!/usr/bin/env bash
+    export PATH=$PATH:/usr/local/bin
+    # Get the release version from the git tag and strip the v from the version
+    export RELEASE_VERSION=$(git describe --tags --abbrev=0)
+    export RELEASE_VERSION=${RELEASE_VERSION:1}
+    echo "Building docker images for release version: $RELEASE_VERSION"
+    docker buildx create --name mybuilder --platform linux/amd64,linux/arm64 --use
+    docker buildx build --push --platform linux/amd64,linux/arm64 -t mbari/aidata:$RELEASE_VERSION --build-arg IMAGE_URI=mbari/aidata:$RELEASE_VERSION -f docker/Dockerfile .
+    docker buildx build --push --platform linux/amd64 -t mbari/aidata:$RELEASE_VERSION-cuda124 --build-arg IMAGE_URI=mbari/aidata:$RELEASE_VERSION-cuda124 -f docker/Dockerfile.cuda .
+    docker push mbari/aidata:$RELEASE_VERSION
+
 # Install development dependencies. Run before running tests
 install-dev:
     #!/usr/bin/env bash
