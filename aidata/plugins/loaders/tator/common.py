@@ -2,13 +2,15 @@
 # Filename: plugins/loaders/tator/common.py
 # Description: Common database functions
 import os
-from typing import Tuple
+from datetime import date, datetime
+from typing import Tuple, Any, List, Dict
 
 import yaml
 
 from tator.openapi.tator_openapi import TatorApi  # type: ignore
 from tator.openapi.tator_openapi.models import Project  # type: ignore
 import tator  # type: ignore
+from urllib3 import HTTPHeaderDict
 
 from aidata.logger import info, debug, err
 
@@ -47,10 +49,12 @@ def init_api_project(host: str, token: str, project: str) -> Tuple[TatorApi, tat
         info(f"Connecting to Tator at {host}")
         api = tator.get_api(host, token)
     except Exception as e:
-        raise (e)
+        raise e
 
     info(f"Searching for project {project} on {host}.")
     tator_project = find_project(api, project)
+    if tator_project is None:
+        raise Exception(f"Could not find project {project}")
     info(f"Found project {tator_project.name} with id {tator_project.id}")
     if tator_project is None:
         raise Exception(f"Could not find project {project}")
@@ -86,7 +90,7 @@ def find_box_type(api: TatorApi, project: int, type_name: str = "Box") -> tator.
     return None
 
 
-def find_media_type(api: TatorApi, project: int, type_name: str) -> tator.models.MediaType:
+def find_media_type(api: TatorApi, project: int, type_name: str) -> Any | None:
     """
     Find the media type for the given project
     :param type_name: String that identifies type, e.g. "Stereo"

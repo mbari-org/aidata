@@ -7,6 +7,8 @@ import os
 from typing import List, Any, Dict
 
 import requests
+from moviepy import VideoFileClip
+import mimetypes
 import subprocess
 
 from pathlib import Path
@@ -55,7 +57,7 @@ def gen_spec(file_loc: str, type_id: int, section: str, **kwargs) -> dict:
     file_url = kwargs.get("file_url")  # The URL to the file if hosted.
 
     if file_url:
-        print(f"spec file URL: {file_url}")
+        debug(f"spec URL: {file_url}")
         spec = {
             "type": type_id,
             "url": file_url,
@@ -91,35 +93,62 @@ def gen_spec(file_loc: str, type_id: int, section: str, **kwargs) -> dict:
 
 def gen_thumbnail(ffmpeg_path: str, num_frames: int, fps: float, video_path: str, thumb_gif_path: str):
     # Create gif thumbnail in a single pass
-    # This logic makes a max(video_length,60) second summary video than speeds it up 4 times and saves as a gif
+    # This logic makes a max 10 second summary video and saves as a gif
     video_duration = int(num_frames / fps)
 
     # Max thumbnail duration is 10 seconds
     thumb_duration = min(10, video_duration)
 
-    # We either select every Nth second based on how much longer than 60 seconds we are
-    frame_select = max(fps, (video_duration / thumb_duration) * fps)
+    # If the video duration is shorter than the thumb duration, adjust the gif to be the video duration
+    if video_duration < 10:
+        cmd = [
+            ffmpeg_path,
+            "-y",
+            "-i",
+            f'{video_path}',
+            "-vf",
+            f"fps={int(fps)},scale=256:-1:flags=lanczos",
+            "-an",
+            thumb_gif_path,
+        ]
+    else:
+        frame_select = max(fps, (video_duration / thumb_duration) * fps)
+        speed_up = 64 * max(1, round(video_duration / thumb_duration))
 
-    # We play each 1 second sample at 64x speed
-    speed_up = 64 * max(1, round(video_duration / thumb_duration))
-
-    debug(f"Creating {thumb_gif_path} frame_select={frame_select} speed_up={speed_up}")
-    cmd = [
-        ffmpeg_path,
-        "-y",
-        "-i",
-        video_path,
-        "-vf",
-        f"select='not(mod(n,{round(frame_select)}))',scale=256:-1:flags=lanczos,setpts=PTS/{speed_up},fps=24",
-        "-an",
-        thumb_gif_path,
-    ]
+        debug(f"Creating {thumb_gif_path} frame_select={frame_select} speed_up={speed_up}")
+        cmd = [
+            ffmpeg_path,
+            "-y",
+            "-i",
+            f'{video_path}',
+            "-vf",
+            f"select='not(mod(n,{round(frame_select)}))',scale=256:-1:flags=lanczos,setpts=PTS/{speed_up},fps=24",
+            "-an",
+            thumb_gif_path,
+        ]
     info(f"cmd={cmd}")
+    debug(' '.join(cmd))
     subprocess.run(cmd, check=True)
 
 
-def get_video_metadata(video_name):
+def get_video_metadata(video_name: str, video_path: Path = None) -> dict or None:
     try:
+        # If the video exists, get the metadata directly, otherwise try to get from the VAM API
+        # with the video name
+        if video_path and video_path.exists():
+            video_clip = VideoFileClip(video_path.as_posix())
+            reader_metadata = video_clip.reader.infos.get('metadata')
+            metadata = {
+                "codec": reader_metadata["encoder"],
+                "mime": mimetypes.guess_type(video_path.as_posix()),
+                "resolution": video_clip.reader.size,
+                "size": os.stat(video_path.as_posix()).st_size,
+                "num_frames": video_clip.reader.n_frames,
+                "frame_rate": video_clip.reader.fps,
+            }
+            video_clip.close()
+            return metadata
+
         query = f"http://m3.shore.mbari.org/vam/v1/media/videoreference/filename/{video_name}"
 
         info(f"query: {query}")
@@ -193,7 +222,9 @@ def load(ffmpeg_path: str, project_id: int, api: tatorapi, media_path: str, spec
             is_video = True
 
         if is_video:
-            metadata = get_video_metadata(spec["name"])
+            metadata = get_video_metadata(spec["name"], **kwargs)
+            if not metadata:
+                raise Exception(f"Error getting metadata for {media_path}")
             media_spec = {
                 "type": spec["type"],
                 "section": spec["section"],
@@ -314,7 +345,7 @@ def load_media(
     :param media_type: media type
     :return:
     """
-    info(f"Uploading {media_path}")
+    info(f"Loading {media_path}")
     spec = gen_spec(
         file_loc=media_path,
         type_id=media_type.id,

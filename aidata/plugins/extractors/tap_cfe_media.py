@@ -1,6 +1,6 @@
 # aidata, Apache-2.0 license
 # Filename: plugins/extractor/tap_cfe_media.py
-# Description: Extracts data from CFE image meta data
+# Description: Extracts data from CFE image/video meta data
 from enum import Enum
 import re
 from datetime import datetime
@@ -11,7 +11,7 @@ import pytz
 import pandas as pd
 from pathlib import Path
 
-from aidata.logger import info
+from aidata.logger import info, exception
 
 
 # Add an enum class for the instrument types ISIIS, SES, SINKER, MINION_FLUX and SNOW_CAM
@@ -23,54 +23,117 @@ class Instrument(Enum):
     SNOW_CAM = "SNOW_CAM"
 
 
-def extract_media(image_path: Path, max_images: Optional[int] = None) -> pd.DataFrame:
+def extract_media(media_path: Path, max_images: Optional[int] = None) -> pd.DataFrame:
+
+    df_images = extract_images(media_path, max_images)
+    df_videos = extract_videos(media_path, max_images)
+    df = pd.concat([df_images, df_videos], ignore_index=True)
+    return df
+
+
+def extract_videos(media_path: Path, max_videos: Optional[int] = None) -> pd.DataFrame:
+    """Extracts data CFE video meta data"""
+
+    # Create a dataframe to store the combined data in a media_path column in sorted order
+    df = pd.DataFrame()
+    if media_path.is_dir():
+        df["media_path"] = [f.as_posix() for f in media_path.rglob("*.mp4")]
+    elif media_path.is_file():
+        df["media_path"] = [media_path.as_posix()]
+    df.sort_values(by="media_path")
+    if 0 < max_videos < len(df):
+        df = df.iloc[:max_videos] # Limit the number of videos to process
+
+    # 'CFE_ISIIS-010-2024-01-26 10-14-07.102_0835.mp4'
+    pattern = re.compile(
+        r"CFE_(.*?)-(\d+)-(\d{4}-\d{2}-\d{2} \d{2}-\d{2}-\d{2}\.\d{3})\.mp4")
+
+    index = 0
+    # Grab any additional metadata from the image name,
+    iso_datetime = {}
+    instrument_type = {}
+    info(f"Found {len(df)} unique videos")
+    try:
+        df = df.groupby("media_path").first().reset_index()
+        for group, df in df.groupby("media_path"):
+            image_name = Path(str(group)).name
+            info(image_name)
+            matches = re.findall(pattern, image_name)
+            if matches:
+                instrument, _, datetime_str = matches[0]
+                datetime_str = datetime_str + "Z"
+                dt = datetime.strptime(datetime_str, "%Y-%m-%d %H-%M-%S.%fZ")
+                dt_utc = pytz.utc.localize(dt)
+                iso_datetime[index] = dt_utc
+                instrument_type[index] = instrument
+                iso_datetime[index] = iso_datetime[index]
+
+        if len(instrument_type) == 0:
+            raise ValueError("No instrument type found in CFE video names")
+        if len(iso_datetime) == 0:
+            raise ValueError("No iso datetime found in video names")
+
+        df["instrument"] = instrument_type
+        df["iso_datetime"] = iso_datetime
+        return df
+    except Exception as e:
+        exception(f"Error extracting video metadata: {e}")
+        return pd.DataFrame()
+
+def extract_images(media_path: Path, max_images: Optional[int] = None) -> pd.DataFrame:
     """Extracts data CFE image meta data"""
 
-    # Create a dataframe to store the combined data in an image_path column in sorted order
-    images_df = pd.DataFrame()
-    if image_path.is_dir():
-        images_df["image_path"] = [f.as_posix() for f in image_path.rglob("*")]
-    elif image_path.is_file():
-        images_df["image_path"] = [image_path.as_posix()]
-    images_df.sort_values(by="image_path")
-    if 0 < max_images < len(images_df):
-        images_df = images_df.iloc[:max_images]
+    # Create a dataframe to store the combined data in an media_path column in sorted order
+    df = pd.DataFrame()
+    acceptible_extensions = ["png", "jpg", "jpeg", "JPEG", "PNG"]
+    if media_path.is_dir():
+        df["media_path"] = [f.as_posix() for f in media_path.rglob("*")]
+    elif media_path.is_file():
+        df["media_path"] = [media_path.as_posix()]
+    df.sort_values(by="media_path")
+    # Keep only the images with the acceptible extensions
+    df = df[df["media_path"].str.endswith(tuple(acceptible_extensions))]
+    if 0 < max_images < len(df):
+        df = df.iloc[:max_images]
 
     # 'CFE_ISIIS-010-2024-01-26 10-14-07.102_0835_8.3m.png'
     pattern = re.compile(r"CFE_(.*?)-(\d+)-(\d{4}-\d{2}-\d{2} \d{2}-\d{2}-\d{2}\.\d{3})_(\d{4})_(\d+\.\d+)m\.(png|jpg|jpeg|JPEG|PNG)")
 
     index = 0
-    images_df = images_df.groupby("image_path").first().reset_index()
-
     # Grab any additional metadata from the image name,
     iso_datetime = {}
     instrument_type = {}
     depth = {}
-    info(f"Found {len(images_df)} unique images")
+    info(f"Found {len(df)} unique images")
     fps = 17
-    for group, df in images_df.groupby("image_path"):
-        image_name = Path(str(group)).name
-        info(image_name)
-        matches = re.findall(pattern, image_name)
-        if matches:
-            instrument, _, datetime_str, frame_num, depth_str, ext = matches[0]
-            datetime_str = datetime_str + "Z"
-            dt = datetime.strptime(datetime_str, "%Y-%m-%d %H-%M-%S.%fZ")
-            dt_utc = pytz.utc.localize(dt)
-            iso_datetime[index] = dt_utc
-            instrument_type[index] = instrument
-            depth[index] = float(depth_str)
-            increment_mseconds = int(int(frame_num) * 1e6 / fps)
-            iso_datetime[index] = iso_datetime[index] + pd.Timedelta(microseconds=increment_mseconds)
+    try:
+        df = df.groupby("media_path").first().reset_index()
+        for group, df in df.groupby("media_path"):
+            image_name = Path(str(group)).name
+            info(image_name)
+            matches = re.findall(pattern, image_name)
+            if matches:
+                instrument, _, datetime_str, frame_num, depth_str, ext = matches[0]
+                datetime_str = datetime_str + "Z"
+                dt = datetime.strptime(datetime_str, "%Y-%m-%d %H-%M-%S.%fZ")
+                dt_utc = pytz.utc.localize(dt)
+                iso_datetime[index] = dt_utc
+                instrument_type[index] = instrument
+                depth[index] = float(depth_str)
+                increment_mseconds = int(int(frame_num) * 1e6 / fps)
+                iso_datetime[index] = iso_datetime[index] + pd.Timedelta(microseconds=increment_mseconds)
 
-    if len(instrument_type) == 0:
-        raise ValueError("No instrument type found in CFE image names")
-    if len(iso_datetime) == 0:
-        raise ValueError("No iso datetime found in image names")
-    if len(depth) == 0:
-        raise ValueError("No depth found in image names")
+        if len(instrument_type) == 0:
+            raise ValueError("No instrument type found in CFE image names")
+        if len(iso_datetime) == 0:
+            raise ValueError("No iso datetime found in image names")
+        if len(depth) == 0:
+            raise ValueError("No depth found in image names")
 
-    images_df["instrument"] = instrument_type
-    images_df["iso_datetime"] = iso_datetime
-    images_df["depth"] = depth
-    return images_df
+        df["instrument"] = instrument_type
+        df["iso_datetime"] = iso_datetime
+        df["depth"] = depth
+        return df
+    except Exception as e:
+        exception(f"Error extracting image metadata: {e}")
+        return pd.DataFrame()

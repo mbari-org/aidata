@@ -7,6 +7,12 @@ mounts:
     host: localhost
     port: 8082
 
+  - name: "video"
+    path: "./data/cfe"
+    nginx_root: "/data/cfe"
+    host: localhost
+    port: 8082
+
 plugins:
   - name: "extractor"
     module: "aidata.plugins.extractors.tap_cfe_media"
@@ -22,13 +28,17 @@ vss:
 
 tator:
   project: "902111-CFE"
-  host: "ada.local:8080"
+  host: "localhost:8080"
   image:
     attributes:
       iso_datetime:
         type: datetime
       depth:
         type: float
+  video:
+    attributes:
+      iso_start_datetime:
+        type: datetime
   box:
     attributes:
       Label:
@@ -41,3 +51,5 @@ tator:
         type: float
       area:
         type: int
+
+ffmpeg_path: "/opt/homebrew/bin/ffmpeg"

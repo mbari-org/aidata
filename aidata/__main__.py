@@ -14,6 +14,7 @@ from pathlib import Path
 
 from aidata.commands.download import download
 from aidata.commands.load_images import load_images
+from aidata.commands.load_video import load_video
 from aidata.commands.load_exemplars import load_exemplars
 from aidata.commands.db_utils import reset_redis
 from aidata.commands.transform import transform, voc_to_yolo
@@ -46,6 +47,7 @@ def cli_load():
 
 cli.add_command(cli_load)
 cli_load.add_command(load_images)
+cli_load.add_command(load_video)
 cli_load.add_command(load_boxes)
 cli_load.add_command(load_queue)
 cli_load.add_command(load_exemplars)

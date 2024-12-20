@@ -17,17 +17,21 @@ config_path = Path(__file__).parent / "config"
 
 HAS_DATABASE = False
 
-dotenv.load_dotenv()
 
 def setup():
+    dotenv.load_dotenv()
+    # Print the environment variables
+    print(os.environ)
     # TODO: Add a check for the database presence
     if "TATOR_TOKEN" in os.environ.keys():
         global HAS_DATABASE
         HAS_DATABASE = True
     os.environ["ENVIRONMENT"] = "TESTING"
 
+setup()
+
 @pytest.mark.skipif(not HAS_DATABASE, reason="This test is excluded because it requires a database")
-def test_load_media_dryrun():
+def test_load_image_dryrun():
     setup()
     runner = CliRunner()
     """Test that the process command works when passing arguments with a single image"""
@@ -53,7 +57,32 @@ def test_load_media_dryrun():
 
 
 @pytest.mark.skipif(not HAS_DATABASE, reason="This test is excluded because it requires a database")
-def test_load_media_i2map():
+def test_load_video_dryrun():
+    setup()
+    runner = CliRunner()
+    """Test that the process command works when passing arguments with a video directory"""
+    video_path = data_path / "cfe"
+    config_yaml = config_path / "config_cfe.yml"
+    print(config_yaml.as_posix())
+    result = runner.invoke(
+        cli,
+        [
+            "load",
+            "videos",
+            "--input",
+            video_path.as_posix(),
+            "--config",
+            config_yaml.as_posix(),
+            "--token",
+            os.environ["TATOR_TOKEN"]
+        ],
+    )
+    print(result.output)
+    assert result.exit_code == 0
+
+
+@pytest.mark.skipif(not HAS_DATABASE, reason="This test is excluded because it requires a database")
+def test_load_image_i2map():
     setup()
     runner = CliRunner()
     """Test that the process command works when passing arguments with a single image"""

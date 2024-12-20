@@ -35,6 +35,13 @@ setup-db:
 #    export PATH="$PATH:~/miniconda3/bin/"
 #    conda run -n aidata --no-capture-output python3 aidata db create
 
+# Stop the docker development environment
+stop-docker-dev:
+    #!/usr/bin/env bash
+    docker stop nginx_images
+    docker stop redis-test
+#    cd tator && make down
+
 # Setup the docker development environment
 setup-docker-dev:
     #!/usr/bin/env bash
@@ -75,11 +82,13 @@ test-media-i2map:
     export PATH="$PATH:~/miniconda3/bin/"
     time conda run -n aidata --no-capture-output pytest -r tests/test_load_media.py::test_load_media_i2map
 
+# Test dry-run loading of images or videos
 test-dryrun:
     #!/usr/bin/env bash
     export PYTHONPATH=.
     export PATH="$PATH:~/miniconda3/bin/"
-    time pytest -r tests/test_load_media.py::test_load_media_dryrun
+    time conda run -n aidata --no-capture-output pytest -r tests/test_load_media.py::test_load_image_dryrun
+    time conda run -n aidata --no-capture-output pytest -r tests/test_load_media.py::test_load_video_dryrun
 
 download-300m-data:
     #!/usr/bin/env bash
