@@ -2,6 +2,7 @@
 
 # Source the .env file
 set dotenv-load := true
+set export
 
 # List recipes
 list:
@@ -16,9 +17,28 @@ install:
 update:
     conda env update --file environment.yml --prune
 
+# Setup the database
+setup-db:
+    #!/usr/bin/env bash
+    export PYTHONPATH=.
+    rm -rf tator
+    git clone --recurse-submodules https://github.com/mbari-org/tator
+    cd tator && git checkout 1.2.5
+    cp example-env .env && make tator &&  make superuser
+
+# TODO: Add a command to initialize the database from the yaml file
+# See sightwire code for an example of how to do this
+## Initialize the database
+#init-db:
+#    #!/usr/bin/env bash
+#    export PYTHONPATH=.
+#    export PATH="$PATH:~/miniconda3/bin/"
+#    conda run -n aidata --no-capture-output python3 aidata db create
+
 # Setup the docker development environment
 setup-docker-dev:
     #!/usr/bin/env bash
+    export PATH=$PATH:/usr/local/bin
     docker stop nginx_images
     docker rm nginx_images
     docker run -d -p 8082:8082  \
@@ -26,9 +46,12 @@ setup-docker-dev:
         -v $PWD/tests/nginx.conf:/etc/nginx/conf.d/default.conf \
         --restart always  \
         --name nginx_images nginx:1.23.3
+    # Get the IP address of the host and add it to the host: field in all the test yaml files
+    export HOST_IP=$(ipconfig getifaddr en0)
+    sed -i '' "s/host: localhost/host: $HOST_IP/g" tests/config/*.yml
     docker volume create redis-test
     docker stop redis-test && docker rm redis-test || true
-    docker run -d \
+    docker run \
       --name redis-test \
       --env-file .env \
       -p 6379:6379 \
@@ -37,15 +60,31 @@ setup-docker-dev:
       redis/redis-stack-server \
       /bin/sh -c 'redis-stack-server --port 6382 --appendonly yes --appendfsync everysec --requirepass "${REDIS_PASSWD:?REDIS_PASSWD variable is not set}"'
 
-# Test the media
-test-load-media:
+
+# Install development dependencies. Run before running tests
+install-dev:
     #!/usr/bin/env bash
     export PYTHONPATH=.
-    time conda run -n aidata --no-capture-output python3 tests/test_load_media.py
+    export PATH="$PATH:~/miniconda3/bin/"
+    conda run -n aidata --no-capture-output python3 -m pip install -r requirements-dev.txt
+
+# Test the media
+test-media-i2map:
+    #!/usr/bin/env bash
+    export PYTHONPATH=.
+    export PATH="$PATH:~/miniconda3/bin/"
+    time conda run -n aidata --no-capture-output pytest -r tests/test_load_media.py::test_load_media_i2map
+
+test-dryrun:
+    #!/usr/bin/env bash
+    export PYTHONPATH=.
+    export PATH="$PATH:~/miniconda3/bin/"
+    time pytest -r tests/test_load_media.py::test_load_media_dryrun
 
 download-300m-data:
     #!/usr/bin/env bash
     export PYTHONPATH=.
+    export PATH="$PATH:~/miniconda3/bin/"
     time conda run -n aidata --no-capture-output python3 aidata download dataset --base-path ./data/i2map --version Baseline --depth 300  --labels "all" --config ./aidata/config/config_i2map.yml
 
 download-300m-data-gtp97:
@@ -56,7 +95,7 @@ download-300m-data-gtp97:
 download-atolla-data:
     #!/usr/bin/env bash
     export PYTHONPATH=.
-    time conda run -n aidata --no-capture-output python3 aidata download dataset --version Baseline --labels "Atolla" --cifar --cifar-size 128 --config ./aidata/config/config_bio.yml
+    time conda run -n aidata --no-capture-output python3 aidata download dataset --version mega-vits-track-gcam --labels "Atolla" --crop-roi --config ./aidata/config/config_bio.yml
 
 download-single-class-data:
     #!/usr/bin/env bash

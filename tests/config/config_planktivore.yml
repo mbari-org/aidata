@@ -3,7 +3,7 @@
 mounts:
   - name: "image"
     path: "./data/planktivore"
-    host: "192.168.0.17" # Note: This is the IP address of the host machine which changes based on the network
+    host: localhost
     nginx_root: "/data/planktivore"
     port: 8082
 

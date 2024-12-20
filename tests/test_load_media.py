@@ -1,13 +1,14 @@
 # aidata, Apache-2.0 license
 # Filename: tests/test_load_media.py
 # Description: Tests loading media to a Tator database
-
+import dotenv
 import pytest
 from click.testing import CliRunner
 from pathlib import Path
 
 from aidata.__main__ import cli
 from aidata.logger import CustomLogger
+import os
 
 CustomLogger(output_path=Path.cwd() / "logs", output_prefix=__name__)
 
@@ -16,18 +17,14 @@ config_path = Path(__file__).parent / "config"
 
 HAS_DATABASE = False
 
+dotenv.load_dotenv()
 
 def setup():
-    # Make sure the TATOR_TOKEN environment variable is set
-    import os
-
     # TODO: Add a check for the database presence
     if "TATOR_TOKEN" in os.environ.keys():
         global HAS_DATABASE
         HAS_DATABASE = True
     os.environ["ENVIRONMENT"] = "TESTING"
-
-setup()
 
 @pytest.mark.skipif(not HAS_DATABASE, reason="This test is excluded because it requires a database")
 def test_load_media_dryrun():
@@ -47,6 +44,8 @@ def test_load_media_dryrun():
             image_path.as_posix(),
             "--config",
             config_yaml.as_posix(),
+            "--token",
+            os.environ["TATOR_TOKEN"]
         ],
     )
     print(result.output)
@@ -70,6 +69,8 @@ def test_load_media_i2map():
             image_path.as_posix(),
             "--config",
             config_yaml.as_posix(),
+            "--token",
+            os.environ["TATOR_TOKEN"]
         ],
     )
     print(result.output)
@@ -93,6 +94,8 @@ def test_load_media_cfe():
             image_path.as_posix(),
             "--config",
             config_yaml.as_posix(),
+            "--token",
+            os.environ["TATOR_TOKEN"]
         ],
     )
     print(result.output)
@@ -115,6 +118,8 @@ def test_load_media_uav():
             image_path.as_posix(),
             "--config",
             config_yaml.as_posix(),
+            "--token",
+            os.environ["TATOR_TOKEN"]
         ],
     )
     print(result.output)
@@ -137,6 +142,8 @@ def test_load_media_planktivore():
             image_path.as_posix(),
             "--config",
             config_yaml.as_posix(),
+            "--token",
+            os.environ["TATOR_TOKEN"]
         ],
     )
     print(result.output)
