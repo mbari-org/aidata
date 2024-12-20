@@ -10,7 +10,7 @@ It is a modified version that supports locally hosted images, video and caching.
 git clone --recurse-submodules https://github.com/mbari-org/tator
 git checkout 1.2.5
 cd tator
-cp example.env .env
+cp example-env .env
 ```
 
 Replace localhost with name of your machine running the TATOR database in the **.env** file, e.g.
