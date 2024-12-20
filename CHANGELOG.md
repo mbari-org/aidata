@@ -1,6 +1,19 @@
 # CHANGELOG
 
 
+## v1.35.0 (2024-12-20)
+
+### Documentation
+
+- Minor typo
+  ([`c746ecb`](https://github.com/mbari-org/aidata/commit/c746ecb9b70ac740d15613aebf6998e6feae8844))
+
+### Features
+
+- Load CFE ISIIS video
+  ([`6c20301`](https://github.com/mbari-org/aidata/commit/6c20301de8d7194d53ec4188cc8bd625d74a2512))
+
+
 ## v1.34.2 (2024-12-19)
 
 
