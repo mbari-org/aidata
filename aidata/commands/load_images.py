@@ -16,7 +16,7 @@ from aidata.plugins.loaders.tator.attribute_utils import format_attributes
 from aidata.plugins.loaders.tator.common import init_api_project, find_media_type, init_yaml_config
 
 
-@click.command("images", help="Load images from a directory")
+@click.command("images", help="Load images from a directory or a single image file")
 @common_args.token
 @common_args.yaml_config
 @common_args.dry_run

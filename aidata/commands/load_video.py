@@ -15,11 +15,11 @@ from aidata.plugins.module_utils import load_module
 from aidata.plugins.loaders.tator.common import init_api_project, find_media_type, init_yaml_config
 
 
-@click.command("videos", help="Load video from a directory")
+@click.command("videos", help="Load videos from a directory or a single video")
 @common_args.token
 @common_args.yaml_config
 @common_args.dry_run
-@click.option("--input", type=str, required=True, help="Path to directory with input video")
+@click.option("--input", type=str, required=True, help="Path to directory with input video or single video")
 @click.option("--section", type=str, default="All Media", help="Section to load images into. Default is 'All Media'")
 @click.option("--max-videos", type=int, default=-1, help="Only load up to max-videos. Useful for testing. Default is to load all mp4 videos found")
 def load_video(token: str, config: str, dry_run: bool, input: str, section: str, max_videos: int) -> int:
