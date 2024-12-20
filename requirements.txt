@@ -1,6 +1,7 @@
 redis==5.0.7
 tator==1.2.3
 ephem
+moviepy==2.1.1
 opencv-contrib-python
 pytz
 piexif==1.1.3
