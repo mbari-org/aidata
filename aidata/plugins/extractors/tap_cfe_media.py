@@ -45,8 +45,7 @@ def extract_videos(media_path: Path, max_videos: Optional[int] = None) -> pd.Dat
         df = df.iloc[:max_videos] # Limit the number of videos to process
 
     # 'CFE_ISIIS-010-2024-01-26 10-14-07.102_0835.mp4'
-    pattern = re.compile(
-        r"CFE_(.*?)-(\d+)-(\d{4}-\d{2}-\d{2} \d{2}-\d{2}-\d{2}\.\d{3})\.mp4")
+    pattern = re.compile(r"CFE_(.*?)-(\d+)-(\d{4}-\d{2}-\d{2} \d{2}-\d{2}-\d{2}\.\d{3})\.mp4")
 
     index = 0
     # Grab any additional metadata from the image name,
@@ -85,14 +84,14 @@ def extract_images(media_path: Path, max_images: Optional[int] = None) -> pd.Dat
 
     # Create a dataframe to store the combined data in an media_path column in sorted order
     df = pd.DataFrame()
-    acceptible_extensions = ["png", "jpg", "jpeg", "JPEG", "PNG"]
+    acceptable_extensions = ["png", "jpg", "jpeg", "JPEG", "PNG"]
     if media_path.is_dir():
         df["media_path"] = [f.as_posix() for f in media_path.rglob("*")]
     elif media_path.is_file():
         df["media_path"] = [media_path.as_posix()]
     df.sort_values(by="media_path")
     # Keep only the images with the acceptible extensions
-    df = df[df["media_path"].str.endswith(tuple(acceptible_extensions))]
+    df = df[df["media_path"].str.endswith(tuple(acceptable_extensions))]
     if 0 < max_images < len(df):
         df = df.iloc[:max_images]
 
@@ -122,6 +121,7 @@ def extract_images(media_path: Path, max_images: Optional[int] = None) -> pd.Dat
                 depth[index] = float(depth_str)
                 increment_mseconds = int(int(frame_num) * 1e6 / fps)
                 iso_datetime[index] = iso_datetime[index] + pd.Timedelta(microseconds=increment_mseconds)
+                index += 1
 
         if len(instrument_type) == 0:
             raise ValueError("No instrument type found in CFE image names")
