@@ -12,6 +12,7 @@ from aidata.logger import info, err, create_logger_file
 from aidata.plugins.loaders.tator.attribute_utils import format_attributes
 from aidata.plugins.loaders.tator.media import load_media
 from aidata.plugins.module_utils import load_module
+from aidata.plugins.extractors.media_types import MediaType
 from aidata.plugins.loaders.tator.common import init_api_project, find_media_type, init_yaml_config
 
 
@@ -59,8 +60,8 @@ def load_video(token: str, config: str, dry_run: bool, input: str, section: str,
         info(f"No images found in {media.input_path}")
         return 0
 
-    # Drop all rows where the image_path end with .mp4
-    df_media = df_media[df_media["media_path"].str.endswith(".mp4")]
+    # Keep only the VIDEO media
+    df_media = df_media[df_media['media_type'] == MediaType.VIDEO]
 
     if dry_run:
         info(f'Dry run: Found {len(df_media)} media file to load')

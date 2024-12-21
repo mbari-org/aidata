@@ -11,6 +11,7 @@ import pandas as pd
 from pathlib import Path
 
 from aidata.logger import info
+from aidata.plugins.extractors.media_types import MediaType
 
 
 def extract_media(image_path: Path, max_images: Optional[int] = None) -> pd.DataFrame:
@@ -40,4 +41,5 @@ def extract_media(image_path: Path, max_images: Optional[int] = None) -> pd.Data
             iso_datetime[index] = dt_utc
 
     images_df["iso_datetime"] = iso_datetime
+    images_df["media_type"] =  MediaType.IMAGE
     return images_df

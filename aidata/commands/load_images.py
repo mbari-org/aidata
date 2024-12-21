@@ -10,6 +10,7 @@ import requests
 from aidata import common_args
 from aidata.commands.load_common import check_mounts
 from aidata.logger import create_logger_file, info, err
+from aidata.plugins.extractors.media_types import MediaType
 from aidata.plugins.loaders.tator.media import gen_spec as gen_media_spec, load_bulk_images
 from aidata.plugins.module_utils import load_module
 from aidata.plugins.loaders.tator.attribute_utils import format_attributes
@@ -53,6 +54,9 @@ def load_images(token: str, config: str, dry_run: bool, input: str, section: str
         if len(df_media) == 0:
             info(f"No images found in {media.input_path}")
             return 0
+
+        # Keep only the IMAGE media
+        df_media = df_media[df_media['media_type'] == MediaType.IMAGE]
 
         if dry_run:
             info(f"Dry run - not loading {len(df_media)} media")

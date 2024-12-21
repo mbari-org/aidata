@@ -9,6 +9,7 @@ import piexif  # type: ignore
 import pytz
 
 from aidata.logger import info, err
+from aidata.plugins.extractors.media_types import MediaType
 
 
 def extract_media(image_path: Path, max_images: int = -1) -> pd.DataFrame:
@@ -81,5 +82,6 @@ def extract_media(image_path: Path, max_images: int = -1) -> pd.DataFrame:
     modified_df["latitude"] = latitude
     modified_df["longitude"] = longitude
     modified_df["date"] = date
+    modified_df["media_type"] = MediaType.IMAGE
     info(f"Done")
     return modified_df
