@@ -1,9 +1,18 @@
 # CHANGELOG
 
 
+## v1.35.3 (2024-12-21)
+
+
 ## v1.35.2 (2024-12-21)
 
 ### Bug Fixes
+
+- Minor fix to assign mime first choice
+  ([`e0913ef`](https://github.com/mbari-org/aidata/commit/e0913ef84ce168fb925e325db6d5713b608e92cf))
+
+- Minor fix to report correct name when video already loaded
+  ([`775bb93`](https://github.com/mbari-org/aidata/commit/775bb93cf5c0ce6ac3892ec57e7cd9af19e05b54))
 
 - **cfe**: Index video correctly for cfe isiis
   ([`1b09ed8`](https://github.com/mbari-org/aidata/commit/1b09ed8b2f811214ac48bb323619e7f9f67f09aa))
