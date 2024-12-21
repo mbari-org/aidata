@@ -1,6 +1,14 @@
 # CHANGELOG
 
 
+## v1.35.2 (2024-12-21)
+
+### Bug Fixes
+
+- **cfe**: Index video correctly for cfe isiis
+  ([`1b09ed8`](https://github.com/mbari-org/aidata/commit/1b09ed8b2f811214ac48bb323619e7f9f67f09aa))
+
+
 ## v1.35.1 (2024-12-21)
 
 ### Bug Fixes
