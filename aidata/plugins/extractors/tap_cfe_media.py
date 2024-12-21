@@ -66,6 +66,7 @@ def extract_videos(media_path: Path, max_videos: Optional[int] = None) -> pd.Dat
                 iso_datetime[index] = dt_utc
                 instrument_type[index] = instrument
                 iso_datetime[index] = iso_datetime[index]
+                index += 1
 
         if len(instrument_type) == 0:
             raise ValueError("No instrument type found in CFE video names")
