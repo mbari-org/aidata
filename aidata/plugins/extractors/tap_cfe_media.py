@@ -54,9 +54,8 @@ def extract_videos(media_path: Path, max_videos: Optional[int] = None) -> pd.Dat
     instrument_type = {}
     info(f"Found {len(df)} unique videos")
     try:
-        df = df.groupby("media_path").first().reset_index()
-        for group, df in df.groupby("media_path"):
-            image_name = Path(str(group)).name
+        for index, row in df.iterrows():
+            image_name = Path(str(row.media_path)).name
             info(image_name)
             matches = re.findall(pattern, image_name)
             if matches:

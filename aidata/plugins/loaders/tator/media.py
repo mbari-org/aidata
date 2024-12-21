@@ -61,7 +61,7 @@ def gen_spec(file_loc: str, type_id: int, section: str, **kwargs) -> dict:
         spec = {
             "type": type_id,
             "url": file_url,
-            "name": Path(file_url).name,
+            "name": file_load_path.name,
             "section": section,
             "md5": local_md5_partial(file_load_path),
             "size": file_load_path.stat().st_size,
