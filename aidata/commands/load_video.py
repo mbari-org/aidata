@@ -59,7 +59,7 @@ def load_video(token: str, config: str, dry_run: bool, input: str, section: str,
         info(f"No images found in {media.input_path}")
         return 0
 
-    # Drop all rows where the image_path does not end with .mp4
+    # Drop all rows where the image_path end with .mp4
     df_media = df_media[df_media["media_path"].str.endswith(".mp4")]
 
     if dry_run:
@@ -83,7 +83,7 @@ def load_video(token: str, config: str, dry_run: bool, input: str, section: str,
             attribute=attribute_media_filter,
         )
         if len(medias) == 1:
-            info(f"Video {row['name']} already loaded")
+            info(f"Video {video_path.name} already loaded")
             continue
 
         video_url = video_path.as_uri()
