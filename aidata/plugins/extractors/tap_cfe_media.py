@@ -12,6 +12,7 @@ import pandas as pd
 from pathlib import Path
 
 from aidata.logger import info, exception
+from aidata.plugins.extractors.media_types import MediaType
 
 
 # Add an enum class for the instrument types ISIIS, SES, SINKER, MINION_FLUX and SNOW_CAM
@@ -75,6 +76,7 @@ def extract_videos(media_path: Path, max_videos: Optional[int] = None) -> pd.Dat
 
         df["instrument"] = instrument_type
         df["iso_datetime"] = iso_datetime
+        df["media_type"] = MediaType.VIDEO
         return df
     except Exception as e:
         exception(f"Error extracting video metadata: {e}")
@@ -134,6 +136,7 @@ def extract_images(media_path: Path, max_images: Optional[int] = None) -> pd.Dat
         df["instrument"] = instrument_type
         df["iso_datetime"] = iso_datetime
         df["depth"] = depth
+        df["media_type"] = MediaType.IMAGE
         return df
     except Exception as e:
         exception(f"Error extracting image metadata: {e}")
