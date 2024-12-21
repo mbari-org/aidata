@@ -1,6 +1,17 @@
 # CHANGELOG
 
 
+## v1.35.4 (2024-12-21)
+
+### Bug Fixes
+
+- Correct query format for video name
+  ([`441e2f6`](https://github.com/mbari-org/aidata/commit/441e2f625f775df83badadf72b38b5e0f63ab60f))
+
+- Handle white space in video path
+  ([`76ca6fe`](https://github.com/mbari-org/aidata/commit/76ca6fe95a61260d9bfa151b55990744c1692b0f))
+
+
 ## v1.35.3 (2024-12-21)
 
 
