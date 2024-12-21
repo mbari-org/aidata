@@ -77,7 +77,7 @@ def load_video(token: str, config: str, dry_run: bool, input: str, section: str,
             continue
 
         # Check if the video is already loaded by its name
-        attribute_media_filter = [f"$Name::{video_path.name}"]
+        attribute_media_filter = [f"$name::{video_path.name}"]
         medias = api.get_media_list(
             project=tator_project.id,
             type=media_type.id,
