@@ -140,7 +140,7 @@ def get_video_metadata(video_name: str, video_path: Path = None) -> dict or None
             reader_metadata = video_clip.reader.infos.get('metadata')
             metadata = {
                 "codec": reader_metadata["encoder"],
-                "mime": mimetypes.guess_type(video_path.as_posix()),
+                "mime": mimetypes.guess_type(video_path.as_posix())[0],
                 "resolution": video_clip.reader.size,
                 "size": os.stat(video_path.as_posix()).st_size,
                 "num_frames": video_clip.reader.n_frames,
