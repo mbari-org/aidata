@@ -1,6 +1,24 @@
 # CHANGELOG
 
 
+## v1.35.1 (2024-12-21)
+
+### Bug Fixes
+
+- Correct indexing for cfe media load
+  ([`deff02c`](https://github.com/mbari-org/aidata/commit/deff02c043760a77ef3ca33aae92c8bd5fb31ed1))
+
+### Build System
+
+- Add moviepy==2.1.1 to support video metadata extraction
+  ([`cd7b06e`](https://github.com/mbari-org/aidata/commit/cd7b06ede3c4d92db9ba55b4bcae1b07dc04779b))
+
+### Documentation
+
+- Minor update in load help for clarity
+  ([`70635f0`](https://github.com/mbari-org/aidata/commit/70635f039ee15a3f532509011a1eb97a26753203))
+
+
 ## v1.35.0 (2024-12-20)
 
 ### Documentation
