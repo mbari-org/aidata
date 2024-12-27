@@ -1,6 +1,14 @@
 # CHANGELOG
 
 
+## v1.35.5 (2024-12-27)
+
+### Performance Improvements
+
+- 2x speed-up for ROI crop
+  ([`7b5c43e`](https://github.com/mbari-org/aidata/commit/7b5c43e5889fc4df926142538a8b112e4bf587f4))
+
+
 ## v1.35.4 (2024-12-21)
 
 ### Bug Fixes
