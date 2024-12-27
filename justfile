@@ -85,28 +85,28 @@ build-docker:
 install-dev:
     #!/usr/bin/env bash
     export PYTHONPATH=.
-    export PATH="$PATH:~/miniconda3/bin/"
+    export PATH="$PATH:~/miniconda3/bin/:/opt/homebrew/bin/"
     conda run -n aidata --no-capture-output python3 -m pip install -r requirements-dev.txt
 
 # Test the media
 test-media-i2map:
     #!/usr/bin/env bash
     export PYTHONPATH=.
-    export PATH="$PATH:~/miniconda3/bin/"
+    export PATH="$PATH:~/miniconda3/bin/:/opt/homebrew/bin/"
     time conda run -n aidata --no-capture-output pytest -r tests/test_load_media.py::test_load_media_i2map
 
 # Test dry-run loading of images or videos
 test-dryrun:
     #!/usr/bin/env bash
     export PYTHONPATH=.
-    export PATH="$PATH:~/miniconda3/bin/"
+    export PATH="$PATH:~/miniconda3/bin/:/opt/homebrew/bin/"
     time conda run -n aidata --no-capture-output pytest -r tests/test_load_media.py::test_load_image_dryrun
     time conda run -n aidata --no-capture-output pytest -r tests/test_load_media.py::test_load_video_dryrun
 
 download-300m-data:
     #!/usr/bin/env bash
     export PYTHONPATH=.
-    export PATH="$PATH:~/miniconda3/bin/"
+    export PATH="$PATH:~/miniconda3/bin/:/opt/homebrew/bin/"
     time conda run -n aidata --no-capture-output python3 aidata download dataset --base-path ./data/i2map --version Baseline --depth 300  --labels "all" --config ./aidata/config/config_i2map.yml
 
 download-300m-data-gtp97:
@@ -117,9 +117,18 @@ download-300m-data-gtp97:
 download-atolla-data:
     #!/usr/bin/env bash
     export PYTHONPATH=.
+    export PATH="$PATH:~/miniconda3/bin/:/opt/homebrew/bin/"
     time conda run -n aidata --no-capture-output python3 aidata download dataset --version mega-vits-track-gcam --labels "Atolla" --crop-roi --config ./aidata/config/config_bio.yml
 
 download-single-class-data:
     #!/usr/bin/env bash
     export PYTHONPATH=.
-    time conda run -n aidata --no-capture-output python3 aidata download dataset --single-class "marineorganism" --version Baseline --labels "Atolla,Gymnopraia lapislazula" --voc  --config ./aidata/config/config_bio.yml
+    export PATH="$PATH:~/miniconda3/bin/:/opt/homebrew/bin/"
+    time conda run -n aidata --no-capture-output python3 aidata download dataset --config --single-class "marineorganism" --version Baseline --labels "Atolla,Gymnopraia lapislazula" --voc  --config ./aidata/config/config_bio.yml
+
+download-pinniped-data:
+    #!/usr/bin/env bash
+    export PYTHONPATH=.
+    export PATH="$PATH:~/miniconda3/bin/:/opt/homebrew/bin/"
+    export IMAGEIO_FFMPEG_EXE=/opt/homebrew/bin//ffmpeg
+    time conda run -n aidata --no-capture-output python3 aidata download dataset --version Baseline --labels "Pinniped" --config ./aidata/config/config_uav.yml

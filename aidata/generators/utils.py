@@ -1,11 +1,32 @@
 # aidata, Apache-2.0 license
 # Filename: generators/utils.py
-# Description: Algorithms to run on lists of localizations to combine them
+# Description: Algorithms to run on lists of localizations to combine them and crop frames
 from typing import List
 from tator.openapi.tator_openapi import Localization  # type: ignore
 import pandas as pd
 import xml.etree.ElementTree as ET
+import subprocess
+import os
 
+from aidata.logger import err, debug
+
+
+def crop_frame(args):
+    """Helper function to run the ffmpeg command for a single crop"""
+    crop, out, inputs = args
+    if os.path.exists(out):
+        return None  # Skip if the output file already exists
+    args = ["ffmpeg"]
+    args.extend(inputs)
+    args.append(crop)
+    args.append(out)
+    debug(' '.join(args))
+    try:
+        subprocess.run(' '.join(args), check=False, shell=True)
+        return out
+    except subprocess.CalledProcessError as e:
+        err(str(e))
+        return None
 
 def combine_localizations(boxes: List[Localization]) -> List[Localization]:
     """

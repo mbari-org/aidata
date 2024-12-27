@@ -1,8 +1,10 @@
 # aidata, Apache-2.0 license
 # Filename: generators/coco_voc.py
 # Description: Generate a COCO formatted dataset from a list of media and localizations
+import concurrent
 import json
 import math
+import os
 from collections import defaultdict
 from pathlib import Path
 from typing import List
@@ -14,8 +16,7 @@ from tqdm import tqdm
 from pascal_voc_writer import Writer  # type: ignore
 from aidata.logger import debug, info, err, exception
 from aidata.generators.cifar import create_cifar_dataset
-from aidata.generators.utils import combine_localizations
-import subprocess
+from aidata.generators.utils import combine_localizations, crop_frame
 
 def download(
     api: tator.api,
@@ -347,6 +348,7 @@ def download(
                     info(f"Skipping download of {media.name}")
 
         if crop_roi:
+
             # Crop the ROI from the original images/video in batches of 30
             num_created = 0
             batch_size = 30
@@ -359,9 +361,14 @@ def download(
                     crop_filter = defaultdict(list)
                     output_maps = defaultdict(list)
                     in_media = localizations_by_media_id[media.id]
+
+                    # Initialize the localizations DataFrame
                     df_localizations = pd.DataFrame([l.to_dict() for l in in_media])
                     df_localizations = df_localizations.sort_values(by=['frame'], ascending=True)
-                    # Group by frame, then add arguments to crop the ROIs in each frame and map them to output files with unique database ids
+
+                    # Group by frame, prepare crop arguments
+                    crop_tasks = []
+
                     for frame, in_frame_loc in df_localizations.groupby('frame'):
                         debug(f"Processing frame {frame} in {media.name}")
                         for c in in_frame_loc.itertuples():
@@ -371,6 +378,8 @@ def download(
                                 output_file = crop_path / f"{c.id}.jpg"
                             if output_file.exists():
                                 continue
+
+                            # Generate crop filter and output map
                             x1 = int(media.width * c.x)
                             y1 = int(media.height * c.y)
                             x2 = int(media.width * (c.x + c.width))
@@ -381,10 +390,7 @@ def download(
                             longer_side = max(height, width)
                             delta = abs(longer_side - shorter_side)
 
-                            # Divide the difference by 2 to determine how much padding is needed on each side
                             padding = delta // 2
-
-                            # Add the padding to the shorter side of the image
                             if width == shorter_side:
                                 x1 -= padding
                                 x2 += padding
@@ -392,98 +398,79 @@ def download(
                                 y1 -= padding
                                 y2 += padding
 
-                            # Make sure that the coordinates don't go outside the image
-                            # If they do, adjust by the overflow amount
-                            if y1 < 0:
-                                y1 = 0
-                                y2 += abs(y1)
-                                if y2 > media.height:
-                                    y2 = media.height
-                            elif y2 > media.height:
-                                y2 = media.height
-                                y1 -= abs(y2 - media.height)
-                                if y1 < 0:
-                                    y1 = 0
-                            if x1 < 0:
-                                x1 = 0
-                                x2 += abs(x1)
-                                if x2 > media.width:
-                                    x2 = media.width
-                            elif x2 > media.width:
-                                x2 = media.width
-                                x1 -= abs(x2 - media.width)
-                                if x1 < 0:
-                                    x1 = 0
-                            if resize:
-                                crop_filter[frame].append(f"[v:0]crop={x2-x1}:{y2-y1}:{x1}:{y1},{scale_filter}[v{c.id}]")
-                            else:
-                                crop_filter[frame].append(f"[v:0]crop={x2-x1}:{y2-y1}:{x1}:{y1}[v{c.id}]")
-                            output_maps[frame].append(f'-map [v{c.id}] -update true "{output_file}"')
+                            # Ensure coordinates don't go out of bounds
+                            x1, x2, y1, y2 = max(0, x1), min(media.width, x2), max(0, y1), min(media.height, y2)
 
-                    if hasattr(media.media_files, "streaming") \
-                            and media.media_files.streaming  \
-                            and len(media.media_files.streaming) == 1 \
-                            and media.media_files.streaming[0].path.startswith("http"):
+                            if resize:
+                                crop_filter[frame].append(f"crop={x2 - x1}:{y2 - y1}:{x1}:{y1},{scale_filter}")
+                            else:
+                                crop_filter[frame].append(f"crop={x2 - x1}:{y2 - y1}:{x1}:{y1}")
+
+                            output_maps[frame].append(f'"{output_file}"')
+
+                    # Prepare for parallel processing  - use all available CPUs
+                    max_workers = min(os.cpu_count(), len(df_localizations['frame'].unique()))
+                    if hasattr(media.media_files, "streaming") and media.media_files.streaming and len(
+                            media.media_files.streaming) == 1 and media.media_files.streaming[0].path.startswith(
+                            "http"):
                         local_media = media.media_files.streaming[0].path
-                        # local_media = local_media.replace("http://media.media_files.streaming[0].path", "https://")
                         in_media = localizations_by_media_id[media.id]
                         df_localizations = pd.DataFrame([l.to_dict() for l in in_media])
                         df_localizations = df_localizations.sort_values(by=['frame'], ascending=True)
-                        for frame, in_frame_loc in df_localizations.groupby('frame'):
-                            debug(f"Cropping ROIS in {local_media} frame {frame}")
-                            inputs = [
-                                "-y",
-                                "-loglevel",
-                                "panic",
-                                "-nostats",
-                                "-hide_banner",
-                                "-ss",
-                                frame_to_timestamp(media, frame),
-                                "-i",
-                                local_media,
+
+                        with concurrent.futures.ThreadPoolExecutor(max_workers) as executor:
+                            for frame, in_frame_loc in df_localizations.groupby('frame'):
+                                debug(f"Cropping ROIs in {local_media} frame {frame}")
+                                inputs = [
+                                    "-y",
+                                    "-loglevel", "panic",
+                                    "-nostats",
+                                    "-hide_banner",
+                                    "-ss", frame_to_timestamp(media, frame),
+                                    "-i", local_media,
+                                    "-vf"
                                 ]
-                            if len(crop_filter[frame]) == 0:
-                                continue
-                            crops = f';'.join(crop_filter[frame])
-                            outputs = ["-frames:v", "1", "-q:v", "1", "-y", "-filter_complex", f'"{crops}"']
-                            outputs.extend(output_maps[frame])
-                            args = ["ffmpeg"]
-                            args.extend(inputs)
-                            args.extend(outputs)
-                            debug(' '.join(args))
-                            try:
-                                subprocess.run(' '.join(args), check=False, shell=True)
-                                num_created += len(output_maps[frame])
-                                debug(f"Created {num_created} crops")
-                            except subprocess.CalledProcessError as e:
-                                err(str(e))
-                                return False
+                                if len(crop_filter[frame]) == 0:
+                                    continue
+
+                                # Submit crop tasks for parallel execution
+                                crop_tasks.extend(
+                                    [(crop, out, inputs) for crop, out in zip(crop_filter[frame], output_maps[frame])]
+                                )
+
+                            # Run the crop tasks in parallel
+                            results = list(executor.map(crop_frame, crop_tasks))
+
+                            # Count successful crops
+                            num_created = sum(1 for result in results if result is not None)
+                            debug(f"Created {num_created} crops")
                     else:
-                        args = ["ffmpeg"]
                         local_media = (media_path / media.name).as_posix()
                         inputs = [
                             "-y",
-                            "-loglevel",
-                            "panic",
+                            "-loglevel", "panic",
                             "-nostats",
                             "-hide_banner",
-                            "-i",
-                            local_media,
+                            "-i", local_media
                         ]
-                        debug(f"Cropping ROIS in {local_media} frame {frame}")
-                        if len(crop_filter[frame]) == 0:
-                            continue
-                        crops = f';'.join(crop_filter[frame])
-                        outputs = ["-frames:v", "1", "-q:v", "1", "-y", "-filter_complex", f'"{crops}"']
-                        outputs.extend(output_maps[frame])
-                        args.extend(inputs)
-                        args.extend(outputs)
-                        debug(f"Cropping {len(output_maps[frame])} ROIs in {local_media} frame {frame}")
-                        try:
-                            subprocess.run(' '.join(args), check=False, shell=True)
-                        except subprocess.CalledProcessError as e:
-                            err(str(e))
-                            return False
+                        debug(f"Cropping ROIs in {local_media} frame {frame}")
+
+                        with concurrent.futures.ThreadPoolExecutor(max_workers) as executor:
+                            for frame, in_frame_loc in df_localizations.groupby('frame'):
+                                if len(crop_filter[frame]) == 0:
+                                    continue
+
+                                # Submit crop tasks for parallel execution
+                                crop_tasks.extend(
+                                    [(crop, out, inputs) for crop, out in zip(crop_filter[frame], output_maps[frame])]
+                                )
+
+                            # Run the crop tasks in parallel
+                            results = list(executor.map(crop_frame, crop_tasks))
+
+                            # Count successful crops
+                            num_created = sum(1 for result in results if result is not None)
+                            debug(f"Created {num_created} crops")
 
 
         # Create YOLO, and optionally COCO, CIFAR, or VOC formatted files
