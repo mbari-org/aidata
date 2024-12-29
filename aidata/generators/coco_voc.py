@@ -451,7 +451,8 @@ def download(
                             "-loglevel", "panic",
                             "-nostats",
                             "-hide_banner",
-                            "-i", local_media
+                            "-i", local_media,
+                            "-vf"
                         ]
                         debug(f"Cropping ROIs in {local_media} frame {frame}")
 
