@@ -14,14 +14,14 @@ from aidata.logger import info
 from aidata.plugins.extractors.media_types import MediaType
 
 
-def extract_media(image_path: Path, max_images: int = -1) -> pd.DataFrame:
+def extract_media(media_path: Path, max_images: int = -1) -> pd.DataFrame:
     """Extracts I2MAP image meta data"""
 
-    # Create a dataframe to store the combined data in an image_path column in sorted order
+    # Create a dataframe to store the combined data in an media_path column in sorted order
     images_df = pd.DataFrame()
     allowed_extensions = [".png", ".jpg", ".jpeg", ".JPEG", ".PNG"]
-    images_df["image_path"] = [str(file) for file in image_path.rglob("*") if file.suffix.lower() in allowed_extensions]
-    images_df.sort_values(by="image_path")
+    images_df["media_path"] = [str(file) for file in media_path.rglob("*") if file.suffix.lower() in allowed_extensions]
+    images_df.sort_values(by="media_path")
     if max_images and max_images > 0:
         images_df = images_df.head(max_images)
 
@@ -50,9 +50,9 @@ def extract_media(image_path: Path, max_images: int = -1) -> pd.DataFrame:
         return 0
 
     index = 0
-    images_df = images_df.groupby("image_path").first().reset_index()
+    images_df = images_df.groupby("media_path").first().reset_index()
     info(f"Found {len(images_df)} unique images")
-    for group, df in images_df.groupby("image_path"):
+    for group, df in images_df.groupby("media_path"):
         image_name = Path(str(group)).name
         info(image_name)
         for depth_str in [

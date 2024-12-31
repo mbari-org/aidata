@@ -12,15 +12,15 @@ from aidata.logger import info, err
 from aidata.plugins.extractors.media_types import MediaType
 
 
-def extract_media(image_path: Path, max_images: int = -1) -> pd.DataFrame:
+def extract_media(media_path: Path, max_images: int = -1) -> pd.DataFrame:
     """Extracts SONY image meta data"""
 
     # Create a dataframe to store the combined data in an image_path column in sorted order
     images_df = pd.DataFrame()
 
     allowed_extensions = [".png", ".jpg", ".jpeg", ".JPEG", ".PNG"]
-    images_df["image_path"] = [str(file) for file in image_path.rglob("*") if file.suffix.lower() in allowed_extensions]
-    images_df.sort_values(by="image_path")
+    images_df["media_path"] = [str(file) for file in media_path.rglob("*") if file.suffix.lower() in allowed_extensions]
+    images_df.sort_values(by="media_path")
     if max_images > 0:
         images_df = images_df.head(max_images)
 
@@ -39,11 +39,11 @@ def extract_media(image_path: Path, max_images: int = -1) -> pd.DataFrame:
     longitude = []
     date = []
     failed_indexes = []
-    sorted_df = images_df.sort_values(by="image_path")
+    sorted_df = images_df.sort_values(by="media_path")
     for i, row in sorted_df.iterrows():
-        info(f"Reading {row.image_path}")
+        info(f"Reading {row.media_path}")
         try:
-            exif = piexif.load(row.image_path)
+            exif = piexif.load(row.media_path)
             # Get the date and time the image was taken
             date_time_str = exif["Exif"][piexif.ExifIFD.DateTimeOriginal].decode("utf-8")
             dt = datetime.strptime(date_time_str, "%Y:%m:%d %H:%M:%S")

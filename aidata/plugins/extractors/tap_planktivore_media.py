@@ -14,14 +14,14 @@ from aidata.logger import info
 from aidata.plugins.extractors.media_types import MediaType
 
 
-def extract_media(image_path: Path, max_images: Optional[int] = None) -> pd.DataFrame:
+def extract_media(media_path: Path, max_images: Optional[int] = None) -> pd.DataFrame:
     """Extracts Planktivore image meta data"""
 
-    # Create a dataframe to store the combined data in an image_path column in sorted order
+    # Create a dataframe to store the combined data in an media_path column in sorted order
     images_df = pd.DataFrame()
 
-    images_df["image_path"] = [f.as_posix() for f in image_path.rglob("*.jpg")]
-    images_df.sort_values(by="image_path")
+    images_df["media_path"] = [f.as_posix() for f in media_path.rglob("*.jpg")]
+    images_df.sort_values(by="media_path")
     if 0 < max_images < len(images_df):
         images_df = images_df.iloc[:max_images]
 
@@ -32,7 +32,7 @@ def extract_media(image_path: Path, max_images: Optional[int] = None) -> pd.Data
     iso_datetime = {}
     info(f"Found {len(images_df)} unique images")
     for index, row in images_df.iterrows():
-        image_name = row["image_path"]
+        image_name = row["media_path"]
         matches = re.findall(pattern, image_name)
         if matches:
             datetime_str = matches[0]
