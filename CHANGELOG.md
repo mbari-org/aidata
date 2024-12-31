@@ -1,6 +1,17 @@
 # CHANGELOG
 
 
+## v1.35.6 (2024-12-31)
+
+### Bug Fixes
+
+- Add missing arg for ffmpeg image crop that was munged during refactor
+  ([`a8e3a17`](https://github.com/mbari-org/aidata/commit/a8e3a173ee4bf468aa4403af6bf3569fbd1ba9e1))
+
+- Rename plugins that load media; image_path should be media_path to support both image/video loads
+  ([`324fab8`](https://github.com/mbari-org/aidata/commit/324fab8a20b2224defb26beecf87c4d943ea209d))
+
+
 ## v1.35.5 (2024-12-27)
 
 ### Performance Improvements
