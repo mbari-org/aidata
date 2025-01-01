@@ -4,6 +4,8 @@
 *aidata* is a command line tool to do basic extract, transform, load and download operations
 on AI data for a number of projects at MBARI that require detection, clustering or classification
 workflows.
+
+Full documentation is available on commands at [https://docs.mbari.org/internal/ai/data](https://docs.mbari.org/internal/ai/data/).
  
 This supports loading [sdcat](https://github.com/mbari-org/sdcat) formatted output and downloads from [Tator](https://www.tatorapp.com/) and 
 [Redis](https://redis.io) databases, although support for other data sources is also possible, e.g. [FathomNet](https://fathomnet.org/).
@@ -32,9 +34,7 @@ REDIS_PASSWORD=your_redis_password
 ENVIRONMENT=testing or production
 ```
 
-A docker version is also available at mbari/aidata, but that is a WIP.
-
-Full documentation is available on commands at [https://docs.mbari.org/internal/ai/data](https://docs.mbari.org/internal/ai/data/). 
+A docker version is also available at `mbari/aidata:latest` or `mbari/aidata:latest:cuda-124`.
 
 ## Commands
 
@@ -47,6 +47,6 @@ Full documentation is available on commands at [https://docs.mbari.org/internal/
 Source code is available at [github.com/mbari-org/aidata](https://github.com/mbari-org/aidata/). 
 
 ## Development
-See the [Development Guide](DEVELOPMENT.md) for more information on how to setup the development environment.
+See the [Development Guide](DEVELOPMENT.md) for more information on how to set up the development environment.
 
-**updated: 2024-10-07**
+**updated: 2024-12-31**
