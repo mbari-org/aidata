@@ -13,6 +13,7 @@ def attribute_to_dict(attribute):
 
 def format_attributes(attributes: dict, attribute_mapping: dict) -> dict:
     """Formats attributes according to the attribute mapping."""
+    attributes_ = {}
     for a_key, a_value in attributes.items():
         for m_key, m_value in attribute_mapping.items():
             a_key = a_key.lower()
@@ -30,29 +31,29 @@ def format_attributes(attributes: dict, attribute_mapping: dict) -> dict:
                             dt_str = dt_utc.strftime("%Y-%m-%dT%H:%M:%SZ")
                     else:
                         dt_str = attributes[a_key]
-                    attributes[a_key] = dt_str
+                    attributes_[a_key] = dt_str
                 # Convert boolean to string
                 if m_value["type"] == "bool":
                     if attributes[m_key] == 1:
-                        attributes[m_key] = "True"
+                        attributes_[m_key] = "True"
                     else:
-                        attributes[m_key] = "False"
+                        attributes_[m_key] = "False"
                 if m_value["type"] == "float":
                     if attributes[m_key] is None:
-                        attributes[m_key] = -1
+                        attributes_[m_key] = -1
                     else:
-                        attributes[m_key] = float(attributes[m_key])
+                        attributes_[m_key] = float(attributes[m_key])
                 if m_value["type"] == "int":
                     if attributes[m_key] is None:
-                        attributes[m_key] = -1
+                        attributes_[m_key] = -1
                     else:
-                        attributes[m_key] = int(attributes[m_key])
+                        attributes_[m_key] = int(attributes[m_key])
                 if m_value["type"] == "string":
                     if m_key == "cluster":
-                        attributes[m_key] = f"Unknown C{attributes[m_key]}"
+                        attributes_[m_key] = f"Unknown C{attributes[m_key]}"
                     else:
-                        attributes[m_key] = str(attributes[m_key])
-    return attributes
+                        attributes_[m_key] = str(attributes[m_key])
+    return attributes_
 
 
 def _find_types(api, project):
