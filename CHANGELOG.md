@@ -1,6 +1,14 @@
 # CHANGELOG
 
 
+## v1.35.7 (2025-01-01)
+
+### Bug Fixes
+
+- Remove any unused media attributes
+  ([`6a05cb1`](https://github.com/mbari-org/aidata/commit/6a05cb1800f42d31774dc5923194a8350aa590b9))
+
+
 ## v1.35.6 (2024-12-31)
 
 ### Bug Fixes
