@@ -92,7 +92,7 @@ def extract_images(media_path: Path, max_images: Optional[int] = None) -> pd.Dat
     elif media_path.is_file():
         df["media_path"] = [media_path.as_posix()]
     df.sort_values(by="media_path")
-    # Keep only the images with the acceptible extensions
+    # Keep only the images with the acceptable extensions
     df = df[df["media_path"].str.endswith(tuple(acceptable_extensions))]
     if 0 < max_images < len(df):
         df = df.iloc[:max_images]
