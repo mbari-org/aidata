@@ -21,7 +21,8 @@ from aidata.plugins.loaders.tator.common import init_yaml_config, find_box_type,
 @click.option("--exclude", type=str, help="Exclude boxes with this label", multiple=True)
 @click.option("--input", type=Path, required=True, help=" VOC xml or SDCAT formatted CSV files")
 @click.option("--max-num", type=int, help="Maximum number of boxes to load")
-def load_boxes(token: str, config: str, version: str, input: Path, dry_run: bool, max_num: int, exclude: str) -> int:
+@click.option("--min-score", type=float, help="Minimum score to load between 0 and 1")
+def load_boxes(token: str, config: str, version: str, input: Path, dry_run: bool, max_num: int, min_score:float, exclude: str) -> int:
     """Load boxes from a directory with VOC or SDCAT formatted CSV files. Returns the number of boxes loaded."""
 
     try:
@@ -64,6 +65,9 @@ def load_boxes(token: str, config: str, version: str, input: Path, dry_run: bool
             info(f"No boxes found in {input}")
             return 0
 
+        min_score = 0 if min_score is None else min_score
+        df_boxes = df_boxes[df_boxes["score"] >= min_score]
+
         if dry_run:
             info(f"Dry run - not loading {len(df_boxes)} boxes into Tator")
             return 0
@@ -76,13 +80,14 @@ def load_boxes(token: str, config: str, version: str, input: Path, dry_run: bool
             image_name = Path(image_path).name  # type: ignore
             media = api.get_media_list(project=tator_project.id, name=image_name)
             if len(media) == 0:
-                print(f"No media found with name {image_name} in project {tator_project.name}.")
-                print("Media must be loaded before localizations.")
+                info(f"No media found with name {image_name} in project {tator_project.name}.")
+                info("Media must be loaded before localizations.")
                 continue
 
             media_id = media[0].id
             specs = []
             max_load = -1 if max_num is None else max_num
+            num_loaded = 0
             # Create a box for each row in the group
             for index, row in group.iterrows():
                 obj = row.to_dict()
@@ -105,12 +110,19 @@ def load_boxes(token: str, config: str, version: str, input: Path, dry_run: bool
                         normalize=False,  # sdcat is already normalized between 0-1
                     )
                 )
-                if 0 < max_load <= len(specs):
-                    break
+
+            # Truncate the boxes if the max number of boxes to load is set
+            if 0 < max_load <= len(specs):
+                specs = specs[:max_load]
 
             info(f"{image_path} boxes {specs}")
             box_ids = load_bulk_boxes(tator_project.id, api, specs)
             info(f"Loaded {len(box_ids)} boxes into Tator for {image_path}")
+
+            # Update the number of boxes loaded and finish if the max number of boxes to load is set
+            num_loaded += len(box_ids)
+            if 0 < max_load <= num_loaded:
+                break
     except Exception as e:
         err(f"Error: {e}")
         raise e
