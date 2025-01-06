@@ -119,7 +119,7 @@ def download(
             if len(attribute_lt) > 0:
                 kwargs["attribute_lt"] = attribute_lt
             if len(related_attribute_equals) > 0:
-                kwargs["related_attribute_equals"] = related_attribute_equals
+                kwargs["related_attribute"] = related_attribute_equals
             info(f"Getting localization count with {kwargs}")
             return api.get_localization_count(
                 project=project_id,
