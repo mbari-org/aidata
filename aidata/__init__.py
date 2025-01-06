@@ -1,2 +1,2 @@
 #aidata/__init__.py
-__version__ = "1.35.7"
+__version__ = "1.36.0"

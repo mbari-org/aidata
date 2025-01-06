@@ -1,6 +1,24 @@
 # CHANGELOG
 
 
+## v1.36.0 (2025-01-06)
+
+### Bug Fixes
+
+- Correct related attribute query
+  ([`1eb5202`](https://github.com/mbari-org/aidata/commit/1eb52022630ff50b35fabf01bf02144992f5625c))
+
+### Documentation
+
+- Minor reorg and update docker info
+  ([`ba00cf0`](https://github.com/mbari-org/aidata/commit/ba00cf0f0126e71f7937d906bb9750753c16ef69))
+
+### Features
+
+- Added support for minimum score in load boxes command and truncate exactly min boxes
+  ([`91f3e65`](https://github.com/mbari-org/aidata/commit/91f3e657709bed9b75d9c51d389d10ee0cd311ec))
+
+
 ## v1.35.7 (2025-01-01)
 
 ### Bug Fixes
