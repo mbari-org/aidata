@@ -55,6 +55,7 @@ setup-docker-dev:
         --name nginx_images nginx:1.23.3
     # Get the IP address of the host and add it to the host: field in all the test yaml files
     export HOST_IP=$(ipconfig getifaddr en0)
+    git checkout tests/config/*.yml
     sed -i '' "s/host: localhost/host: $HOST_IP/g" tests/config/*.yml
     docker volume create redis-test
     docker stop redis-test && docker rm redis-test || true
@@ -85,28 +86,44 @@ build-docker:
 install-dev:
     #!/usr/bin/env bash
     export PYTHONPATH=.
-    export PATH="$PATH:~/miniconda3/bin/:/opt/homebrew/bin/"
+    export PATH="$PATH:$CONDA_PREFIX/bin"
     conda run -n aidata --no-capture-output python3 -m pip install -r requirements-dev.txt
 
-# Test the media
-test-media-i2map:
+# Load i2map images
+load-i2map:
     #!/usr/bin/env bash
     export PYTHONPATH=.
-    export PATH="$PATH:~/miniconda3/bin/:/opt/homebrew/bin/"
-    time conda run -n aidata --no-capture-output pytest -r tests/test_load_media.py::test_load_media_i2map
+    export PATH="$PATH:$CONDA_PREFIX/bin"
+    time conda run -n aidata --no-capture-output python3 aidata load images \
+        --config ./tests/config/config_i2map.yml \
+        --input ./tests/data/i2map --token $TATOR_TOKEN
+
+# Test loading of i2map images
+test-load-i2map:
+    #!/usr/bin/env bash
+    export PYTHONPATH=.
+    export PATH="$PATH:$CONDA_PREFIX/bin"
+    time conda run -n aidata --no-capture-output pytest -r tests/test_load_media.py -k test_load_image_i2map
+
+# Test loading of i2map images
+test-load-cfe:
+    #!/usr/bin/env bash
+    export PYTHONPATH=.
+    export PATH="$PATH:$CONDA_PREFIX/bin"
+    time conda run -n aidata --no-capture-output pytest -r tests/test_load_media.py -k test_load_image_cfe
 
 # Test dry-run loading of images or videos
 test-dryrun:
     #!/usr/bin/env bash
     export PYTHONPATH=.
-    export PATH="$PATH:~/miniconda3/bin/:/opt/homebrew/bin/"
-    time conda run -n aidata --no-capture-output pytest -r tests/test_load_media.py::test_load_image_dryrun
-    time conda run -n aidata --no-capture-output pytest -r tests/test_load_media.py::test_load_video_dryrun
+    export PATH="$PATH:$CONDA_PREFIX/bin"
+    time conda run -n aidata --no-capture-output pytest -r tests/test_load_media.py -k test_load_image_dryrun
+    time conda run -n aidata --no-capture-output pytest -r tests/test_load_media.py -k test_load_video_dryrun
 
 download-300m-data:
     #!/usr/bin/env bash
     export PYTHONPATH=.
-    export PATH="$PATH:~/miniconda3/bin/:/opt/homebrew/bin/"
+    export PATH="$PATH:$CONDA_PREFIX/bin"
     time conda run -n aidata --no-capture-output python3 aidata download dataset --base-path ./data/i2map --version Baseline --depth 300  --labels "all" --config ./aidata/config/config_i2map.yml
 
 download-300m-data-gtp97:
@@ -117,18 +134,30 @@ download-300m-data-gtp97:
 download-atolla-data:
     #!/usr/bin/env bash
     export PYTHONPATH=.
-    export PATH="$PATH:~/miniconda3/bin/:/opt/homebrew/bin/"
+    export PATH="$PATH:$CONDA_PREFIX/bin"
     time conda run -n aidata --no-capture-output python3 aidata download dataset --version mega-vits-track-gcam --labels "Atolla" --crop-roi --config ./aidata/config/config_bio.yml
 
 download-single-class-data:
     #!/usr/bin/env bash
     export PYTHONPATH=.
-    export PATH="$PATH:~/miniconda3/bin/:/opt/homebrew/bin/"
+    export PATH="$PATH:$CONDA_PREFIX/bin"
     time conda run -n aidata --no-capture-output python3 aidata download dataset --config --single-class "marineorganism" --version Baseline --labels "Atolla,Gymnopraia lapislazula" --voc  --config ./aidata/config/config_bio.yml
 
 download-pinniped-data:
     #!/usr/bin/env bash
     export PYTHONPATH=.
-    export PATH="$PATH:~/miniconda3/bin/:/opt/homebrew/bin/"
-    export IMAGEIO_FFMPEG_EXE=/opt/homebrew/bin//ffmpeg
+    export PATH="$PATH:$CONDA_PREFIX/bin"
     time conda run -n aidata --no-capture-output python3 aidata download dataset --version Baseline --labels "Pinniped" --config ./aidata/config/config_uav.yml
+
+download-copepod-data:
+    #!/usr/bin/env bash
+    export PYTHONPATH=.
+    export PATH="$PATH:$CONDA_PREFIX/bin"
+    time conda run -n aidata --no-capture-output python3 aidata download dataset --version Baseline --labels "copepod" --config ./aidata/config/config_cfe.yml
+
+
+download-section-data:
+    #!/usr/bin/env bash
+    export PYTHONPATH=.
+    export PATH="$PATH:$CONDA_PREFIX/bin"
+    time conda run -n aidata --no-capture-output python3 aidata download dataset --base-path ./data/i2map --version Baseline --section "25000_depth_v1"  --labels "all" --config ./aidata/config/config_cfe.yml
