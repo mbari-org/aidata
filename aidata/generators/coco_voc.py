@@ -188,7 +188,7 @@ def download(
             if len(attribute_lt) > 0:
                 kwargs["related_attribute_lt"] = attribute_lt
             if depth:
-                kwargs["attribute_equals"] = [f"depth::{depth}"]
+                kwargs["attribute"] = [f"depth::{depth}"]
             if section:
                 if "attribute_contains" in kwargs:
                     kwargs["attribute_contains"].append(f"section::{section}")
