@@ -350,7 +350,6 @@ def download(
         if crop_roi:
 
             # Crop the ROI from the original images/video in batches of 30
-            num_created = 0
             batch_size = 30
             scale_filter = ""
             if resize:
@@ -427,7 +426,7 @@ def download(
                                     "-nostats",
                                     "-hide_banner",
                                     "-ss", frame_to_timestamp(media, frame),
-                                    "-i", local_media,
+                                    "-i", f'"{local_media}"',
                                     "-vf"
                                 ]
                                 if len(crop_filter[frame]) == 0:
@@ -451,7 +450,7 @@ def download(
                             "-loglevel", "panic",
                             "-nostats",
                             "-hide_banner",
-                            "-i", local_media,
+                            "-i", f'"{local_media}"',
                             "-vf"
                         ]
                         debug(f"Cropping ROIs in {local_media} frame {frame}")
