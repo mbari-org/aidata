@@ -1,6 +1,14 @@
 # CHANGELOG
 
 
+## v1.36.2 (2025-01-10)
+
+### Bug Fixes
+
+- Larger batch size for ffmpeg roi crop
+  ([`68a6fe9`](https://github.com/mbari-org/aidata/commit/68a6fe933f95f9ae20c8ae3e9e1df2ac311af222))
+
+
 ## v1.36.1 (2025-01-10)
 
 ### Bug Fixes
