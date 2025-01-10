@@ -349,8 +349,8 @@ def download(
 
         if crop_roi:
 
-            # Crop the ROI from the original images/video in batches of 30
-            batch_size = 30
+            # Crop the ROI from the original images/video in batches of 500
+            batch_size = 500
             scale_filter = ""
             if resize:
                 scale_filter = f"scale={resize}:{resize}"
@@ -408,7 +408,7 @@ def download(
                             output_maps[frame].append(f'"{output_file}"')
 
                     # Prepare for parallel processing  - use all available CPUs
-                    max_workers = min(os.cpu_count(), len(df_localizations['frame'].unique()))
+                    max_workers = os.cpu_count()
                     if hasattr(media.media_files, "streaming") and media.media_files.streaming and len(
                             media.media_files.streaming) == 1 and media.media_files.streaming[0].path.startswith(
                             "http"):
