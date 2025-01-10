@@ -1,6 +1,17 @@
 # CHANGELOG
 
 
+## v1.36.1 (2025-01-10)
+
+### Bug Fixes
+
+- Correct depth query
+  ([`3801cc4`](https://github.com/mbari-org/aidata/commit/3801cc40aa7f0f06b8bc5d5d0e6142cefd756452))
+
+- Handle crops from images with whitespaces
+  ([`e6e2b5b`](https://github.com/mbari-org/aidata/commit/e6e2b5b05a502ac13635a70dafd4221e3cde3c41))
+
+
 ## v1.36.0 (2025-01-06)
 
 ### Bug Fixes
