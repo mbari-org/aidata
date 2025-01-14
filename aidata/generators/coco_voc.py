@@ -481,10 +481,14 @@ def download(
                     media_localizations = combine_localizations(media_localizations)
 
                 for loc in media_localizations:
+                    label = loc.attributes.get("Label", "Unknown")
+                    score = loc.attributes.get("score", 0)
+                    score_s = loc.attributes.get("score_s", 0)
+                    label_s = loc.attributes.get("label_s", "Unknown")
                     f.write(f"{m.name},"
                             f"{loc.attributes['cluster']},"
-                            f"{loc.attributes['Label']},{loc.attributes['score']},"
-                            f"{loc.attributes['label_s']},{loc.attributes['score_s']}\n")
+                            f"{label},{score},"
+                            f"{label_s},{score_s}\n")
 
         # Create YOLO, and optionally COCO, CIFAR, or VOC formatted files
         info(f"Creating YOLO files in {label_path}")
