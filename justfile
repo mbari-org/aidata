@@ -119,43 +119,42 @@ test-dryrun:
     export PATH="$PATH:$CONDA_PREFIX/bin"
     time conda run -n aidata --no-capture-output pytest -r tests/test_load_media.py -k test_load_image_dryrun
     time conda run -n aidata --no-capture-output pytest -r tests/test_load_media.py -k test_load_video_dryrun
-
+# Download all verified data from the i2map project at 300m depth
 download-300m-data:
     #!/usr/bin/env bash
     export PYTHONPATH=.
     export PATH="$PATH:$CONDA_PREFIX/bin"
     time conda run -n aidata --no-capture-output python3 aidata download dataset --base-path ./data/i2map --version Baseline --depth 300  --labels "all" --config ./aidata/config/config_i2map.yml
-
+# Download all verified data from the i2map project at 300m depth with a minimum score of 0.97
 download-300m-data-gtp97:
     #!/usr/bin/env bash
     export PYTHONPATH=.
     time conda run -n aidata --no-capture-output python3 aidata download dataset --base-path ./data/i2map --version Baseline --depth 300  --min-score 0.97 --labels "all" --config ./aidata/config/config_i2map.yml
-
+# Download the 300m data for the Atolla dataset with the mega-vits-track-gcam version
 download-atolla-data:
     #!/usr/bin/env bash
     export PYTHONPATH=.
     export PATH="$PATH:$CONDA_PREFIX/bin"
-    time conda run -n aidata --no-capture-output python3 aidata download dataset --version mega-vits-track-gcam --labels "Atolla" --crop-roi --config ./aidata/config/config_bio.yml
-
+    time conda run -n aidata --no-capture-output python3 aidata download dataset --voc --version mega-vits-track-gcam --labels "Atolla" --crop-roi --config ./aidata/config/config_bio.yml
+# Download all verified data from the bio project and collapse the labels to a single class
 download-single-class-data:
     #!/usr/bin/env bash
     export PYTHONPATH=.
     export PATH="$PATH:$CONDA_PREFIX/bin"
     time conda run -n aidata --no-capture-output python3 aidata download dataset --config --single-class "marineorganism" --version Baseline --labels "Atolla,Gymnopraia lapislazula" --voc  --config ./aidata/config/config_bio.yml
-
+# Download the pinniped data from the UAV project
 download-pinniped-data:
     #!/usr/bin/env bash
     export PYTHONPATH=.
     export PATH="$PATH:$CONDA_PREFIX/bin"
     time conda run -n aidata --no-capture-output python3 aidata download dataset --version Baseline --labels "Pinniped" --config ./aidata/config/config_uav.yml
-
+# Download the copepod data from the CFE project
 download-copepod-data:
     #!/usr/bin/env bash
     export PYTHONPATH=.
     export PATH="$PATH:$CONDA_PREFIX/bin"
     time conda run -n aidata --no-capture-output python3 aidata download dataset --version Baseline --labels "copepod" --config ./aidata/config/config_cfe.yml
-
-
+# Download the 25000_depth_v1 section data from the CFE project
 download-section-data:
     #!/usr/bin/env bash
     export PYTHONPATH=.

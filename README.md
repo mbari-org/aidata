@@ -49,4 +49,4 @@ Source code is available at [github.com/mbari-org/aidata](https://github.com/mba
 ## Development
 See the [Development Guide](DEVELOPMENT.md) for more information on how to set up the development environment.
 
-**updated: 2024-12-31**
+**updated: 2025-01-13**
