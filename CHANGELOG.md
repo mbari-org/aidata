@@ -1,6 +1,19 @@
 # CHANGELOG
 
 
+## v1.37.0 (2025-01-14)
+
+### Documentation
+
+- Added descriptions for just recipes
+  ([`6671d68`](https://github.com/mbari-org/aidata/commit/6671d6831642834726e84276989f3705a3dd9262))
+
+### Features
+
+- Added export of csv with media,cluster,label,score,label_s,score_s for downstream analysis
+  ([`690ba60`](https://github.com/mbari-org/aidata/commit/690ba60ab2303a1a624f4d06db50f5a7776f6580))
+
+
 ## v1.36.2 (2025-01-10)
 
 ### Bug Fixes
