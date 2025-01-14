@@ -472,6 +472,19 @@ def download(
                             num_created = sum(1 for result in results if result is not None)
                             debug(f"Created {num_created} crops")
 
+        # Create a simple csv file with the media name, cluster, label, score, and label_s and score_s
+        with (output_path / "localizations.csv").open("w") as f:
+            f.write("media,cluster,label,score,label_s,score_s\n")
+            for m in all_media:
+                media_localizations = localizations_by_media_id[m.id]
+                if len(version_ids) > 1:
+                    media_localizations = combine_localizations(media_localizations)
+
+                for loc in media_localizations:
+                    f.write(f"{m.name},"
+                            f"{loc.attributes['cluster']},"
+                            f"{loc.attributes['Label']},{loc.attributes['score']},"
+                            f"{loc.attributes['label_s']},{loc.attributes['score_s']}\n")
 
         # Create YOLO, and optionally COCO, CIFAR, or VOC formatted files
         info(f"Creating YOLO files in {label_path}")
