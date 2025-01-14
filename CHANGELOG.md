@@ -1,6 +1,14 @@
 # CHANGELOG
 
 
+## v1.38.0 (2025-01-14)
+
+### Features
+
+- Handle missing secondary labels/scores during download
+  ([`e24fd3c`](https://github.com/mbari-org/aidata/commit/e24fd3cb682ff141a2f4c01f44cb53673fc466fc))
+
+
 ## v1.37.0 (2025-01-14)
 
 ### Documentation
