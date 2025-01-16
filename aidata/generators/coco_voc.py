@@ -472,9 +472,10 @@ def download(
                             num_created = sum(1 for result in results if result is not None)
                             debug(f"Created {num_created} crops")
 
-        # Create a simple csv file with the media name, cluster, label, score, and label_s and score_s
+        # Create a simple csv file with the media name, cluster, label, score, and label_s and score_s and
+        # normalized box coordinates
         with (output_path / "localizations.csv").open("w") as f:
-            f.write("media,cluster,label,score,label_s,score_s\n")
+            f.write("id,media,cluster,label,score,label_s,score_s,x,y,width,height\n")
             for m in all_media:
                 media_localizations = localizations_by_media_id[m.id]
                 if len(version_ids) > 1:
@@ -485,10 +486,15 @@ def download(
                     score = loc.attributes.get("score", 0)
                     score_s = loc.attributes.get("score_s", 0)
                     label_s = loc.attributes.get("label_s", "Unknown")
-                    f.write(f"{m.name},"
+                    x = loc.x
+                    y = loc.y
+                    width = loc.width
+                    height = loc.height
+                    f.write(f"{loc.id},{m.name},"
                             f"{loc.attributes['cluster']},"
                             f"{label},{score},"
-                            f"{label_s},{score_s}\n")
+                            f"{label_s},{score_s},"
+                            f"{x},{y},{width},{height}\n")
 
         # Create YOLO, and optionally COCO, CIFAR, or VOC formatted files
         info(f"Creating YOLO files in {label_path}")
