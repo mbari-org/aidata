@@ -1,6 +1,14 @@
 # CHANGELOG
 
 
+## v1.39.0 (2025-01-16)
+
+### Features
+
+- Add database id and box coordinates to the localizations.csv output
+  ([`a9f38cf`](https://github.com/mbari-org/aidata/commit/a9f38cf606dbf2a0879737deff713ffd79c24c5b))
+
+
 ## v1.38.0 (2025-01-14)
 
 ### Features
