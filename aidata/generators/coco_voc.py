@@ -478,6 +478,12 @@ def download(
             f.write("id,media,cluster,label,score,label_s,score_s,x,y,width,height\n")
             for m in all_media:
                 media_localizations = localizations_by_media_id[m.id]
+
+                # Add default values for score if missing - this is used to combine localizations
+                for loc in media_localizations:
+                    if "score" not in loc.attributes:
+                        loc.attributes["score"] = 0
+
                 if len(version_ids) > 1:
                     media_localizations = combine_localizations(media_localizations)
 
@@ -486,12 +492,13 @@ def download(
                     score = loc.attributes.get("score", 0)
                     score_s = loc.attributes.get("score_s", 0)
                     label_s = loc.attributes.get("label_s", "Unknown")
+                    cluster = loc.attributes.get("cluster", "Unknown")
                     x = loc.x
                     y = loc.y
                     width = loc.width
                     height = loc.height
                     f.write(f"{loc.id},{m.name},"
-                            f"{loc.attributes['cluster']},"
+                            f"{cluster},"
                             f"{label},{score},"
                             f"{label_s},{score_s},"
                             f"{x},{y},{width},{height}\n")
