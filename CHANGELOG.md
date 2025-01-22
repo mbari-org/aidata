@@ -1,6 +1,14 @@
 # CHANGELOG
 
 
+## v1.40.1 (2025-01-22)
+
+### Bug Fixes
+
+- Handle missing score and cluster attributes when combining versions
+  ([`65a96ba`](https://github.com/mbari-org/aidata/commit/65a96ba9c73e6d2d2fccf4c7fff8ed02a672d560))
+
+
 ## v1.40.0 (2025-01-22)
 
 ### Features
