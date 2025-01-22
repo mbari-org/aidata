@@ -92,10 +92,13 @@ def download(
         project = find_project(api, project)
         info(f"Found project id: {project.name} for project {project}")
 
-        # Download a dataset by its version 
-        info(f"Downloading dataset {version}")
-        data_path = base_path / version
+        # Download a dataset by its version if it exists
+        if version:
+            data_path = base_path / version
+        else:
+            data_path = base_path
         data_path.mkdir(exist_ok=True)
+        info(f"Downloading data to {data_path}")
 
         # Convert comma separated list of concepts to a list
         if labels == "all":
@@ -120,8 +123,13 @@ def download(
             concepts_list = [c for c in concepts_list if len(c) > 0]
 
         # Convert comma separated list of versions to a list
-        version_list = version.split(",")
-        version_list = [l.strip() for l in version_list]
+        if version:
+            version_list = version.split(",")
+            version_list = [l.strip() for l in version_list]
+        else:
+            # If no version is specified, download all versions
+            versions = api.get_version_list(project.id)
+            version_list = [v.name for v in versions]
 
         success = download_full(
             api,

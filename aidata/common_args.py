@@ -23,6 +23,5 @@ dry_run = click.option("--dry-run", is_flag=True, help="Dry run, do not load dat
 version = click.option(
     "--version",
     type=str,
-    default="Baseline",
-    help="Version to load data into. Default is 'Baseline'",
+    help="Version to load data into. If not provided, all version will be used.",
 )
