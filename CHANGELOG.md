@@ -1,6 +1,16 @@
 # CHANGELOG
 
 
+## v1.40.0 (2025-01-22)
+
+### Features
+
+- Download all versions by default and combine via NMS; this is potentially a breaking change for
+  downstream that relies on the Baseline naming convention. Remove Baseline from the root directory
+  name on datasets
+  ([`f91a3bc`](https://github.com/mbari-org/aidata/commit/f91a3bc63c6ffd6faff6943a429aec068403cee2))
+
+
 ## v1.39.0 (2025-01-16)
 
 ### Features
