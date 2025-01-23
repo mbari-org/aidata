@@ -1,6 +1,16 @@
 # CHANGELOG
 
 
+## v1.41.0 (2025-01-23)
+
+### Features
+
+- Added flag to download all unverified data, e.g. --unverified python aidata download dataset --voc
+  --token <token> --config /tmp/uav/config.yml --base-path /mnt/ML_SCRATCH/uav --min-score 0.5
+  --crop-roi --resize 224 --labels "all" --unverified
+  ([`99d4061`](https://github.com/mbari-org/aidata/commit/99d4061656e43ee066b72474e5824b931e000462))
+
+
 ## v1.40.1 (2025-01-22)
 
 ### Bug Fixes
