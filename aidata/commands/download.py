@@ -47,7 +47,8 @@ DEFAULT_BASE_DIR = Path.home() / "aidata" / "datasets"
 @click.option("--cifar", is_flag=True, help="True if export as CIFAR dataset, False if not.")
 @click.option("--cifar-size", default=32, help="Size of CIFAR images.")
 @click.option("--save-score", is_flag=True, help="True to save score in YOLO output, False if not.")
-@click.option("--verified", is_flag=True, help="True if only download verified annotations, False if not.")
+@click.option("--verified", is_flag=True, help="True if only download verified annotations.")
+@click.option("--not-verified", is_flag=True, help="True if only download not verified annotations.")
 @click.option("--single-class", type=str, help="Set to collapse all classes into a single class, e.g. 'marine organism'")
 @click.option(
     "--skip-image-download", is_flag=True, help="Skip image download, only download annotations. CIFAR requires images."
@@ -75,7 +76,8 @@ def download(
     save_score: bool,
     single_class: str,
     skip_image_download: bool,
-    verified: bool
+    verified: bool,
+    unverified: bool,
 ) -> bool:
     create_logger_file("download")
     try:
@@ -142,6 +144,7 @@ def download(
             min_score=min_score,
             version_list=version_list,
             verified=verified,
+            unverified=unverified,
             generator=generator,
             output_path=data_path,
             labels_list=labels_list,
