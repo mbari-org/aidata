@@ -26,6 +26,7 @@ def download(
     section: str,
     version_list: List[str],
     verified: bool,
+    unverified: bool,
     generator: str,
     output_path: Path,
     labels_list: List[str],
@@ -96,6 +97,8 @@ def download(
             attribute_equals.append(f"group::{group}")
         if verified:
             attribute_equals.append("verified::true")
+        if unverified:
+            attribute_equals.append("verified::false")
         if depth:
             related_attribute_equals.append(f"depth::{depth}")
         if section:
