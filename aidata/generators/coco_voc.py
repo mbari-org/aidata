@@ -57,6 +57,7 @@ def download(
     :param min_score: minimum model score, e.g. 0.5
     :param version_list: version name(s), e.g. ['Baseline'] to download
     :param verified: (optional) True if only verified annotations should be downloaded
+    :param unverified: (optional) True if only unverified annotations should be downloaded
     :param generator: generator name, e.g. 'vars-labelbot' or 'vars-annotation'
     :param output_path: output directory to save the dataset
     :param labels_list: (optional) list of labels to download
