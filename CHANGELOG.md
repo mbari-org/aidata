@@ -1,6 +1,14 @@
 # CHANGELOG
 
 
+## v1.41.1 (2025-01-24)
+
+### Bug Fixes
+
+- Correct option named not-verified to unverified
+  ([`646d297`](https://github.com/mbari-org/aidata/commit/646d297441170f883b4b6e5cc166953487fb8b31))
+
+
 ## v1.41.0 (2025-01-23)
 
 ### Features
