@@ -1,6 +1,14 @@
 # CHANGELOG
 
 
+## v1.41.2 (2025-01-24)
+
+### Performance Improvements
+
+- 2x speed-up in crop
+  ([`114bece`](https://github.com/mbari-org/aidata/commit/114becef4bd978969ce6ac2c725f36c385e1c045))
+
+
 ## v1.41.1 (2025-01-24)
 
 ### Bug Fixes
