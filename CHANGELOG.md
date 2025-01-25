@@ -1,6 +1,14 @@
 # CHANGELOG
 
 
+## v1.41.3 (2025-01-25)
+
+### Bug Fixes
+
+- Correct concurrent task array init
+  ([`28031da`](https://github.com/mbari-org/aidata/commit/28031dac70fdf1e98ec4973060a2ffae92308b9a))
+
+
 ## v1.41.2 (2025-01-24)
 
 ### Performance Improvements
