@@ -363,6 +363,7 @@ def download(
             for i in range(0, len(all_media), batch_size):
                 batch = all_media[i:i + batch_size]
                 with concurrent.futures.ThreadPoolExecutor(max_workers) as executor:
+                    crop_tasks = []
                     for media in batch:
                         crop_filter = defaultdict(list)
                         output_maps = defaultdict(list)
@@ -373,8 +374,6 @@ def download(
                         df_localizations = df_localizations.sort_values(by=['frame'], ascending=True)
 
                         # Group by frame, prepare crop arguments
-                        crop_tasks = []
-
                         for frame, in_frame_loc in df_localizations.groupby('frame'):
                             debug(f"Processing frame {frame} in {media.name}")
                             for c in in_frame_loc.itertuples():
