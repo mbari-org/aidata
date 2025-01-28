@@ -2,8 +2,8 @@
 line-length = 170
 
 [tool.poetry]
-name = "aidata"
-version = "1.41.5"
+name = "mbari-aidata"
+version = "1.41.3"
 description = "Command line tool to do extract, transform, load and download operations on AI data for a number of projects at MBARI that require detection, clustering or classification workflows."
 authors = [
     "Danelle Cline <dcline@mbari.org>"

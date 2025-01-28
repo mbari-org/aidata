@@ -21,8 +21,7 @@ Install from PyPi
 ```shell
 pip install mbari-aidata
 ```
-
-```shell
+ 
 Then create a .env file with the following contents in the root directory of the project:
 ```shell
 TATOR_TOKEN=your_api_token
@@ -45,4 +44,4 @@ Source code is available at [github.com/mbari-org/aidata](https://github.com/mba
 ## Development
 See the [Development Guide](DEVELOPMENT.md) for more information on how to set up the development environment.
 
-**updated: 2025-01-27**
+**updated: 2025-01-28**

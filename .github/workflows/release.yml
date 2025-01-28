@@ -83,17 +83,6 @@ jobs:
       - name: Clear Poetry cache
         run: poetry cache clear pypi --all
 
-      - name: Get PyPI version
-        id: get_pypi_version
-        run: |
-          pip install requests
-          PACKAGE_NAME=$(basename $GITHUB_REPOSITORY)
-          echo "Fetching latest version for $PACKAGE_NAME"
-          pypi_url="https://pypi.org/pypi/$PACKAGE_NAME/json"
-          pypi_version=$(curl -s $pypi_url | python3 -c "import sys, json; print(json.load(sys.stdin)['info']['version'])")
-          echo "Latest PyPI version is: $pypi_version"
-          echo "VERSION=$pypi_version" >> $GITHUB_ENV
-
 #      - name: Docker Build and Push
 #        run: |
 #          export RELEASE_VERSION=$(echo ${{ steps.semantic.outputs.tag }} | cut -c 2-)
