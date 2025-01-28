@@ -7,20 +7,94 @@ on:
 jobs:
   semantic_release:
     runs-on: ubuntu-latest
+    concurrency: semantic_release
+    permissions:
+      id-token: write
+      contents: write
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
         with:
           fetch-depth: 0
 
-      - name: Python Semantic Release
-        id: semantic
-        uses: python-semantic-release/python-semantic-release@master
+      - name: Set up Python
+        uses: actions/setup-python@v2
         with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          
-#      - name: docker push version
-#        if: steps.semantic.outputs.released == 'true'
+          python-version: '3.11'
+
+      - name: Install Poetry
+        run: |
+          curl -sSL https://install.python-poetry.org | python3 -
+          echo "${HOME}/.local/bin" >> $GITHUB_PATH
+
+      - name: Install dependencies
+        run: poetry install
+
+      - name: Set PYTHONPATH to subdirectory sdcat
+        run: echo "PYTHONPATH=." >> $GITHUB_ENV
+      - name: Check release status
+        id: release-status
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          pip install python-semantic-release
+          if semantic-release --noop --strict version
+          then
+            echo "Releasing new version."
+          else
+            echo "Skipping release steps."
+          fi
+
+      - if: steps.release-status.outputs.released == 'true'
+        name: Release to GitHub
+        id: github-release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          semantic-release version
+#          git fetch --tags
+#          for file in ./dist/**
+#            do gh release upload "${{steps.release-status.outputs.tag}}" $file
+#          done
+
+      - if: steps.release-status.outputs.released == 'true'
+        name: Release to Test PyPI
+        id: test-pypi-release
+        env:
+          TEST_PYPI_TOKEN: ${{ secrets.TEST_PYPI_TOKEN }}
+        run: |
+          poetry config repositories.test-pypi https://test.pypi.org/legacy/
+          poetry config pypi-token.test-pypi $TEST_PYPI_TOKEN
+          poetry publish -r test-pypi -u __token__
+
+#      - if: steps.release-status.outputs.released == 'true'
+#        name: Release to PyPI
+#        id: pypi-release
+#        env:
+#          PYPI_TOKEN: ${{ secrets.PYPI_TOKEN }}
+#        run: |
+#          poetry config pypi-token.pypi $PYPI_TOKEN
+#          poetry publish
+
+      - name: Clean up build artifacts
+        run: rm -rf dist/
+
+      - name: Clear Poetry cache
+        run: poetry cache clear pypi --all
+
+      - name: Get PyPI version
+        id: get_pypi_version
+        run: |
+          pip install requests
+          PACKAGE_NAME=$(basename $GITHUB_REPOSITORY)
+          echo "Fetching latest version for $PACKAGE_NAME"
+          pypi_url="https://pypi.org/pypi/$PACKAGE_NAME/json"
+          pypi_version=$(curl -s $pypi_url | python3 -c "import sys, json; print(json.load(sys.stdin)['info']['version'])")
+          echo "Latest PyPI version is: $pypi_version"
+          echo "VERSION=$pypi_version" >> $GITHUB_ENV
+
+#      - name: Docker Build and Push
 #        run: |
 #          export RELEASE_VERSION=$(echo ${{ steps.semantic.outputs.tag }} | cut -c 2-)
 #          docker login -u ${{ secrets.DOCKERHUB_USERNAME }} -p ${{ secrets.DOCKERHUB_TOKEN }}

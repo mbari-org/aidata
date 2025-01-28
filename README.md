@@ -1,7 +1,7 @@
 [![MBARI](https://www.mbari.org/wp-content/uploads/2014/11/logo-mbari-3b.png)](http://www.mbari.org)
 [![Python](https://img.shields.io/badge/language-Python-blue.svg)](https://www.python.org/downloads/)
 
-*aidata* is a command line tool to do basic extract, transform, load and download operations
+*aidata* is a command line tool to do extract, transform, load and download operations
 on AI data for a number of projects at MBARI that require detection, clustering or classification
 workflows.
 
@@ -16,17 +16,13 @@ formats for machine learning, e.g. COCO, CIFAR, or PASCAL VOC format.
 
 ## Installation 
 
-### Create the Anaconda environment
+Install from PyPi
 
-The fastest way to get started is to use the Anaconda environment.  This will create a conda environment called *aidata*.
 ```shell
-git clone http://github.com/mbari-org/aidata.git
-cd aidata
-conda env create 
-conda activate aidata
-export PYTHONPATH=$PWD
+pip install mbari-aidata
 ```
 
+```shell
 Then create a .env file with the following contents in the root directory of the project:
 ```shell
 TATOR_TOKEN=your_api_token
@@ -49,4 +45,4 @@ Source code is available at [github.com/mbari-org/aidata](https://github.com/mba
 ## Development
 See the [Development Guide](DEVELOPMENT.md) for more information on how to set up the development environment.
 
-**updated: 2025-01-13**
+**updated: 2025-01-27**
