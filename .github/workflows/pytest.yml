@@ -28,6 +28,9 @@ jobs:
       - name: Install dependencies
         run: poetry install
 
+      - name: Install pytest
+        run: poetry add pytest
+
       - name: Set PYTHONPATH to subdirectory sdcat
         run: echo "PYTHONPATH=." >> $GITHUB_ENV
 

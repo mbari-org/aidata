@@ -1,4 +1,4 @@
-# aidata, Apache-2.0 license
+# mbari_aidata, Apache-2.0 license
 # Filename: tests/test_load_annotations.py
 # Description: Tests loading annotations to a Tator database
 
@@ -6,8 +6,8 @@ import pytest
 from click.testing import CliRunner
 from pathlib import Path
 
-from aidata.__main__ import cli
-from aidata.logger import CustomLogger
+from mbari_aidata.__main__ import cli
+from mbari_aidata.logger import CustomLogger
 
 CustomLogger(output_path=Path.cwd() / "logs", output_prefix=__name__)
 

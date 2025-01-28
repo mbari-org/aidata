@@ -33,7 +33,7 @@ setup-db:
 #    #!/usr/bin/env bash
 #    export PYTHONPATH=.
 #    export PATH="$PATH:~/miniconda3/bin/"
-#    conda run -n aidata --no-capture-output python3 aidata db create
+#    conda run -n mbari_aidata --no-capture-output python3 mbari_aidata db create
 
 # Stop the docker development environment
 stop-docker-dev:
@@ -78,23 +78,23 @@ build-docker:
     export RELEASE_VERSION=${RELEASE_VERSION:1}
     echo "Building docker images for release version: $RELEASE_VERSION"
     docker buildx create --name mybuilder --platform linux/amd64,linux/arm64 --use
-    docker buildx build --push --platform linux/amd64,linux/arm64 -t mbari/aidata:$RELEASE_VERSION --build-arg IMAGE_URI=mbari/aidata:$RELEASE_VERSION -f docker/Dockerfile .
-    docker buildx build --push --platform linux/amd64 -t mbari/aidata:$RELEASE_VERSION-cuda124 --build-arg IMAGE_URI=mbari/aidata:$RELEASE_VERSION-cuda124 -f docker/Dockerfile.cuda .
-    docker push mbari/aidata:$RELEASE_VERSION
+    docker buildx build --push --platform linux/amd64,linux/arm64 -t mbari/mbari_aidata:$RELEASE_VERSION --build-arg IMAGE_URI=mbari/mbari_aidata:$RELEASE_VERSION -f docker/Dockerfile .
+    docker buildx build --push --platform linux/amd64 -t mbari/mbari_aidata:$RELEASE_VERSION-cuda124 --build-arg IMAGE_URI=mbari/mbari_aidata:$RELEASE_VERSION-cuda124 -f docker/Dockerfile.cuda .
+    docker push mbari/mbari_aidata:$RELEASE_VERSION
 
 # Install development dependencies. Run before running tests
 install-dev:
     #!/usr/bin/env bash
     export PYTHONPATH=.
     export PATH="$PATH:$CONDA_PREFIX/bin"
-    conda run -n aidata --no-capture-output python3 -m pip install -r requirements-dev.txt
+    conda run -n mbari_aidata --no-capture-output python3 -m pip install -r requirements-dev.txt
 
 # Load i2map images
 load-i2map:
     #!/usr/bin/env bash
     export PYTHONPATH=.
     export PATH="$PATH:$CONDA_PREFIX/bin"
-    time conda run -n aidata --no-capture-output python3 aidata load images \
+    time conda run -n mbari_aidata --no-capture-output python3 mbari_aidata load images \
         --config ./tests/config/config_i2map.yml \
         --input ./tests/data/i2map --token $TATOR_TOKEN
 
@@ -103,70 +103,70 @@ test-load-i2map:
     #!/usr/bin/env bash
     export PYTHONPATH=.
     export PATH="$PATH:$CONDA_PREFIX/bin"
-    time conda run -n aidata --no-capture-output pytest -r tests/test_load_media.py -k test_load_image_i2map
+    time conda run -n mbari_aidata --no-capture-output pytest -r tests/test_load_media.py -k test_load_image_i2map
 
 # Test loading of i2map images
 test-load-cfe:
     #!/usr/bin/env bash
     export PYTHONPATH=.
     export PATH="$PATH:$CONDA_PREFIX/bin"
-    time conda run -n aidata --no-capture-output pytest -r tests/test_load_media.py -k test_load_image_cfe
+    time conda run -n mbari_aidata --no-capture-output pytest -r tests/test_load_media.py -k test_load_image_cfe
 
 # Test dry-run loading of images or videos
 test-dryrun:
     #!/usr/bin/env bash
     export PYTHONPATH=.
     export PATH="$PATH:$CONDA_PREFIX/bin"
-    time conda run -n aidata --no-capture-output pytest -r tests/test_load_media.py -k test_load_image_dryrun
-    time conda run -n aidata --no-capture-output pytest -r tests/test_load_media.py -k test_load_video_dryrun
+    time conda run -n mbari_aidata --no-capture-output pytest -r tests/test_load_media.py -k test_load_image_dryrun
+    time conda run -n mbari_aidata --no-capture-output pytest -r tests/test_load_media.py -k test_load_video_dryrun
 # Download all verified data from the i2map project at 300m depth
 download-300m-data:
     #!/usr/bin/env bash
     export PYTHONPATH=.
     export PATH="$PATH:$CONDA_PREFIX/bin"
-    time conda run -n aidata --no-capture-output python3 aidata download dataset --base-path ./data/i2map --version Baseline --depth 300  --labels "all" --config ./aidata/config/config_i2map.yml
+    time conda run -n mbari_aidata --no-capture-output python3 mbari_aidata download dataset --base-path ./data/i2map --version Baseline --depth 300  --labels "all" --config ./mbari_aidata/config/config_i2map.yml
 # Download all verified data from the i2map project at 300m depth with a minimum score of 0.97
 download-300m-data-gtp97:
     #!/usr/bin/env bash
     export PYTHONPATH=.
-    time conda run -n aidata --no-capture-output python3 aidata download dataset --base-path ./data/i2map --version Baseline --depth 300  --min-score 0.97 --labels "all" --config ./aidata/config/config_i2map.yml
+    time conda run -n mbari_aidata --no-capture-output python3 mbari_aidata download dataset --base-path ./data/i2map --version Baseline --depth 300  --min-score 0.97 --labels "all" --config ./mbari_aidata/config/config_i2map.yml
 # Download the 300m data for the Atolla dataset with the mega-vits-track-gcam version
 download-atolla-data:
     #!/usr/bin/env bash
     export PYTHONPATH=.
     export PATH="$PATH:$CONDA_PREFIX/bin"
-    time conda run -n aidata --no-capture-output python3 aidata download dataset --voc --version mega-vits-track-gcam --labels "Atolla" --crop-roi --config ./aidata/config/config_bio.yml
+    time conda run -n mbari_aidata --no-capture-output python3 mbari_aidata download dataset --voc --version mega-vits-track-gcam --labels "Atolla" --crop-roi --config ./mbari_aidata/config/config_bio.yml
 # Download all verified data from the bio project and collapse the labels to a single class
 download-single-class-data:
     #!/usr/bin/env bash
     export PYTHONPATH=.
     export PATH="$PATH:$CONDA_PREFIX/bin"
-    time conda run -n aidata --no-capture-output python3 aidata download dataset --config --single-class "marineorganism" --version Baseline --labels "Atolla,Gymnopraia lapislazula" --voc  --config ./aidata/config/config_bio.yml
+    time conda run -n mbari_aidata --no-capture-output python3 mbari_aidata download dataset --config --single-class "marineorganism" --version Baseline --labels "Atolla,Gymnopraia lapislazula" --voc  --config ./mbari_aidata/config/config_bio.yml
 # Download the pinniped data from the UAV project
 download-pinniped-data:
     #!/usr/bin/env bash
     export PYTHONPATH=.
     export PATH="$PATH:$CONDA_PREFIX/bin"
-    time conda run -n aidata --no-capture-output python3 aidata download dataset --labels "Pinniped" --crop-roi --config ./aidata/config/config_uav.yml
+    time conda run -n mbari_aidata --no-capture-output python3 mbari_aidata download dataset --labels "Pinniped" --crop-roi --config ./mbari_aidata/config/config_uav.yml
 download-jelly-data:
     #!/usr/bin/env bash
     export PYTHONPATH=.
     export PATH="$PATH:$CONDA_PREFIX/bin"
-    time conda run -n aidata --no-capture-output python3 aidata download dataset --crop-roi --labels "Jelly" --config ./aidata/config/config_uav.yml
+    time conda run -n mbari_aidata --no-capture-output python3 mbari_aidata download dataset --crop-roi --labels "Jelly" --config ./mbari_aidata/config/config_uav.yml
 download-bird-data:
     #!/usr/bin/env bash
     export PYTHONPATH=.
     export PATH="$PATH:$CONDA_PREFIX/bin"
-    time conda run -n aidata --no-capture-output python3 aidata download dataset --crop-roi --verified --labels "Bird" --config ./aidata/config/config_uav.yml
+    time conda run -n mbari_aidata --no-capture-output python3 mbari_aidata download dataset --crop-roi --verified --labels "Bird" --config ./mbari_aidata/config/config_uav.yml
 # Download the copepod data from the CFE project
 download-copepod-data:
     #!/usr/bin/env bash
     export PYTHONPATH=.
     export PATH="$PATH:$CONDA_PREFIX/bin"
-    time conda run -n aidata --no-capture-output python3 aidata download dataset --version Baseline --labels "copepod" --config ./aidata/config/config_cfe.yml
+    time conda run -n mbari_aidata --no-capture-output python3 mbari_aidata download dataset --version Baseline --labels "copepod" --config ./mbari_aidata/config/config_cfe.yml
 # Download the 25000_depth_v1 section data from the CFE project
 download-section-data:
     #!/usr/bin/env bash
     export PYTHONPATH=.
     export PATH="$PATH:$CONDA_PREFIX/bin"
-    time conda run -n aidata --no-capture-output python3 aidata download dataset --base-path ./data/i2map --version Baseline --section "25000_depth_v1"  --labels "all" --config ./aidata/config/config_cfe.yml
+    time conda run -n mbari_aidata --no-capture-output python3 mbari_aidata download dataset --base-path ./data/i2map --version Baseline --section "25000_depth_v1"  --labels "all" --config ./mbari_aidata/config/config_cfe.yml

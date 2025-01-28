@@ -9,10 +9,10 @@ mounts:
 
 plugins:
   - name: "extractor"
-    module: "aidata.plugins.extractors.tap_planktivore_media"
+    module: "mbari_aidata.plugins.extractors.tap_planktivore_media"
     function: "extract_media"
   - name: "extractor"
-    module: "aidata.plugins.extractors.tap_sdcat_media"
+    module: "mbari_aidata.plugins.extractors.tap_sdcat_media"
     function: "extract_sdcat_csv"
 
 redis:

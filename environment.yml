@@ -1,4 +1,4 @@
-name: aidata
+name: mbari_aidata
 channels:
   - conda-forge
 dependencies:

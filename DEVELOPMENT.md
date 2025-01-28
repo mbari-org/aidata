@@ -10,9 +10,9 @@ Setup a development server to run tests on your local machine with the following
 # 1. Check out the repository and install the Anaconda environment
 ```shell
 git clone http://github.com/mbari-org/aidata.git
-cd aidata
+cd mbari_aidata
 conda env create 
-conda activate aidata
+conda activate mbari_aidata
 export PYTHONPATH=$PWD
 ```
 
@@ -21,7 +21,7 @@ Instructions are in [database_setup.md](docs/database_setup.md)
 # 3. Setup the remaining services
 This will setup the remaining services needed for development, including a REDI and NGINX server.
 ```shell
-cd aidata
+cd mbari_aidata
 just setup-docker-dev
 ```
  

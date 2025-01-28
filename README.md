@@ -19,7 +19,7 @@ formats for machine learning, e.g. COCO, CIFAR, or PASCAL VOC format.
 Install from PyPi
 
 ```shell
-pip install mbari-aidata
+pip install mbari-mbari_aidata
 ```
  
 Then create a .env file with the following contents in the root directory of the project:
@@ -33,11 +33,11 @@ A docker version is also available at `mbari/aidata:latest` or `mbari/aidata:lat
 
 ## Commands
 
-* `python aidata download --help` -  Download data, such as images, boxes, into various formats for machine learning e,g, COCO, CIFAR, or PASCAL VOC format
-* `python aidata load --help` -  Load data, such as images, boxes, and exemplars into either a Postgres or REDIS database
-* `python aidata db --help` -  Commands related to database management
-* `python aidata transform --help` - Commands related to transforming downloaded data
-* `python aidata  -h` - Print help message and exit.
+* `python mbari_aidata download --help` -  Download data, such as images, boxes, into various formats for machine learning e,g, COCO, CIFAR, or PASCAL VOC format
+* `python mbari_aidata load --help` -  Load data, such as images, boxes, and exemplars into either a Postgres or REDIS database
+* `python mbari_aidata db --help` -  Commands related to database management
+* `python mbari_aidata transform --help` - Commands related to transforming downloaded data
+* `python mbari_aidata  -h` - Print help message and exit.
  
 Source code is available at [github.com/mbari-org/aidata](https://github.com/mbari-org/aidata/). 
 

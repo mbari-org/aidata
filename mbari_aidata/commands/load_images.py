@@ -1,0 +1,108 @@
+# mbari_aidata, Apache-2.0 license
+# Filename: commands/load_images.py
+# Description: Load images from a directory. Assumes the images are available via a web server.
+
+from pathlib import Path
+
+import click
+import requests
+
+from mbari_aidata import common_args
+from mbari_aidata.commands.load_common import check_mounts
+from mbari_aidata.logger import create_logger_file, info, err
+from mbari_aidata.plugins.extractors.media_types import MediaType
+from mbari_aidata.plugins.loaders.tator.media import gen_spec as gen_media_spec, load_bulk_images
+from mbari_aidata.plugins.module_utils import load_module
+from mbari_aidata.plugins.loaders.tator.attribute_utils import format_attributes
+from mbari_aidata.plugins.loaders.tator.common import init_api_project, find_media_type, init_yaml_config
+
+
+@click.command("images", help="Load images from a directory or a single image file")
+@common_args.token
+@common_args.yaml_config
+@common_args.dry_run
+@click.option("--input", type=str, required=True, help="Path to directory with input images")
+@click.option("--section", type=str, default="All Media", help="Section to load images into. Default is 'All Media'")
+@click.option("--max-images", type=int, default=-1, help="Only load up to max-images. Useful for testing. Default is to load all images")
+def load_images(token: str, config: str, dry_run: bool, input: str, section: str, max_images: int) -> int:
+    """Load images from a directory. Assumes the images are available via a web server. Returns the number of images loaded."""
+    create_logger_file("load_images")
+    try:
+        # Load the configuration file
+        config_dict = init_yaml_config(config)
+        project = config_dict["tator"]["project"]
+        host = f'http://{config_dict["tator"]["host"]}'
+        plugins = config_dict["plugins"]
+
+        media, rc = check_mounts(config_dict, input, "image")
+        if rc == -1:
+            return -1
+
+        p = [p for p in plugins if "extractor" in p["name"]][0]  # ruff: noqa
+        module = load_module(p["module"])
+        extractor = getattr(module, p["function"])
+
+        # Initialize the Tator API
+        api, tator_project = init_api_project(host, token, project)
+        media_type = find_media_type(api, tator_project.id, "Image")
+
+        if not media_type:
+            err("Could not find media type Image")
+            return -1
+
+        df_media = extractor(media.input_path, max_images)
+        if len(df_media) == 0:
+            info(f"No images found in {media.input_path}")
+            return 0
+
+        # Keep only the IMAGE media
+        df_media = df_media[df_media['media_type'] == MediaType.IMAGE]
+
+        if dry_run:
+            info(f"Dry run - not loading {len(df_media)} media")
+            return 0
+
+        specs = []
+        for index, row in df_media.iterrows():
+            file_loc_sans_root = row["media_path"].split(media.mount_path.as_posix())[-1]
+            image_url = f"{media.base_url}{file_loc_sans_root}"
+
+            # Check if the URL is valid
+            info(f"Checking if the url {image_url} is valid")
+            try:
+                timeout = 15
+                r = requests.head(image_url, timeout=timeout)
+                if r.status_code != 200:
+                    err(f"URL {image_url} is not valid")
+                    return -1
+            except Exception as e:
+                err(f"Error checking URL {image_url}: {e}")
+                return -1
+
+            # Check if the image is valid
+            if not Path(row["media_path"]).exists():
+                err(f"Image {row.media_path} does not exist")
+                return -1
+
+            attributes = format_attributes(row.to_dict(), media.attributes)
+
+            specs.append(
+                gen_media_spec(
+                    file_loc=row.media_path,
+                    file_url=image_url,
+                    type_id=media_type.id,
+                    section=section,
+                    attributes=attributes,
+                    base_url=media.base_url,
+                )
+            )
+        info(f"Loading {len(specs)} images")
+        ids = load_bulk_images(tator_project.id, api, specs)
+        if ids is None:
+            err(f"Error loading images")
+            return -1
+        info(f"Loaded {len(ids)} images")
+        return len(ids)
+    except Exception as e:
+        err(f"Error loading images: {e}")
+        raise e

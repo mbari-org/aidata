@@ -11,12 +11,12 @@ authors = [
 license = "Apache"
 readme = "README.md"
 packages = [
-    { include = "aidata" }
+    { include = "mbari_aidata" }
 ]
 exclude = ["tests"]
 
 [tool.poetry.scripts]
-aidata = "aidata.__main__:cli"
+aidata = "mbari_aidata.__main__:cli"
 
 [tool.poetry.dependencies]
 python = ">=3.10,<3.12"
@@ -48,7 +48,7 @@ commit_parser = "angular"
 logging_use_named_masks = true
 major_on_zero = true
 assets = []
-version_variables = ["aidata/__init__.py:__version__"]
+version_variables = ["mbari_aidata/__init__.py:__version__"]
 version_toml = ["pyproject.toml:tool.poetry.version"]
 build_command = "pip install poetry && poetry build"
 
