@@ -1,6 +1,14 @@
 # CHANGELOG
 
 
+## v1.41.5 (2025-01-28)
+
+### Bug Fixes
+
+- Added missing upload to semantic release and poetry build command
+  ([`e258cd3`](https://github.com/mbari-org/aidata/commit/e258cd3c21da265d8ddf453f53d60993c7afaaf5))
+
+
 ## v1.41.4 (2025-01-28)
 
 ### Bug Fixes
