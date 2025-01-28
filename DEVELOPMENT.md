@@ -18,6 +18,7 @@ export PYTHONPATH=$PWD
 
 # 2. Launch a Tator stack
 Instructions are in [database_setup.md](docs/database_setup.md)
+
 # 3. Setup the remaining services
 This will setup the remaining services needed for development, including a REDI and NGINX server.
 ```shell
