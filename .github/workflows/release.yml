@@ -31,7 +31,7 @@ jobs:
       - name: Install dependencies
         run: poetry install
 
-      - name: Set PYTHONPATH to subdirectory sdcat
+      - name: Set PYTHONPATH
         run: echo "PYTHONPATH=." >> $GITHUB_ENV
       - name: Check release status
         id: release-status
@@ -53,10 +53,10 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           semantic-release version
-#          git fetch --tags
-#          for file in ./dist/**
-#            do gh release upload "${{steps.release-status.outputs.tag}}" $file
-#          done
+          git fetch --tags
+          for file in ./dist/**
+            do gh release upload "${{steps.release-status.outputs.tag}}" $file
+          done
 
       - if: steps.release-status.outputs.released == 'true'
         name: Release to Test PyPI
