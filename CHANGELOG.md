@@ -1,6 +1,14 @@
 # CHANGELOG
 
 
+## v1.41.6 (2025-01-28)
+
+### Bug Fixes
+
+- Removed unnecessary release step and minor changes to README.md to reflect correct package name
+  ([`11f6558`](https://github.com/mbari-org/aidata/commit/11f6558e602d9aa60e4eb94ea1c45ada2378e415))
+
+
 ## v1.41.5 (2025-01-28)
 
 ### Bug Fixes
