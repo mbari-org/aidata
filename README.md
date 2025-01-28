@@ -3,7 +3,7 @@
 [![License](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
 [![Python](https://img.shields.io/badge/language-Python-blue.svg)](https://www.python.org/downloads/)
 
-*aidata* is a command line tool to do extract, transform, load and download operations
+*mbari-aidata* is a command line tool to do extract, transform, load and download operations
 on AI data for a number of projects at MBARI that require detection, clustering or classification
 workflows.
 
@@ -42,7 +42,7 @@ touch config_cfe.yaml
 
 This file will be used to configure the project data, such as mounts, plugins, and database connections.
 ```shell
-mbari_aidata download --version Baseline --labels "Diatoms, Copepods" --config config_cfe.yml
+aidata download --version Baseline --labels "Diatoms, Copepods" --config config_cfe.yml
 ```
 
 Example configuration file:
@@ -107,11 +107,11 @@ A docker version is also available at `mbari/aidata:latest` or `mbari/aidata:lat
 
 ## Commands
 
-* `mbari_aidata download --help` -  Download data, such as images, boxes, into various formats for machine learning e,g, COCO, CIFAR, or PASCAL VOC format
-* `mbari_aidata load --help` -  Load data, such as images, and boxes into either a Postgres or REDIS database
-* `mbari_aidata db --help` -  Commands related to database management
-* `mbari_aidata transform --help` - Commands related to transforming downloaded data
-* `mbari_aidata  -h` - Print help message and exit.
+* `aidata download --help` -  Download data, such as images, boxes, into various formats for machine learning e,g, COCO, CIFAR, or PASCAL VOC format
+* `aidata load --help` -  Load data, such as images, and boxes into either a Postgres or REDIS database
+* `aidata db --help` -  Commands related to database management
+* `aidata transform --help` - Commands related to transforming downloaded data
+* `aidata  -h` - Print help message and exit.
  
 Source code is available at [github.com/mbari-org/aidata](https://github.com/mbari-org/aidata/). 
 
