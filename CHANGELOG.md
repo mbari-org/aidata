@@ -1,6 +1,22 @@
 # CHANGELOG
 
 
+## v1.41.7 (2025-01-28)
+
+### Bug Fixes
+
+- Bump pandas to 2.2.2 to fix broken pytest
+  ([`32dc477`](https://github.com/mbari-org/aidata/commit/32dc477c37eb41fe0bd4981331caa6718697593a))
+
+### Build System
+
+- Added missing pandas requirement
+  ([`2105643`](https://github.com/mbari-org/aidata/commit/2105643e7de1b7e752c6b78b108745afaa082467))
+
+- Renamed package to mbari-aidata
+  ([`218fe75`](https://github.com/mbari-org/aidata/commit/218fe75cdba615a10a2cceb2f9f91da5c665a85f))
+
+
 ## v1.41.6 (2025-01-28)
 
 ### Bug Fixes
