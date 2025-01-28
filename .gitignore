@@ -1,6 +1,9 @@
 # Tator
 tator/*
 
+# Secrets
+.env*
+
 .idea/
 
 *.log
