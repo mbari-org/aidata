@@ -147,7 +147,17 @@ download-pinniped-data:
     #!/usr/bin/env bash
     export PYTHONPATH=.
     export PATH="$PATH:$CONDA_PREFIX/bin"
-    time conda run -n aidata --no-capture-output python3 aidata download dataset --version Baseline --labels "Pinniped" --config ./aidata/config/config_uav.yml
+    time conda run -n aidata --no-capture-output python3 aidata download dataset --labels "Pinniped" --crop-roi --config ./aidata/config/config_uav.yml
+download-jelly-data:
+    #!/usr/bin/env bash
+    export PYTHONPATH=.
+    export PATH="$PATH:$CONDA_PREFIX/bin"
+    time conda run -n aidata --no-capture-output python3 aidata download dataset --crop-roi --labels "Jelly" --config ./aidata/config/config_uav.yml
+download-bird-data:
+    #!/usr/bin/env bash
+    export PYTHONPATH=.
+    export PATH="$PATH:$CONDA_PREFIX/bin"
+    time conda run -n aidata --no-capture-output python3 aidata download dataset --crop-roi --verified --labels "Bird" --config ./aidata/config/config_uav.yml
 # Download the copepod data from the CFE project
 download-copepod-data:
     #!/usr/bin/env bash
