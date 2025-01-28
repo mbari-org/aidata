@@ -1,6 +1,14 @@
 # CHANGELOG
 
 
+## v1.41.9 (2025-01-28)
+
+### Bug Fixes
+
+- Trigger release to pypi and update command munged during refactoring for poetry build
+  ([`2764364`](https://github.com/mbari-org/aidata/commit/27643648e932ee897a01749211205c61b02f5b01))
+
+
 ## v1.41.8 (2025-01-28)
 
 ### Bug Fixes
