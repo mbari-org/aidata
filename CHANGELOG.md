@@ -1,6 +1,24 @@
 # CHANGELOG
 
 
+## v1.41.8 (2025-01-28)
+
+### Bug Fixes
+
+- Trigger release to test pypi
+  ([`7d26fac`](https://github.com/mbari-org/aidata/commit/7d26fac0fe502dfe14a20ff186e5c9dde28372c6))
+
+### Build System
+
+- Downgraded click and export requirements.txt to sync with poetry build for flexible dev
+  ([`d6c1f94`](https://github.com/mbari-org/aidata/commit/d6c1f943f5556f21a08b233930df113c4b7cb869))
+
+### Documentation
+
+- Added config.yml example
+  ([`2a1f9b8`](https://github.com/mbari-org/aidata/commit/2a1f9b8e073b82f48b68df5b7ef5bbb67da5cf6b))
+
+
 ## v1.41.7 (2025-01-28)
 
 ### Bug Fixes
