@@ -35,7 +35,7 @@ requests = "2.32.3"
 pascal-voc-writer = ">=0.1.4"
 albumentations = "1.4.15"
 albucore = "0.0.16"
-pandas = "1.4.0"
+pandas = "2.2.2"
 
 [tool.semantic_release]
 branch = "main"
