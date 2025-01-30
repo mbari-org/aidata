@@ -8,6 +8,17 @@ set export
 list:
     @just --list --unsorted
 
+# Build the docker images for linux/amd64 and linux/arm64 and push to Docker Hub
+build-and-push:
+    #!/usr/bin/env bash
+    echo "Building and pushing the Docker image"
+    RELEASE_VERSION=$(git describe --tags --abbrev=0)
+    echo "Release version: $RELEASE_VERSION"
+    RELEASE_VERSION=${RELEASE_VERSION:1}
+    docker buildx create --name mybuilder --platform linux/amd64,linux/arm64 --use
+    docker buildx build --sbom=true --provenance=true --push --platform linux/amd64,linux/arm64 -t mbari/aidata:$RELEASE_VERSION --build-arg IMAGE_URI=mbari/aidata:$RELEASE_VERSION -f docker/Dockerfile .
+    docker buildx build --sbom=true --provenance=true --push --platform linux/amd64,linux/arm64 -t mbari/aidata:$RELEASE_VERSION-cuda124 --build-arg IMAGE_URI=mbari/aidata:$RELEASE_VERSION-cuda124 -f docker/Dockerfile.cuda .
+
 # Setup the environment
 install:
     conda env create -f environment.yml
@@ -40,7 +51,7 @@ stop-docker-dev:
     #!/usr/bin/env bash
     docker stop nginx_images
     docker stop redis-test
-#    cd tator && make down
+    cd tator && make down && make tator
 
 # Setup the docker development environment
 setup-docker-dev:
@@ -59,7 +70,7 @@ setup-docker-dev:
     sed -i '' "s/host: localhost/host: $HOST_IP/g" tests/config/*.yml
     docker volume create redis-test
     docker stop redis-test && docker rm redis-test || true
-    docker run \
+    docker run -d \
       --name redis-test \
       --env-file .env \
       -p 6379:6379 \
@@ -67,6 +78,7 @@ setup-docker-dev:
       --restart always \
       redis/redis-stack-server \
       /bin/sh -c 'redis-stack-server --port 6382 --appendonly yes --appendfsync everysec --requirepass "${REDIS_PASSWD:?REDIS_PASSWD variable is not set}"'
+    cd tator && make tator
 
 
 # Build the docker images for all platforms
