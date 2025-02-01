@@ -7,14 +7,19 @@
 on AI data for a number of projects at MBARI that require detection, clustering or classification
 workflows.
 
-Full documentation is available on commands at [https://docs.mbari.org/internal/ai/data](https://docs.mbari.org/internal/ai/data/).
+More documentation and examples are available at [https://docs.mbari.org/internal/ai/data](https://docs.mbari.org/internal/ai/data/).
  
-This supports loading [sdcat](https://github.com/mbari-org/sdcat) formatted output and downloads from [Tator](https://www.tatorapp.com/) and 
-[Redis](https://redis.io) databases, although support for other data sources is also possible, e.g. [FathomNet](https://fathomnet.org/).
-so we decided to keep the name generic.
+Features:
 
-This also supports loading media from a directory or URL, and transforming data into various 
-formats for machine learning, e.g. COCO, CIFAR, or PASCAL VOC format.
+* Loading object detection/classification/clustering output from [SDCAT](https://github.com/mbari-org/sdcat) formatted output
+* Downloads from [Tator](https://www.tatorapp.com/) into various formats for machine learning, e.g. COCO, CIFAR, or PASCAL VOC format.
+* Uploads triggered from a [Redis](https://redis.io) queue for workflows that need real-time loads. 
+* Loading metadata from SONY cameras, extracting timestamps from images and video, and loading VOC formatted data.  The plugin
+architecture allows for easy extension to other data sources and formats.  Media loads are generally handled in a
+project specific way by the [plugin/extractors](https://github.com/mbari-org/aidata/tree/main/mbari_aidata/plugins/extractors)
+module.
+* Media can exist either locally in a directory or through a URL.
+* Augmentations are available for VOC downloaded data to create more training data using the [albumentations library](https://albumentations.ai/)
 
 ## Requirements
 - Python 3.10 or higher
@@ -118,4 +123,4 @@ Source code is available at [github.com/mbari-org/aidata](https://github.com/mba
 ## Development
 See the [Development Guide](DEVELOPMENT.md) for more information on how to set up the development environment.
 
-**updated: 2025-01-28**
+**updated: 2025-01-31**
