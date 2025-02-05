@@ -24,7 +24,7 @@ module.
 ## Requirements
 - Python 3.10 or higher
 - A Tator API token and Redis password for the .env file. Contact the MBARI AI team for access.
-- Docker for development and testing only
+- Docker for development and testing only, but it can also be used instead of a local Python installation.
 
 ## Installation 
 Install from PyPi
@@ -109,6 +109,11 @@ tator:
 ```
 
 A docker version is also available at `mbari/aidata:latest` or `mbari/aidata:latest:cuda-124`.
+For example, to download data using the docker image:
+
+```shell
+docker run -it --rm -v $(pwd):/mnt mbari/aidata:latest aidata download --version Baseline --labels "Diatoms, Copepods" --config config_cfe.yml
+```
 
 ## Commands
 
@@ -123,4 +128,4 @@ Source code is available at [github.com/mbari-org/aidata](https://github.com/mba
 ## Development
 See the [Development Guide](DEVELOPMENT.md) for more information on how to set up the development environment.
 
-**updated: 2025-01-31**
+**updated: 2025-02-04**

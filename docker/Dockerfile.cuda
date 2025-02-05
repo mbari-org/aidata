@@ -4,23 +4,28 @@ LABEL vendor="MBARI"
 LABEL maintainer="dcline@mbari.org"
 LABEL license="Apache License 2.0"
 
-RUN apt-get update && apt-get install --no-install-recommends -y \
-        ffmpeg && \
-        apt clean && rm -rf /var/lib/apt/lists/*
+RUN apt-get update &&  \
+    apt-get install --no-install-recommends -y \
+    curl \
+    ffmpeg && \
+    apt clean && rm -rf /var/lib/apt/lists/*
 
 ARG GIT_VERSION=latest
 ARG IMAGE_URI=mbari/aidata:${GIT_VERSION}
+RUN python3 -m venv /venv
 
+# Set environment variables
+ENV PATH="/venv/bin:$PATH"
 ENV APP_HOME=/app
-WORKDIR ${APP_HOME}
-ADD aidata ${APP_HOME}/aidata
-ADD requirements.txt ${APP_HOME}
-ENV PYTHONPATH=${APP_HOME}/aidata
 ENV HF_HOME=/tmp/transformers_cache
+ENV NO_ALBUMENTATIONS_UPDATE=1
 
-RUN python3 -m pip install --no-cache-dir -r requirements.txt && \
-    python3 -m pip install --no-cache-dir torch torchvision --index-url https://download.pytorch.org/whl/cu121
+RUN pip install --upgrade pip
+RUN if GIT_VERSION=latest; then pip install mbari-aidata; else pip install mbari-aidata==${GIT_VERSION}; fi
 
-RUN chmod a+rwx -R /app
+RUN pip install --no-cache-dir torch torchvision --index-url https://download.pytorch.org/whl/cu121
 
-ENTRYPOINT ["python3", "aidata"]
+WORKDIR ${APP_HOME}
+ENV HOME=${APP_HOME}
+RUN chmod a+rwx -R ${APP_HOME}
+ENTRYPOINT ["aidata"]

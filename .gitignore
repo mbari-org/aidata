@@ -1,3 +1,7 @@
+# Configuration files
+*.yml
+*.yaml
+
 # Tator
 tator/*
 
