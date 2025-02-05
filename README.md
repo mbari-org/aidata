@@ -126,6 +126,6 @@ docker run -it --rm -v $(pwd):/mnt mbari/aidata:latest aidata download --version
 Source code is available at [github.com/mbari-org/aidata](https://github.com/mbari-org/aidata/). 
 
 ## Development
-See the [Development Guide](DEVELOPMENT.md) for more information on how to set up the development environment.
+See the [Development Guide](https://github.com/mbari-org/aidata/blob/main/DEVELOPMENT.md) for more information on how to set up the development environment.
 
 **updated: 2025-02-04**
