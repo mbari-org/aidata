@@ -1,2 +1,2 @@
 #mbari_aidata/__init__.py
-__version__ = "1.41.9"
+__version__ = "1.42.0"

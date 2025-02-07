@@ -1,6 +1,40 @@
 # CHANGELOG
 
 
+## v1.42.0 (2025-02-07)
+
+### Build System
+
+- Build recipe with added provenance and SBOM
+  ([`8389b6e`](https://github.com/mbari-org/aidata/commit/8389b6e752abf6c884681a4b39c83cee5c595517))
+
+- Conditional docker build only on release
+  ([`a02c966`](https://github.com/mbari-org/aidata/commit/a02c966e5417d084a0ae05d8624b8986cf2b5367))
+
+- Relaxed requirements for compatibility with mbari-aidata since these are often used together
+  ([`334e8d5`](https://github.com/mbari-org/aidata/commit/334e8d54d95b97b7fb47d4fa8e2307036faebfc8))
+
+- Switch to pip install in Docker build, fix build context, and uncomment docker build in
+  release.yml
+  ([`45aed2e`](https://github.com/mbari-org/aidata/commit/45aed2ef83a0bc966056527612d6d1efc30fad93))
+
+### Documentation
+
+- Added default project and more correct docker output in database_setup.md
+  ([`6a9dd7f`](https://github.com/mbari-org/aidata/commit/6a9dd7ffa34aa4947d8a0a86691dd492fb635413))
+
+- Better link to dev guide for docker
+  ([`a6e9af9`](https://github.com/mbari-org/aidata/commit/a6e9af9fd3b8fa315a69acbf190d02faeceebca7))
+
+- More details in README.md on features
+  ([`afe88e0`](https://github.com/mbari-org/aidata/commit/afe88e0203fc1c8838f24e18c5a77c4fa46f0b0d))
+
+### Features
+
+- Trigger a release with the latest deps
+  ([`24f8830`](https://github.com/mbari-org/aidata/commit/24f883044670c61816b39cfcabb83af9a67f5a30))
+
+
 ## v1.41.9 (2025-01-28)
 
 ### Bug Fixes
