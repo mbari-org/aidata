@@ -20,10 +20,10 @@ export PYTHONPATH=$PWD
 Instructions are in [database_setup.md](docs/database_setup.md)
 
 # 3. Setup the remaining services
-This will setup the remaining services needed for development, including a REDI and NGINX server.
+This will setup the remaining services needed for development, including a REDIS and NGINX server.
 ```shell
 cd mbari_aidata
-just setup-docker-dev
+just setup-docker-dev #or follow the instructions in the Justfile
 ```
  
 What you should see when you navigate to [http://localhost:8082/data](http://localhost:8082/data) is a list of images that are served from the `tests/data` directory. 
