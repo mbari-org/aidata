@@ -1,8 +1,11 @@
 # mbari_aidata, Apache-2.0 license
 # Filename: commands/load_common.py
-# Description: Common functions for loading different media, e.g. images or video from a directory
+# Description: Common functions for loading different media, e.g. images or video from a directory mapped to a web server
 from pathlib import Path
-from typing import Dict
+from typing import Dict, List
+
+import pandas as pd
+from tator.openapi.tator_openapi import TatorApi
 
 from mbari_aidata.logger import info, err
 
@@ -11,6 +14,16 @@ class MediaHelper:
     mount_path: Path
     base_url: str
     attributes: dict
+
+def check_duplicate_media(api: TatorApi, project_id:int, media_type:int, df_media: pd.DataFrame) -> List[str]:
+    """Check if the images are already loaded to avoid duplicates"""
+    media_names = []
+    for index, row in df_media.iterrows():
+        name = Path(row["media_path"]).name
+        media = api.get_media_list(project_id, name=name, type=media_type)
+        if media:
+            media_names.append(name)
+    return media_names
 
 def check_mounts(config_dict: Dict, input:str, media_type: str) -> (MediaHelper, int):
     mounts = config_dict["mounts"]
@@ -60,7 +73,8 @@ def check_mounts(config_dict: Dict, input:str, media_type: str) -> (MediaHelper,
         dir_or_file = input_path.parent
 
     if not dir_or_file.is_relative_to(mount_path):
-        err(f"{dir_or_file} is not a subdirectory of {mount_path}")
+        err(f"{dir_or_file} is not a subdirectory of the mount path {mount_path}. "
+            f"This is required to load the media correctly.")
         return None, -1
 
     return media, 0

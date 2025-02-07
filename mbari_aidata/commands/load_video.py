@@ -7,7 +7,7 @@ from pathlib import Path
 import click
 
 from mbari_aidata import common_args
-from mbari_aidata.commands.load_common import check_mounts
+from mbari_aidata.commands.load_common import check_mounts, check_duplicate_media
 from mbari_aidata.logger import info, err, create_logger_file
 from mbari_aidata.plugins.loaders.tator.attribute_utils import format_attributes
 from mbari_aidata.plugins.loaders.tator.media import load_media
@@ -20,10 +20,11 @@ from mbari_aidata.plugins.loaders.tator.common import init_api_project, find_med
 @common_args.token
 @common_args.yaml_config
 @common_args.dry_run
+@common_args.duplicates
 @click.option("--input", type=str, required=True, help="Path to directory with input video or single video")
 @click.option("--section", type=str, default="All Media", help="Section to load images into. Default is 'All Media'")
 @click.option("--max-videos", type=int, default=-1, help="Only load up to max-videos. Useful for testing. Default is to load all mp4 videos found")
-def load_video(token: str, config: str, dry_run: bool, input: str, section: str, max_videos: int) -> int:
+def load_video(token: str, config: str, dry_run: bool, input: str, section: str, max_videos: int, check_duplicates: bool) -> int:
     """Load video(s) from a directory. Returns the number of video loaded."""
     create_logger_file("load_videos")
     # Load the configuration file
@@ -67,6 +68,15 @@ def load_video(token: str, config: str, dry_run: bool, input: str, section: str,
         info(f'Dry run: Found {len(df_media)} media file to load')
         return len(df_media)
 
+    if check_duplicates:
+        duplicates = check_duplicate_media(api, tator_project.id, media_type.id, df_media)
+        if len(duplicates) > 0:
+            err("Video(s) already loaded")
+            info("==== Duplicates ====")
+            for d in duplicates:
+                info(d)
+            return -1
+
     info(f'Found {len(df_media)} media file to load')
     num_loaded = 0
     for index, row in df_media.iterrows():
@@ -93,8 +103,9 @@ def load_video(token: str, config: str, dry_run: bool, input: str, section: str,
         video_url = video_url.replace(media.mount_path.as_posix(), media.base_url)
         iso_datetime = row['iso_datetime']
 
-        # Organize by year and month
-        section = f"Video/{iso_datetime.year:02}/{iso_datetime.month:02}"
+        # Organize by year and month if no section is provided
+        if section == "All Media" or len(section) == 0:
+            section = f"Video/{iso_datetime.year:02}/{iso_datetime.month:02}"
 
         attributes = {
             "iso_start_datetime": iso_datetime,

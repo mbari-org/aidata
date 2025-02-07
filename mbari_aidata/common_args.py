@@ -25,3 +25,5 @@ version = click.option(
     type=str,
     help="Version to load data into. If not provided, all version will be used.",
 )
+duplicates = click.option("--check-duplicates", is_flag=True,
+                          help="Check if the images are already loaded to avoid duplicates")

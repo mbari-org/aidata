@@ -86,7 +86,7 @@ jobs:
       - if: steps.release-status.outputs.released == 'true'
         name: Docker Build and Push
         run: |
-          export RELEASE_VERSION=$(echo ${{ steps.semantic.outputs.tag }} | cut -c 2-)
+          export RELEASE_VERSION=${{steps.release-status.outputs.tag}}
           docker login -u ${{ secrets.DOCKERHUB_USERNAME }} -p ${{ secrets.DOCKERHUB_TOKEN }}
           docker buildx create --name mybuilder --platform linux/amd64,linux/arm64 --use
           docker buildx build --sbom=true --provenance=true --push --platform linux/amd64,linux/arm64 -t mbari/aidata:$RELEASE_VERSION --build-arg IMAGE_URI=mbari/aidata:$RELEASE_VERSION -f docker/Dockerfile ..
