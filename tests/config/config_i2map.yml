@@ -2,7 +2,7 @@
 # Config file for i2MAP experiments testing
 mounts:
   - name: "image"
-    path: "./data/i2map"
+    path: "./tests/data/i2map"
     nginx_root: "/data/i2map"
     host: localhost
     port: 8082

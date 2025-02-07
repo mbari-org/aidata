@@ -2,7 +2,7 @@
 # Config file for CFE project testing
 mounts:
   - name: "image"
-    path: "./data/cfe"
+    path: "./tests/data/cfe"
     nginx_root: "/data/cfe"
     host: localhost
     port: 8082
