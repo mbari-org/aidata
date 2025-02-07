@@ -8,7 +8,7 @@ mounts:
     port: 8082
 
   - name: "video"
-    path: "./data/cfe"
+    path: "./tests/data/cfe"
     nginx_root: "/data/cfe"
     host: localhost
     port: 8082
