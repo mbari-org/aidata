@@ -18,7 +18,7 @@ Features:
 architecture allows for easy extension to other data sources and formats.  Media loads are generally handled in a
 project specific way by the [plugin/extractors](https://github.com/mbari-org/aidata/tree/main/mbari_aidata/plugins/extractors)
 module.
-* Media can exist either locally in a directory or through a URL.
+* Media must exist through a URL.
 * Augmentations are available for VOC downloaded data to create more training data using the [albumentations library](https://albumentations.ai/)
 
 ## Requirements
@@ -27,7 +27,7 @@ module.
 - Docker for development and testing only, but it can also be used instead of a local Python installation.
 
 ## Installation 
-Install from PyPi
+Install as a Python package:
 
 ```shell
 pip install mbari-aidata

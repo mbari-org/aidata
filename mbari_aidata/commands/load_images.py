@@ -8,7 +8,7 @@ import click
 import requests
 
 from mbari_aidata import common_args
-from mbari_aidata.commands.load_common import check_mounts
+from mbari_aidata.commands.load_common import check_mounts, check_duplicate_media
 from mbari_aidata.logger import create_logger_file, info, err
 from mbari_aidata.plugins.extractors.media_types import MediaType
 from mbari_aidata.plugins.loaders.tator.media import gen_spec as gen_media_spec, load_bulk_images
@@ -21,10 +21,11 @@ from mbari_aidata.plugins.loaders.tator.common import init_api_project, find_med
 @common_args.token
 @common_args.yaml_config
 @common_args.dry_run
+@common_args.duplicates
 @click.option("--input", type=str, required=True, help="Path to directory with input images")
 @click.option("--section", type=str, default="All Media", help="Section to load images into. Default is 'All Media'")
 @click.option("--max-images", type=int, default=-1, help="Only load up to max-images. Useful for testing. Default is to load all images")
-def load_images(token: str, config: str, dry_run: bool, input: str, section: str, max_images: int) -> int:
+def load_images(token: str, config: str, dry_run: bool, input: str, section: str, max_images: int, check_duplicates) -> int:
     """Load images from a directory. Assumes the images are available via a web server. Returns the number of images loaded."""
     create_logger_file("load_images")
     try:
@@ -61,6 +62,15 @@ def load_images(token: str, config: str, dry_run: bool, input: str, section: str
         if dry_run:
             info(f"Dry run - not loading {len(df_media)} media")
             return 0
+
+        if check_duplicates:
+            duplicates = check_duplicate_media(api, tator_project.id, media_type.id, df_media)
+            if len(duplicates) > 0:
+                err("Image(s) already loaded")
+                info("==== Duplicates ====")
+                for d in duplicates:
+                    info(d)
+                return -1
 
         specs = []
         for index, row in df_media.iterrows():
