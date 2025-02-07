@@ -11,7 +11,9 @@ CONDA_PREFIX := env("CONDA_PREFIX")
 # Set the path to python envrionment
 #env_dir := justfile_directory() / ".venv" / "bin" # uncomment if you are using a venv instead of conda
 env_dir := CONDA_PREFIX / "bin"
-export PATH := if os_family() == "windows" { env_dir + x";${PATH}" } else { env_dir + x":${PATH}" }
+# Uncomment the line below for cross-platform compatibility (Windows)
+##export PATH := if os_family() == "windows" { env_dir + x";${PATH}" } else { env_dir + x":${PATH}" }
+export PATH := env_dir + x":${PATH}"
 
 # List recipes
 list:
@@ -53,10 +55,11 @@ setup-db:
 stop-docker-dev:
     docker stop nginx_images
     docker stop redis-test
-    cd tator && make down && make tator
+    cd tator && make clean && make tator
 
 # Setup the docker development environment
 setup-docker-dev:
+    #!/bin/bash
     docker stop nginx_images
     docker rm nginx_images
     docker run -d -p 8082:8082  \
@@ -83,7 +86,7 @@ setup-docker-dev:
 
 # Build the docker images for all platforms
 build-docker:
-    export PATH=$PATH:/usr/local/bin
+    #!/bin/bash
     # Get the release version from the git tag and strip the v from the version
     export RELEASE_VERSION=$(git describe --tags --abbrev=0)
     export RELEASE_VERSION=${RELEASE_VERSION:1}
@@ -98,16 +101,22 @@ install-dev:
     conda run -n mbari_aidata --no-capture-output python3 -m pip install -r requirements-dev.txt
 
 # Load i2map images
-load-i2map:
+load-i2map :
     time conda run -n mbari_aidata --no-capture-output python3 mbari_aidata load images \
         --config ./tests/config/config_i2map.yml \
         --input ./tests/data/i2map --token $TATOR_TOKEN
+
+# Load cfe video
+load-cfe:
+    time conda run -n mbari_aidata --no-capture-output python3 mbari_aidata load videos \
+        --config ./tests/config/config_cfe.yml \
+        --input ./tests/data/cfe --token $TATOR_TOKEN
 
 # Test loading of i2map images
 test-load-i2map:
     time conda run -n mbari_aidata --no-capture-output pytest -r tests/test_load_media.py -k test_load_image_i2map
 
-# Test loading of i2map images
+# Test loading of cfe images
 test-load-cfe:
     time conda run -n mbari_aidata --no-capture-output pytest -r tests/test_load_media.py -k test_load_image_cfe
 
