@@ -1,6 +1,14 @@
 # CHANGELOG
 
 
+## v1.43.0 (2025-02-07)
+
+### Features
+
+- Trigger release for --check-duplicates
+  ([`f978d8f`](https://github.com/mbari-org/aidata/commit/f978d8f604bf2b10c65afa7e45b0165ff6bbbd96))
+
+
 ## v1.42.0 (2025-02-07)
 
 ### Build System
