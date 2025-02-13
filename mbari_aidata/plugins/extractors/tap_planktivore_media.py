@@ -20,9 +20,8 @@ def extract_media(media_path: Path, max_images: Optional[int] = None) -> pd.Data
     # Create a dataframe to store the combined data in an media_path column in sorted order
     images_df = pd.DataFrame()
 
-    images_df["media_path"] = [f.as_posix() for f in media_path.rglob("*.jpg")]
-    # Tap png files as well
-    images_df = images_df.append([f.as_posix() for f in media_path.rglob("*.png")], ignore_index=True)
+    allowed_extensions = [".png", ".jpg"]
+    images_df["media_path"] = [str(file) for file in media_path.rglob("*") if file.suffix.lower() in allowed_extensions]
     images_df.sort_values(by="media_path")
     if 0 < max_images < len(images_df):
         images_df = images_df.iloc[:max_images]

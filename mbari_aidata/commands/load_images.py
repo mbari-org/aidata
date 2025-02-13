@@ -73,21 +73,24 @@ def load_images(token: str, config: str, dry_run: bool, input: str, section: str
                 return -1
 
         specs = []
+        num_checked = 0
         for index, row in df_media.iterrows():
             file_loc_sans_root = row["media_path"].split(media.mount_path.as_posix())[-1]
             image_url = f"{media.base_url}{file_loc_sans_root}"
 
-            # Check if the URL is valid
-            info(f"Checking if the url {image_url} is valid")
-            try:
-                timeout = 15
-                r = requests.head(image_url, timeout=timeout)
-                if r.status_code != 200:
-                    err(f"URL {image_url} is not valid")
+            if num_checked < 100:
+                # Check if the URL is valid, but only for the first 100 images
+                info(f"Checking if the url {image_url} is valid")
+                try:
+                    timeout = 15
+                    r = requests.head(image_url, timeout=timeout)
+                    if r.status_code != 200:
+                        err(f"URL {image_url} is not valid")
+                        return -1
+                    num_checked += 1
+                except Exception as e:
+                    err(f"Error checking URL {image_url}: {e}")
                     return -1
-            except Exception as e:
-                err(f"Error checking URL {image_url}: {e}")
-                return -1
 
             # Check if the image is valid
             if not Path(row["media_path"]).exists():
