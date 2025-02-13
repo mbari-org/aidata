@@ -41,7 +41,7 @@ def extract_media(media_path: Path, max_images: int = -1) -> pd.DataFrame:
     failed_indexes = []
     sorted_df = images_df.sort_values(by="media_path")
     for i, row in sorted_df.iterrows():
-        info(f"Reading {row.media_path}")
+        info(f"Reading EXIF data in {row.media_path}")
         try:
             exif = piexif.load(row.media_path)
             # Get the date and time the image was taken
