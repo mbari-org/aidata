@@ -21,6 +21,8 @@ def extract_media(media_path: Path, max_images: Optional[int] = None) -> pd.Data
     images_df = pd.DataFrame()
 
     images_df["media_path"] = [f.as_posix() for f in media_path.rglob("*.jpg")]
+    # Tap png files as well
+    images_df = images_df.append([f.as_posix() for f in media_path.rglob("*.png")], ignore_index=True)
     images_df.sort_values(by="media_path")
     if 0 < max_images < len(images_df):
         images_df = images_df.iloc[:max_images]
