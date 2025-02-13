@@ -1,6 +1,14 @@
 # CHANGELOG
 
 
+## v1.44.0 (2025-02-13)
+
+### Features
+
+- Tap planktivore png images as well as jpg
+  ([`bc84180`](https://github.com/mbari-org/aidata/commit/bc84180957fced8f4d61c46b16a5eb902adccbe3))
+
+
 ## v1.43.0 (2025-02-07)
 
 ### Features
