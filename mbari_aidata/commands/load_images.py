@@ -6,6 +6,7 @@ from pathlib import Path
 
 import click
 import requests
+from tqdm import tqdm
 
 from mbari_aidata import common_args
 from mbari_aidata.commands.load_common import check_mounts, check_duplicate_media
@@ -74,7 +75,7 @@ def load_images(token: str, config: str, dry_run: bool, input: str, section: str
 
         specs = []
         num_checked = 0
-        for index, row in df_media.iterrows():
+        for index, row in tqdm.tqdm(df_media.iterrows(), total=len(df_media), desc="Creating images specs"):
             file_loc_sans_root = row["media_path"].split(media.mount_path.as_posix())[-1]
             image_url = f"{media.base_url}{file_loc_sans_root}"
 

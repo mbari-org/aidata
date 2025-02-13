@@ -52,7 +52,7 @@ class CustomLogger(Singleton):
 
         # also log to console
         console = logging.StreamHandler()
-        console.setLevel(logging.DEBUG)
+        console.setLevel(logging.INFO)
         console.setFormatter(formatter)
         self.logger.addHandler(console)
 
