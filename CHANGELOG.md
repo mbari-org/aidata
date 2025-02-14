@@ -1,6 +1,14 @@
 # CHANGELOG
 
 
+## v1.44.1 (2025-02-14)
+
+### Performance Improvements
+
+- Only check first 100 urls for speed-up during load
+  ([`5292b6d`](https://github.com/mbari-org/aidata/commit/5292b6d703aed794613a9e7a39f29a9e72ae2dfd))
+
+
 ## v1.44.0 (2025-02-13)
 
 ### Features
