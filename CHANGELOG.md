@@ -1,6 +1,20 @@
 # CHANGELOG
 
 
+## v1.45.0 (2025-03-04)
+
+### Build System
+
+- Relax transformers dependency for more compatible install across common tools
+  ([`c82c173`](https://github.com/mbari-org/aidata/commit/c82c173bb0a5499b61a33262392bf3baf202c04b))
+
+### Features
+
+- Add saliency and area to localization.csv for convenience as it is useful for exploring training
+  data
+  ([`77a5973`](https://github.com/mbari-org/aidata/commit/77a5973960eaf63682d669d3d13342a358864000))
+
+
 ## v1.44.1 (2025-02-14)
 
 ### Performance Improvements
