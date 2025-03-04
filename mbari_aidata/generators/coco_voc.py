@@ -467,7 +467,7 @@ def download(
         # Create a simple csv file with the media name, cluster, label, score, and label_s and score_s and
         # normalized box coordinates
         with (output_path / "localizations.csv").open("w") as f:
-            f.write("id,media,cluster,label,score,label_s,score_s,x,y,width,height\n")
+            f.write("media,cluster,saliency,area,label,score,label_s,score_s,x,y,width,height\n")
             for m in all_media:
                 media_localizations = localizations_by_media_id[m.id]
 
@@ -485,15 +485,21 @@ def download(
                     score_s = loc.attributes.get("score_s", 0)
                     label_s = loc.attributes.get("label_s", "Unknown")
                     cluster = loc.attributes.get("cluster", "Unknown")
+                    area = loc.attributes.get("area", -1)
+                    saliency = loc.attributes.get("saliency", -1)
                     x = loc.x
                     y = loc.y
                     width = loc.width
                     height = loc.height
-                    f.write(f"{loc.id},{m.name},"
+                    f.write(f"{m.name},"
                             f"{cluster},"
+                            f"{saliency},"
+                            f"{area},"
                             f"{label},{score},"
                             f"{label_s},{score_s},"
                             f"{x},{y},{width},{height}\n")
+
+        info(f'Finished creating {output_path / "localizations.csv"}')
 
         # Create YOLO, and optionally COCO, CIFAR, or VOC formatted files
         info(f"Creating YOLO files in {label_path}")
