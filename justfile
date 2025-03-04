@@ -21,6 +21,7 @@ list:
 
 # Build the docker images for linux/amd64 and linux/arm64 and push to Docker Hub
 build-and-push:
+    #!/bin/bash
     echo "Building and pushing the Docker image"
     RELEASE_VERSION=$(git describe --tags --abbrev=0)
     echo "Release version: $RELEASE_VERSION"
