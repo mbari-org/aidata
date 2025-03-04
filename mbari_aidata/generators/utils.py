@@ -16,7 +16,7 @@ def crop_frame(args):
     crop, out, inputs = args
     if os.path.exists(out):
         return 1  # Skip if the output file already exists
-    args = ["/opt/homebrew/bin/ffmpeg"]
+    args = ["ffmpeg"]
     args.extend(inputs)
     args.append(crop)
     args.append(out)
