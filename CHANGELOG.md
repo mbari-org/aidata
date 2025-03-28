@@ -1,6 +1,14 @@
 # CHANGELOG
 
 
+## v1.47.0 (2025-03-28)
+
+### Features
+
+- Create versions during upload if does not exists and more performance bulk loading for ROIs
+  ([`f10abbd`](https://github.com/mbari-org/aidata/commit/f10abbd9eb88fa497e71f945a8e655d611b7dd98))
+
+
 ## v1.46.0 (2025-03-28)
 
 ### Features
