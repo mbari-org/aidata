@@ -1,6 +1,14 @@
 # CHANGELOG
 
 
+## v1.46.0 (2025-03-28)
+
+### Features
+
+- Added support for config files from a URL and local
+  ([`df5d1cd`](https://github.com/mbari-org/aidata/commit/df5d1cdad19117afbd0ddd069cfb63ea151fb77f))
+
+
 ## v1.45.0 (2025-03-04)
 
 ### Build System
