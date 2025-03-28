@@ -2,15 +2,14 @@
 # Filename: plugins/loaders/tator/common.py
 # Description: Common database functions
 import os
-from datetime import date, datetime
 from typing import Tuple, Any, List, Dict
+from urllib.parse import urlparse
 
 import yaml
 
 from tator.openapi.tator_openapi import TatorApi  # type: ignore
 from tator.openapi.tator_openapi.models import Project  # type: ignore
 import tator  # type: ignore
-from urllib3 import HTTPHeaderDict
 
 from mbari_aidata.logger import info, debug, err
 
@@ -111,13 +110,23 @@ def init_yaml_config(yaml_config: str) -> dict:
     :return: The configuration dictionary
     """
     info(f"Reading configuration from {yaml_config}")
-    if not os.path.exists(yaml_config):
-        info(f"Configuration file {yaml_config} not found")
-        raise FileNotFoundError(f"Configuration file {yaml_config} not found")
-    with open(yaml_config, "r") as file:
-        try:
-            config_dict = yaml.safe_load(file)
-        except yaml.YAMLError as e:
-            err(f"Error reading YAML file: {e}")
-            raise e
+    parsed_url = urlparse(str(yaml_config))
+
+    if parsed_url.scheme in ('http', 'https'):
+        import requests
+        response = requests.get(yaml_config)
+        response.raise_for_status()
+        content = response.content.decode()
+    else:
+        if not os.path.exists(yaml_config):
+            info(f"Configuration file {yaml_config} not found")
+            raise FileNotFoundError(f"Configuration file {yaml_config} not found")
+        with open(yaml_config) as f:
+            content = f.read()
+
+    try:
+        config_dict = yaml.safe_load(content)
+    except yaml.YAMLError as e:
+        err(f"Error reading YAML file: {e}")
+        raise e
     return config_dict
