@@ -2,7 +2,7 @@
 # Filename: plugins/loaders/tator/common.py
 # Description: Common database functions
 import os
-from typing import Tuple, Any, List, Dict
+from typing import Tuple, Any
 from urllib.parse import urlparse
 
 import yaml
@@ -13,6 +13,28 @@ import tator  # type: ignore
 
 from mbari_aidata.logger import info, debug, err
 
+
+def create_version(api: TatorApi, project: Project, version: str) -> int:
+        """
+        Create a version in the given project
+        :param api: :class:`TatorApi` object
+        :param project: project object
+        :param version: version name
+        :return: version ID
+        """
+        try:
+            # Create another version that is based off the baseline
+            baseline_version = api.get_version_list(project.id)[0].id
+            version_obj = api.create_version(project.id, version_spec={
+                "name": version,
+                "description": version,
+                "show_empty": True,
+                "bases": [baseline_version]
+                })
+            return version_obj.id
+        except Exception as e:
+            err(f"Error creating version {version}: {e}")
+            raise e
 
 def get_version_id(api: TatorApi, project: Project, version: str) -> int:
     """
@@ -25,11 +47,16 @@ def get_version_id(api: TatorApi, project: Project, version: str) -> int:
     versions = api.get_version_list(project=project.id)
     debug(versions)
 
+    # Flag and error if the version is empty
+    if version is None or len(version) == 0:
+        raise Exception(f"A version must be specified, e.g. Baseline")
+
     # Find the version by name
     version_match = [v for v in versions if v.name == version]
     if len(version_match) == 0:
         err(f"Could not find version {version}")
-        raise ValueError(f"Could not find version {version}")
+        version_id = create_version(api, project, version)
+        return version_id
     if len(version_match) > 1:
         err(f"Found multiple versions with name {version}")
         raise ValueError(f"Found multiple versions with name {version}")

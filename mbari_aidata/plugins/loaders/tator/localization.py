@@ -54,10 +54,10 @@ def gen_spec(
     if h < 0.0:
         info(f"Localization height negative {h} {box}")
         h = 0.0
-    if w >= 1.0:
+    if w > 1.0:
         info(f"Localization height too large {w} {box}")
         w = 1.0
-    if h >= 1.0:
+    if h > 1.0:
         info(f"Localization width too large {h} {box}")
         h = 1.0
     if w + x > 1.0:

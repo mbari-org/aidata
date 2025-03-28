@@ -14,11 +14,40 @@ import subprocess
 from pathlib import Path
 from uuid import uuid1
 import tator  # type: ignore
-from tator.openapi.tator_openapi import TatorApi as tatorapi  # type: ignore
+from tator.openapi.tator_openapi import TatorApi as tatorapi, Project  # type: ignore
 from PIL import Image
 from tator.util._upload_file import _upload_file  # type: ignore
 from tator.openapi.tator_openapi import MessageResponse  # type: ignore
 from mbari_aidata.logger import err, debug, info
+
+
+
+def get_media_ids(
+        api: tator.api,
+        project: Project,
+        image_type: int,
+        **kwargs
+        ) -> Dict[str, int]:
+        """
+        `Get the media ids that match the filter
+        :param api:  tator api
+        :param kwargs:  filter arguments to pass to the get_media_list function
+        :return: media name to id mapping
+        """
+        media_map = {}
+        media_count = api.get_media_count(project=project.id, type=image_type, **kwargs)
+        if media_count == 0:
+            err(f"No media found in project {project.name}")
+            return media_map
+        batch_size = min(1000, media_count)
+        debug(f"Searching through {media_count} medias with {kwargs}")
+        for i in range(0, media_count, batch_size):
+            media = api.get_media_list(project=project.id, start=i, stop=i + batch_size, **kwargs)
+            info(f"Found {len(media)} medias with {kwargs} {i} {i + batch_size}")
+            for m in media:
+                media_map[m.name] = m.id
+                debug(f"Found {len(media_map)} medias with {kwargs}")
+        return media_map
 
 
 def local_md5_partial(file_name, max_chunks=5):
