@@ -11,9 +11,9 @@ authors = [
 license = "Apache"
 readme = "README.md"
 packages = [
-    { include = "mbari_aidata" }
+    { include = "mbari_aidata" },
 ]
-exclude = ["tests"]
+exclude = ["tests", "logs", "data", "docker", "transformers_cache"]
 
 [tool.poetry.scripts]
 aidata = "mbari_aidata.__main__:cli"

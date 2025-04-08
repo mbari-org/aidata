@@ -44,10 +44,13 @@ Create a configuration file in the root directory of the project:
 ```shell
 touch config_cfe.yaml
 ```
+Or, use the project specific configuration from our docs server at
+https://docs.mbari.org/internal/ai/projects/
+
 
 This file will be used to configure the project data, such as mounts, plugins, and database connections.
 ```shell
-aidata download --version Baseline --labels "Diatoms, Copepods" --config config_cfe.yml
+aidata download --version Baseline --labels "Diatoms, Copepods" --config https://docs.mbari.org/internal/ai/projects/uav-901902/config_uav.yml
 ```
 
 Example configuration file:
@@ -128,4 +131,4 @@ Source code is available at [github.com/mbari-org/aidata](https://github.com/mba
 ## Development
 See the [Development Guide](https://github.com/mbari-org/aidata/blob/main/DEVELOPMENT.md) for more information on how to set up the development environment.
 
-**updated: 2025-02-04**
+**updated: 2025-04-07**

@@ -8,7 +8,6 @@ It is a modified version that supports locally hosted images, video and caching.
 
 ```shell
 git clone --recurse-submodules https://github.com/mbari-org/tator
-git checkout 1.2.5
 cd tator
 cp example-env .env
 ```
@@ -85,3 +84,4 @@ export TATOR_TOKEN=eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpZCI6MzYsInVzZXJuYW1l
 Create a new media type called **Image** and a new Localization type called **box**.
 
 
+**updated: 2025-04-07**

@@ -43,8 +43,10 @@ update:
 setup-db:
     rm -rf tator
     git clone --recurse-submodules https://github.com/mbari-org/tator
-    cd tator && git checkout 1.2.5
-    cp example-env .env && make tator &&  make superuser
+    cd tator
+    cp example-env .env
+    make cluster
+    make superuser
 
 # TODO: Add a command to initialize the database from the yaml file
 # See sightwire code for an example of how to do this
