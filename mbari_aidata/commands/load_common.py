@@ -33,11 +33,15 @@ def check_mounts(config_dict: Dict, input:str, media_type: str) -> (MediaHelper,
         err("No image mount found in configuration")
         return None, -1
 
+    if 'http' in media_mount["host"]:
+        base_url = media_mount["host"]
+    else:
+        base_url = f'http://{media_mount["host"]}' # assuming http protocol which may not be correct
+
     if "port" in media_mount:
         port = media_mount["port"]
-        base_url = f'http://{media_mount["host"]}:{port}'
-    else:
-        base_url = f'http://{media_mount["host"]}'
+        base_url = f'{base_url}:{port}'
+
     if "nginx_root" in media_mount:
         base_url = f'{base_url}{media_mount["nginx_root"]}/'
     info(f"Media base URL: {base_url}")
