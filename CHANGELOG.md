@@ -1,6 +1,20 @@
 # CHANGELOG
 
 
+## v1.48.0 (2025-04-10)
+
+### Documentation
+
+- Updated instructions and recipes per latest build steps and some additional excludes in project
+  common in dev
+  ([`776af45`](https://github.com/mbari-org/aidata/commit/776af45b9645a10e5ec9b1b95b628985b716e9eb))
+
+### Features
+
+- Handle both media mounts with and without complete urls
+  ([`225ecc6`](https://github.com/mbari-org/aidata/commit/225ecc6e00355f7736c2079a006deed5ec1cbcb8))
+
+
 ## v1.47.0 (2025-03-28)
 
 ### Features
