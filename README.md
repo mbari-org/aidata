@@ -84,7 +84,7 @@ vss:
 
 tator:
   project: "902111-CFE"
-  host: "mantis.shore.mbari.org"
+  host: "https://mantis.shore.mbari.org"
   image:
     attributes:
       iso_datetime:

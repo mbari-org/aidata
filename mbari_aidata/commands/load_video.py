@@ -30,7 +30,7 @@ def load_video(token: str, config: str, dry_run: bool, input: str, section: str,
     # Load the configuration file
     config_dict = init_yaml_config(config)
     project = config_dict["tator"]["project"]
-    host = f'http://{config_dict["tator"]["host"]}'
+    host = config_dict["tator"]["host"]
     plugins = config_dict["plugins"]
 
     media, rc = check_mounts(config_dict, input, "video")

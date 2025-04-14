@@ -160,10 +160,9 @@ def gen_thumbnail(ffmpeg_path: str, num_frames: int, fps: float, video_path: str
     subprocess.run(cmd, check=True)
 
 
-def get_video_metadata(video_name: str, video_path: Path = None) -> dict or None:
+def get_video_metadata(video_name: str) -> dict or None:
     try:
-        # If the video exists, get the metadata directly, otherwise try to get from the VAM API
-        # with the video name
+        video_path = Path(video_name)
         if video_path and video_path.exists():
             video_clip = VideoFileClip(video_path.as_posix())
             reader_metadata = video_clip.reader.infos.get('metadata')
@@ -178,28 +177,7 @@ def get_video_metadata(video_name: str, video_path: Path = None) -> dict or None
             video_clip.close()
             return metadata
 
-        query = f"http://m3.shore.mbari.org/vam/v1/media/videoreference/filename/{video_name}"
-
-        info(f"query: {query}")
-        # Get the video reference uuid from the rest query JSON response
-        resp = requests.get(query)
-        info(f"resp: {resp}")
-        data = json.loads(resp.text)[0]
-        info(f"data: {data}")
-        # Add a reasonable default for the code if it is not present
-        if "codec" not in data:
-            data["codec"] = "h264"
-        if data['frame_rate'] == 0:
-            data['frame_rate'] = 29.97
-        metadata = {
-            "codec": data["codec"],
-            "mime": data["container"],
-            "resolution": (data["width"], data["height"]),
-            "size": data["size_bytes"],
-            "num_frames": int(data["frame_rate"] * data["duration_millis"] / 1000),
-            "frame_rate": data["frame_rate"],
-        }
-        return metadata
+        return {}
     except Exception as e:
         print("Error:", e)
         return None
