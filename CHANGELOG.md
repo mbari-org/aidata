@@ -1,6 +1,15 @@
 # CHANGELOG
 
 
+## v1.48.1 (2025-04-14)
+
+### Bug Fixes
+
+- Switch to defaulting to yaml config only for tator host and fetch video metadata from the file
+  only
+  ([`78a02d4`](https://github.com/mbari-org/aidata/commit/78a02d4db54d0e963edce57adf0cb10627605a13))
+
+
 ## v1.48.0 (2025-04-10)
 
 ### Documentation
