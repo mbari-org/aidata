@@ -22,7 +22,7 @@ vss:
 
 tator:
   project: "i2map"
-  host: "localhost:8080"
+  host: "http://localhost:8080"
   image:
     attributes:
       iso_datetime:

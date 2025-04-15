@@ -25,7 +25,7 @@ vss:
 
 tator:
   project: "902004-Planktivore"
-  host: "localhost:8080"
+  host: "http://localhost:8080"
   image:
     attributes:
       iso_datetime:

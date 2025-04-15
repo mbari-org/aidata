@@ -28,7 +28,7 @@ vss:
 
 tator:
   project: "902111-CFE"
-  host: "localhost:8080"
+  host: "http://localhost:8080"
   image:
     attributes:
       iso_datetime:
