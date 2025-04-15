@@ -7,7 +7,6 @@ on:
 jobs:
   semantic_release:
     runs-on: ubuntu-latest
-    concurrency: semantic_release
     permissions:
       id-token: write
       contents: write
