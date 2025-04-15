@@ -20,7 +20,8 @@ from mbari_aidata.plugins.loaders.tator.common import init_yaml_config, init_api
 @click.command("queue", help="Load data from a Redis message queue")
 @common_args.token
 @common_args.yaml_config
-def load_queue(token: str, config: str) -> None:
+@click.option("--reset", is_flag=True, help="Reset the Redis queue. CAUTION: This will delete all data in the queue.")
+def load_queue(token: str, config: str, reset: bool) -> None:
     """Load data from a Redis message queue."""
     create_logger_file("load_queue")
 
@@ -29,6 +30,17 @@ def load_queue(token: str, config: str) -> None:
     project = config_dict["tator"]["project"]
     host = config_dict["tator"]["host"]
     video_attributes = config_dict["tator"]["video"]["attributes"]
+
+    # Connect to Redis
+    redis_host = config_dict["redis"]["host"]
+    redis_port = config_dict["redis"]["port"]
+    r = redis.Redis(host=redis_host, port=redis_port, password=os.getenv("REDIS_PASSWORD"))
+
+    if reset:
+        # Reset the Redis queue
+        info("Resetting the Redis queue")
+        r.flushdb()
+        info("Redis queue reset")
 
     # Initialize the Tator API
     api, tator_project = init_api_project(host, token, project)
@@ -40,11 +52,6 @@ def load_queue(token: str, config: str) -> None:
     if media_type_v is None:
         info(f"No media type found in project {project}")
         return
-
-    # Connect to Redis
-    redis_host = config_dict["redis"]["host"]
-    redis_port = config_dict["redis"]["port"]
-    r = redis.Redis(host=redis_host, port=redis_port, password=os.getenv("REDIS_PASSWORD"))
 
     # Get the mount path from the configuration
     mounts = config_dict["mounts"]

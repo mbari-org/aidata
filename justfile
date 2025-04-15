@@ -152,3 +152,8 @@ download-copepod-data:
 # Download the 25000_depth_v1 section data from the CFE project
 download-section-data:
     time conda run -n mbari_aidata --no-capture-output python3 mbari_aidata download dataset --base-path ./data/i2map --version Baseline --section "25000_depth_v1"  --labels "all" --config config_cfe.yml
+# Load the i2map data into redis
+load-redis:
+    time conda run -n mbari_aidata --no-capture-output python3 mbari_aidata load queue --reset \
+        --config ./tests/config/config_cfe.yml \
+        --token $TATOR_TOKEN
