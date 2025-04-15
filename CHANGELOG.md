@@ -1,6 +1,14 @@
 # CHANGELOG
 
 
+## v1.49.0 (2025-04-15)
+
+### Features
+
+- Add --reset to aidata load queue to support resetting REDIS
+  ([`6a7ecd5`](https://github.com/mbari-org/aidata/commit/6a7ecd5024e98621ea4712009379bda23d523c5a))
+
+
 ## v1.48.1 (2025-04-14)
 
 ### Bug Fixes
