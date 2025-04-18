@@ -1,6 +1,14 @@
 # CHANGELOG
 
 
+## v1.50.0 (2025-04-18)
+
+### Features
+
+- Added thumbnail and improved video metadata for video load
+  ([`9b72355`](https://github.com/mbari-org/aidata/commit/9b72355cf7938caed1125e9e3bd9c2aa7a1c41ff))
+
+
 ## v1.49.0 (2025-04-15)
 
 ### Features
