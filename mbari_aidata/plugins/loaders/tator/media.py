@@ -2,11 +2,10 @@
 # Filename: plugins/loaders/tator/media.py
 # Description:  Database operations related to media
 import hashlib
-import json
 import os
+from tempfile import TemporaryDirectory
 from typing import List, Any, Dict
 
-import requests
 from moviepy import VideoFileClip
 import mimetypes
 import subprocess
@@ -14,12 +13,12 @@ import subprocess
 from pathlib import Path
 from uuid import uuid1
 import tator  # type: ignore
-from tator.openapi.tator_openapi import TatorApi as tatorapi, Project  # type: ignore
+from tator.openapi.tator_openapi import TatorApi as tatorapi, Project, MediaType  # type: ignore
 from PIL import Image
 from tator.util._upload_file import _upload_file  # type: ignore
 from tator.openapi.tator_openapi import MessageResponse  # type: ignore
 from mbari_aidata.logger import err, debug, info
-
+from mbari_aidata.plugins.loaders.tator.common import find_media_type, init_api_project
 
 
 def get_media_ids(
@@ -119,8 +118,24 @@ def gen_spec(file_loc: str, type_id: int, section: str, **kwargs) -> dict:
 
     return spec
 
+def gen_thumbnail_jpg(ffmpeg_path: str, video_path: str, thumb_jpg_path: str):
+    # Create jpg thumbnail in a single pass
+    cmd = [
+        ffmpeg_path,
+        "-y",
+        "-i",
+        f'{video_path}',
+        "-vf",
+        f"select=eq(n\,0),scale=256:-1:flags=lanczos",
+        "-frames:v",
+        "1",
+        thumb_jpg_path,
+    ]
+    info(f"cmd={cmd}")
+    debug(' '.join(cmd))
+    subprocess.run(cmd, check=True)
 
-def gen_thumbnail(ffmpeg_path: str, num_frames: int, fps: float, video_path: str, thumb_gif_path: str):
+def gen_thumbnail_gif(ffmpeg_path: str, num_frames: int, fps: float, video_path: str, thumb_gif_path: str):
     # Create gif thumbnail in a single pass
     # This logic makes a max 10 second summary video and saves as a gif
     video_duration = int(num_frames / fps)
@@ -160,24 +175,21 @@ def gen_thumbnail(ffmpeg_path: str, num_frames: int, fps: float, video_path: str
     subprocess.run(cmd, check=True)
 
 
-def get_video_metadata(video_name: str) -> dict or None:
+def get_video_metadata(video_url_or_path: str) -> dict or None:
     try:
-        video_path = Path(video_name)
-        if video_path and video_path.exists():
-            video_clip = VideoFileClip(video_path.as_posix())
-            reader_metadata = video_clip.reader.infos.get('metadata')
-            metadata = {
-                "codec": reader_metadata["encoder"],
-                "mime": mimetypes.guess_type(video_path.as_posix())[0],
-                "resolution": video_clip.reader.size,
-                "size": os.stat(video_path.as_posix()).st_size,
-                "num_frames": video_clip.reader.n_frames,
-                "frame_rate": video_clip.reader.fps,
-            }
-            video_clip.close()
-            return metadata
-
-        return {}
+        video_clip = VideoFileClip(video_url_or_path)
+        reader_metadata = video_clip.reader.infos.get('metadata')
+        metadata = {
+            "codec": reader_metadata["encoder"],
+            "mime": mimetypes.guess_type(video_url_or_path)[0],
+            "resolution": video_clip.reader.size,
+            "size": os.stat(video_url_or_path).st_size,
+            "num_frames": video_clip.reader.n_frames,
+            "frame_rate": video_clip.reader.fps,
+            "bit_rate": video_clip.reader.bitrate,
+        }
+        video_clip.close()
+        return metadata
     except Exception as e:
         print("Error:", e)
         return None
@@ -225,11 +237,12 @@ def load(ffmpeg_path: str, project_id: int, api: tatorapi, media_path: str, spec
         is_video = False
         # if the media is a video, create a thumbnail gif
         possible_extensions = [".mp4", ".mov", ".avi", ".mkv"]
-        if Path(media_path).suffix.lower() in possible_extensions:
+        video_path = Path(media_path)
+        if video_path.suffix.lower() in possible_extensions:
             is_video = True
 
         if is_video:
-            metadata = get_video_metadata(spec["name"], **kwargs)
+            metadata = get_video_metadata(video_path)
             if not metadata:
                 raise Exception(f"Error getting metadata for {media_path}")
             media_spec = {
@@ -242,6 +255,9 @@ def load(ffmpeg_path: str, project_id: int, api: tatorapi, media_path: str, spec
                 "height": metadata["resolution"][1],
                 "num_frames": metadata["num_frames"],
                 "fps": metadata["frame_rate"],
+                "bit_rate": metadata["bit_rate"],
+                "codec": metadata["codec"],
+                "mime": metadata["mime"],
             }
         else:
             media_spec = {
@@ -258,19 +274,43 @@ def load(ffmpeg_path: str, project_id: int, api: tatorapi, media_path: str, spec
         response = api.create_media_list(project_id, [media_spec])
         media_id = response.id[0]
 
-        if metadata:
+        if metadata is None:
+            raise Exception(f"Error getting metadata for {media_id}")
+
+        with TemporaryDirectory() as tmpdir:
             name = Path(spec["name"])
-            thumb_gif_path = f"/tmp/{name.stem}_thumbnail_gif.gif"
-            gen_thumbnail(
+            thumb_path = f"/tmp/{name.stem}_thumbnail.jpg"
+            thumb_gif_path = f"/{tmpdir}/{name.stem}_thumbnail_gif.gif"
+            gen_thumbnail_gif(
                 ffmpeg_path,
                 metadata["num_frames"],
                 metadata["frame_rate"],
                 media_path,
                 thumb_gif_path,
             )
+            gen_thumbnail_jpg(
+                ffmpeg_path,
+                media_path,
+                thumb_path,
+            )
             # Check if the thumbnail gif was created and is not empty
             if not os.path.exists(thumb_gif_path) or os.stat(thumb_gif_path).st_size == 0:
                 raise Exception(f"Thumbnail gif {thumb_gif_path} not created or empty")
+
+            for progress, thumbnail_info in _upload_file(
+                api,
+                project_id,
+                thumb_path,
+                media_id=media_id,
+                filename=os.path.basename(thumb_path),
+            ):
+                info(f"Thumbnail {thumb_path} upload progress: {progress}%")
+                pass
+
+            for progress, thumbnail_gif_info in _upload_file(api, project_id, media_id=media_id, path=thumb_gif_path, filename=os.path.basename(thumb_gif_path), timeout=30):
+                pass
+
+            info(f"Thumbnail {thumb_gif_path} upload progress: {progress}%")
 
             for progress, thumbnail_gif_info in _upload_file(
                 api,
@@ -279,24 +319,30 @@ def load(ffmpeg_path: str, project_id: int, api: tatorapi, media_path: str, spec
                 media_id=media_id,
                 filename=os.path.basename(thumb_gif_path),
             ):
-                pass
+                info(f"Thumbnail {thumb_gif_path} upload progress: {progress}%")
+
             thumb_gif_image = Image.open(thumb_gif_path)
             thumb_gif_def = {
                 "path": thumbnail_gif_info.key,
                 "size": os.stat(thumb_gif_path).st_size,
                 "resolution": [thumb_gif_image.height, thumb_gif_image.width],
+                "mime": f"image/{thumb_gif_image.format.lower()}"
             }
-
-            if thumb_gif_image and thumb_gif_image.format:
-                thumb_gif_def["mime"] = f"image/{thumb_gif_image.format.lower()}"
-
+            thumb_image = Image.open(thumb_path)
+            thumb_def = {
+                "path": thumbnail_info.key,
+                "size": os.stat(thumb_path).st_size,
+                "resolution": [thumb_image.height, thumb_image.width],
+                "mime": f"image/{thumb_image.format.lower()}"
+            }
             response = api.create_image_file(media_id, role="thumbnail_gif", image_definition=thumb_gif_def)
             if not isinstance(response, MessageResponse):
                 raise Exception(f"Creating thumbnail gif {thumb_gif_path}")
+            response = api.create_image_file(media_id, role="thumbnail", image_definition=thumb_def)
+            if not isinstance(response, MessageResponse):
+                raise Exception(f"Creating thumbnail {thumb_path}")
 
-            os.remove(thumb_gif_path)
-
-            # Update the media object.
+            # # Update the media object.
             response = api.update_media(
                 media_id,
                 media_update={
@@ -314,7 +360,7 @@ def load(ffmpeg_path: str, project_id: int, api: tatorapi, media_path: str, spec
                 "codec": metadata["codec"],
                 "codec_description": "H.264 / AVC / MPEG-4 AVC / MPEG-4 part 10",
                 "size": metadata["size"],
-                "bit_rate": -1,
+                "bit_rate": metadata["bit_rate"],
                 "resolution": [metadata["resolution"][1], metadata["resolution"][0]],
                 "path": spec["url"],
                 "reference_only": 1,
@@ -333,11 +379,11 @@ def load_media(
     ffmpeg_path: str,
     media_path: str,
     media_url: str,
-    section: str,
     attributes: dict,
     api: tatorapi,
-    tator_project,
-    media_type,
+    tator_project: Project,
+    media_type: MediaType,
+    section: str = "All Media",
     **kwargs,
 ) -> int:
     """
@@ -345,11 +391,11 @@ def load_media(
     :param ffmpeg_path: Path to the ffmpeg binary
     :param media_path: Absolute path to the image/video to load
     :param media_url: URL (if hosted)
-    :param section: section to assign to the media
     :param attributes: Attributes to assign to the media
     :param api: Tator API
     :param tator_project: Tator project
     :param media_type: media type
+    :param section: Section to store media in; defaults to "All Media"
     :return:
     """
     info(f"Loading {media_path}")
@@ -374,9 +420,15 @@ def load_media(
 
 
 if __name__ == "__main__":
-    file_url = "http://mantis.shore.mbari.org/UAV/Level-1/trinity-2_20230608T175648/SONY_DSC-RX1RM2/trinity-2_20230608T175648_DSC02775.JPG"
-    file_load_path = "/Volumes/UAV/Level-1/trinity-2_20230608T175648/SONY_DSC-RX1RM2/trinity-2_20230608T175648_DSC02775.JPG"
-    spec = gen_spec(file_load_path, 1, "200m", file_url=file_url)
-    # Print as json
-    # This can be used to load the media to the database through the Tator REST API for experimentation
-    print(json.dumps(spec, indent=2))
+    file_url = "http://localhost:8082/data/cfe/CFE_ISIIS-001-2023-07-12%2009-14-56.898.mp4"
+    file_load_path = Path(__file__).parent.parent.parent.parent.parent / "tests" / "data" / "cfe" /"CFE_ISIIS-001-2023-07-12 09-14-56.898.mp4"
+    api, project = init_api_project("http://localhost:8080", os.getenv("TATOR_TOKEN"), "902111-CFE")
+    video_type = find_media_type(api, project.id, "Video")
+    load_media(ffmpeg_path='/usr/local/bin/ffmpeg',
+               tator_project=project,
+               media_url=file_url,
+               media_type=video_type,
+               attributes={},
+               media_path=file_load_path.as_posix(),
+               section="cfe_test",
+               api=api)

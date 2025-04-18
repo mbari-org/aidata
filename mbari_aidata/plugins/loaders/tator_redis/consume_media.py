@@ -5,13 +5,14 @@ import time
 from pathlib import Path
 import pytz
 from datetime import datetime
+from dateutil.parser import isoparse
 import re
 import redis
 
 from tator.openapi.tator_openapi import TatorApi  # type: ignore
 from tator.openapi.tator_openapi.models import Project, MediaType  # type: ignore
-from mbari_aidata.plugins.loaders.tator.media import load_media
 
+from mbari_aidata.plugins.loaders.tator.media import load_media
 from mbari_aidata.logger import info, err
 from mbari_aidata.plugins.loaders.tator.attribute_utils import format_attributes
 
@@ -109,12 +110,14 @@ class ConsumeVideo:
                                     iso_start_datetime = datetime(year, month, day, hour, minute, second, millisecond * 1000, tzinfo=pytz.utc)
 
                                 if iso_start_datetime is None:
-                                    info(f"Could not parse start timestamp {start_timestamp}")
-                                    continue
+                                    iso_start_datetime = isoparse(start_timestamp)
+                                    if iso_start_datetime.tzinfo is None:
+                                        info(f"Could not parse start timestamp {start_timestamp}")
+                                        continue
 
                                 mount_base = Path(self.mount_path).name
                                 video_path = Path(f"{self.mount_path}{video_uri.split(mount_base)[1]}")
-                                info(f"Loading video ref {k} uri {video_uri}")
+                                info(f"Loading video ref {k} uri {video_uri} {video_path}")
                                 if not video_path.exists():
                                     info(f"Video path {video_path} does not exist")
                                 else:

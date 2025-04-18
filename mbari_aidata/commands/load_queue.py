@@ -66,7 +66,7 @@ def load_queue(token: str, config: str, reset: bool) -> None:
     # Get the ffmpeg path from the configuration
     ffmpeg_path = config_dict["ffmpeg_path"]
     if not Path(ffmpeg_path).exists():
-        info(f"FFMPEG path {ffmpeg_path} does not exist")
+        info(f"FFMPEG path {ffmpeg_path} does not exist. Correct the configuration file {config}.")
         return
 
     # Create consumers

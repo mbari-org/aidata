@@ -25,11 +25,10 @@ class ConsumeLocalization:
             try:
                 keys = self.r.keys("locs:*")
                 for k in keys:
-                    info(f"Processing key {k}")
+                    info(f"Checking for valid media load for {k}")
                     video_ref = k.decode("utf-8").split(":")[1]
                     load_key = self.r.keys(f"tator_ids_v:{video_ref}")
                     if len(load_key) == 1:
-                        info(f"Loading localization for video ref {video_ref}")
                         hash_data = self.r.hgetall(f"locs:{video_ref}")
                         objects = {
                             key.decode("utf-8"): json.loads(value.decode("utf-8")) for key, value in hash_data.items()
@@ -66,7 +65,7 @@ class ConsumeLocalization:
                                         label = obj['label']
                                     if 'Label' in obj:
                                         label = obj['Label']
-                                    info(f"Formatting {b}")
+                                    info(f"Formatting {obj}")
                                     attributes = format_attributes(obj, self.attribute_mapping)
                                     boxes.append(
                                         gen_spec(
