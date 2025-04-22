@@ -1,6 +1,15 @@
 # CHANGELOG
 
 
+## v1.51.0 (2025-04-22)
+
+### Features
+
+- Added support for new command e.g. aidata load clusters --config config.yml --token <token>>
+  --input clusters.csv --version Baseline
+  ([`2fa2e9b`](https://github.com/mbari-org/aidata/commit/2fa2e9bc4f036c148fd6700302a03d0dd549c464))
+
+
 ## v1.50.0 (2025-04-18)
 
 ### Features
