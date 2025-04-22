@@ -121,7 +121,7 @@ docker run -it --rm -v $(pwd):/mnt mbari/aidata:latest aidata download --version
 ## Commands
 
 * `aidata download --help` -  Download data, such as images, boxes, into various formats for machine learning e,g, COCO, CIFAR, or PASCAL VOC format
-* `aidata load --help` -  Load data, such as images, and boxes into either a Postgres or REDIS database
+* `aidata load --help` -  Load data, such as images, boxes, or clusters into either a Postgres or REDIS database
 * `aidata db --help` -  Commands related to database management
 * `aidata transform --help` - Commands related to transforming downloaded data
 * `aidata  -h` - Print help message and exit.

@@ -12,6 +12,7 @@ sys.path.insert(0, str(Path(__file__).parent.parent))
 
 from pathlib import Path
 
+from mbari_aidata.commands.load_clusters import load_clusters
 from mbari_aidata.commands.download import download
 from mbari_aidata.commands.load_images import load_images
 from mbari_aidata.commands.load_video import load_video
@@ -51,6 +52,7 @@ cli_load.add_command(load_video)
 cli_load.add_command(load_boxes)
 cli_load.add_command(load_queue)
 cli_load.add_command(load_exemplars)
+cli_load.add_command(load_clusters)
 
 
 @click.group(name="download")
