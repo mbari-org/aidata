@@ -179,8 +179,12 @@ def get_video_metadata(video_url_or_path: str) -> dict or None:
     try:
         video_clip = VideoFileClip(video_url_or_path)
         reader_metadata = video_clip.reader.infos.get('metadata')
+        if '.mp4' in video_url_or_path.lower():
+            fallback_codec = 'h264'
+        else:
+            fallback_codec = 'unknown'
         metadata = {
-            "codec": reader_metadata["encoder"],
+            "codec": reader_metadata.get("encoder", fallback_codec),
             "mime": mimetypes.guess_type(video_url_or_path)[0],
             "resolution": video_clip.reader.size,
             "size": os.stat(video_url_or_path).st_size,
