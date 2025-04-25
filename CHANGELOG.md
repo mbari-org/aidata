@@ -1,6 +1,19 @@
 # CHANGELOG
 
 
+## v1.52.0 (2025-04-25)
+
+### Documentation
+
+- Minor README.md typo and added some detail on augmentation
+  ([`945f042`](https://github.com/mbari-org/aidata/commit/945f0427c505d697816c8007dd389356c34b17fe))
+
+### Features
+
+- Added support for microsecond isoparse 2025-04-25T04:11:23.770409 from redis queue
+  ([`00da986`](https://github.com/mbari-org/aidata/commit/00da9862b9eb4f00bb2d9c66319266dc94d271c0))
+
+
 ## v1.51.0 (2025-04-22)
 
 ### Features
