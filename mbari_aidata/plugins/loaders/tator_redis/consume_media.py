@@ -79,6 +79,7 @@ class ConsumeVideo:
                                 pattern_date4 = re.compile(r"(\d{2})(\d{2})(\d{2})T(\d{2})(\d{2})(\d{2})Z")  # 161025T184500Z
                                 pattern_date5 = re.compile(r"(\d{2})-(\d{2})-(\d{2})T(\d{2})_(\d{2})_(\d{2})-")
                                 pattern_date6 = re.compile(r"(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2}):(\d{2})\.(\d{3})Z") # 2015-03-07T20:53:01.065Z
+                                pattern_date7 = re.compile(r"(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2}):(\d{2})\.(\d{6})") # 2025-04-25T04:11:23.770409
                                 iso_start_datetime = None
                                 if pattern_date0.search(start_timestamp):
                                     match = pattern_date0.search(start_timestamp).groups()
@@ -108,6 +109,10 @@ class ConsumeVideo:
                                     match = pattern_date6.search(start_timestamp).groups()
                                     year, month, day, hour, minute, second, millisecond = map(int, match)
                                     iso_start_datetime = datetime(year, month, day, hour, minute, second, millisecond * 1000, tzinfo=pytz.utc)
+                                if pattern_date7.search(start_timestamp):
+                                    match = pattern_date7.search(start_timestamp).groups()
+                                    year, month, day, hour, minute, second, microsecond = map(int, match)
+                                    iso_start_datetime = datetime(year, month, day, hour, minute, second, microsecond, tzinfo=pytz.utc)
 
                                 if iso_start_datetime is None:
                                     iso_start_datetime = isoparse(start_timestamp)
