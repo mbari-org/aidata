@@ -1,6 +1,19 @@
 # CHANGELOG
 
 
+## v1.52.1 (2025-04-25)
+
+### Bug Fixes
+
+- Better handling of missing codec that throws None exception for some video
+  ([`9d092bc`](https://github.com/mbari-org/aidata/commit/9d092bc250c77889f486471800b2ea10ab19ccb1))
+
+### Documentation
+
+- Updated yaml example to reflect changes from release v.0.48.0
+  ([`51b5f1a`](https://github.com/mbari-org/aidata/commit/51b5f1ad3080f503317deee916887d1a4b13f19e))
+
+
 ## v1.52.0 (2025-04-25)
 
 ### Documentation
