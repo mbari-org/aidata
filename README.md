@@ -60,12 +60,12 @@ Example configuration file:
 mounts:
   - name: "image"
     path: "/mnt/CFElab"
-    host: "mantis.shore.mbari.org"
+    host: "https://mantis.shore.mbari.org"
     nginx_root: "/CFElab"
 
   - name: "video"
     path: "/mnt/CFElab"
-    host: "mantis.shore.mbari.org"
+    host: "https://mantis.shore.mbari.org"
     nginx_root: "/CFElab"
 
 
