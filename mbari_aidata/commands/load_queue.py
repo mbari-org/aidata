@@ -56,9 +56,13 @@ def load_queue(token: str, config: str, reset: bool) -> None:
     # Get the mount path from the configuration
     mounts = config_dict["mounts"]
     mount_path = None
+    mount_host = None
+    mount_nginx = None
     for mount in mounts:
         if mount["name"] == "video":
             mount_path = mount["path"]
+            mount_host = mount["host"]
+            mount_nginx = mount["nginx_root"]
     if mount_path is None:
         info("Mount path not found")
         return
@@ -76,7 +80,9 @@ def load_queue(token: str, config: str, reset: bool) -> None:
             api,
             tator_project,
             media_type_v,
+            mount_nginx,
             mount_path,
+            mount_host,
             ffmpeg_path,
             video_attributes,
         ),

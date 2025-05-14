@@ -23,59 +23,67 @@ class ConsumeLocalization:
         while True:
             info("Waiting for new localizations...")
             try:
-                keys = self.r.keys("locs:*")
-                for k in keys:
-                    info(f"Checking for valid media load for {k}")
-                    video_ref = k.decode("utf-8").split(":")[1]
-                    load_key = self.r.keys(f"tator_ids_v:{video_ref}")
-                    if len(load_key) == 1:
-                        hash_data = self.r.hgetall(f"locs:{video_ref}")
-                        objects = {
-                            key.decode("utf-8"): json.loads(value.decode("utf-8")) for key, value in hash_data.items()
-                        }
+                for video_uri in self.r.scan_iter("locs:*"):
+                    data = self.r.hgetall(video_uri)
+                    video_uri = video_uri.decode("utf-8").split("locs:")[-1]
+                    info(f"video_uri {video_uri}")
+                    if data is None:
+                        continue
 
-                        # Load them referencing the video by its load_id
-                        info(f"Getting tator_id from {load_key[0]}")
+                    info(f"Found localization {video_uri} total locs {len(data)}")
+                    loc_items = {k.decode("utf-8"): v.decode("utf-8") for k, v in data.items()}
+                    info(f"Found localization {video_uri} total locs {len(loc_items)}")
 
-                        # Check if the key exists
-                        if self.r.exists(load_key[0], "tator_id"):
-                            tator_id = self.r.hget(load_key[0], "tator_id_v").decode("utf-8")
-                            if tator_id == 'None':
-                                err(f"tator_id not found for {load_key[0]}")
-                            else:
-                                info(f"Loading {len(objects)} localization(s) for video ref {video_ref} load_id {tator_id}")
+                    if not self.r.exists(f"tator_ids_v:{video_uri}"):
+                        info(f'No data: tator_ids_v empty for {video_uri}')
+                        continue
 
-                                boxes = []
-                                for b in objects:
-                                    obj = objects[b]
-                                    debug(obj)
-                                    if 'label' in obj:
-                                        label = obj['label']
-                                    if 'Label' in obj:
-                                        label = obj['Label']
-                                    info(f"Formatting {obj}")
-                                    attributes = format_attributes(obj, self.attribute_mapping)
-                                    boxes.append(
-                                        gen_spec(
-                                            box=[obj["x1"], obj["y1"], obj["x2"], obj["y2"]],
-                                            version_id=obj["version_id"],
-                                            label=label,
-                                            width=obj["width"],
-                                            height=obj["height"],
-                                            attributes=attributes,
-                                            frame_number=obj["frame"],
-                                            type_id=self.box_type.id,
-                                            media_id=int(tator_id),
-                                            project_id=self.tator_project.id,
-                                        )
-                                    )
+                    tator_id_v = self.r.hget(f"tator_ids_v:{video_uri}", "tator_id_v")
+                    if tator_id_v is not None:
+                        tator_id = tator_id_v.decode("utf-8")
+                        info(f"Found tator id {tator_id} for {video_uri}")
+                    else:
+                        info(f'No data: tator_ids_v empty for {video_uri}')
+                        continue
 
-                                load_bulk_boxes(self.tator_project.id, self.api, boxes)
+                    seen_boxes = set()
+                    boxes = []
+                    l_ids = []
 
-                                # Remove them from the queue
-                                for obj_id in objects:
-                                    info(f"Removing localization {obj_id} from queue")
-                                    self.r.hdel(f"locs:{video_ref}", obj_id)
+                    for l_id, l in loc_items.items():
+                        l_id = int(l_id)
+                        l_ids.append(l_id)
+                        info(f"Found localization {l_id} for {video_uri}\n")
+                        l = json.loads(l)
+                        info(f"Formatting attributes in {l}")
+                        attributes = format_attributes(l, self.attribute_mapping)
+                        label = l.get('label') or l.get('Label')
+                        # Define uniqueness based only on box coordinates and frame number
+                        box_key = ( l["x1"], l["y1"], l["x2"], l["y2"], l["frame"])
+                        if box_key in seen_boxes:
+                            info(f"Duplicate box found for {box_key}, skipping.")
+                            continue 
+                        seen_boxes.add(box_key)
+                        box = gen_spec(
+                                box=[l["x1"], l["y1"], l["x2"], l["y2"]],
+                                version_id=l["version_id"],
+                                label=label,
+                                width=l["width"],
+                                height=l["height"],
+                                attributes=attributes,
+                                frame_number=l["frame"],
+                                type_id=self.box_type.id,
+                                media_id=int(tator_id),
+                                project_id=self.tator_project.id,
+                            )
+                        boxes.append(box)
+
+                    load_bulk_boxes(self.tator_project.id, self.api, boxes)
+
+                    # Remove them from the queue
+                    for l_id in l_ids:
+                        info(f"Removing localization {l_id} from queue")
+                        self.r.hdel(f"locs:{video_uri}", l_id)
             except Exception as e:
                 info(f"Error: {e}")
                 time.sleep(5)
