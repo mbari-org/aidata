@@ -45,10 +45,10 @@ def extract_videos(media_path: Path, max_videos: Optional[int] = None) -> pd.Dat
     if 0 < max_videos < len(df):
         df = df.iloc[:max_videos] # Limit the number of videos to process
 
-    # 'CFE_ISIIS-010-2024-01-26 10-14-07.102_0835.mp4'
+    # CFE_ISIIS-010-2024-01-26 10-14-07.102_0835.mp4
+    # CFE_ISIIS-029-2025-04-05 10-52-46.523.mp4
     pattern = re.compile(r"CFE_(.*?)-(\d+)-(\d{4}-\d{2}-\d{2} \d{2}-\d{2}-\d{2}\.\d{3})\.mp4")
 
-    index = 0
     # Grab any additional metadata from the image name,
     iso_datetime = {}
     instrument_type = {}
