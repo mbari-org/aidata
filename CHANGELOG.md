@@ -1,6 +1,14 @@
 # CHANGELOG
 
 
+## v1.53.0 (2025-05-23)
+
+### Features
+
+- Handle enum attributes in tator loads simply as strings for now
+  ([`0b96bc1`](https://github.com/mbari-org/aidata/commit/0b96bc12be21f1fb38872ac65736e0b172f109b2))
+
+
 ## v1.52.2 (2025-05-23)
 
 ### Bug Fixes
