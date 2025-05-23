@@ -38,21 +38,29 @@ def format_attributes(attributes: dict, attribute_mapping: dict) -> dict:
                         attributes_[m_key] = "True"
                     else:
                         attributes_[m_key] = "False"
-                if m_value["type"] == "float":
+                # Convert enum to string
+                elif m_value["type"] == "enum":
+                    if attributes[m_key] is None:
+                        attributes_[m_key] = "UNKNOWN"
+                    else:
+                        attributes_[m_key] = str(attributes[m_key])
+                elif m_value["type"] == "float":
                     if attributes[m_key] is None:
                         attributes_[m_key] = -1
                     else:
                         attributes_[m_key] = float(attributes[m_key])
-                if m_value["type"] == "int":
+                elif m_value["type"] == "int":
                     if attributes[m_key] is None:
                         attributes_[m_key] = -1
                     else:
                         attributes_[m_key] = int(attributes[m_key])
-                if m_value["type"] == "string":
+                elif m_value["type"] == "string":
                     if m_key == "cluster":
                         attributes_[m_key] = f"Unknown C{attributes[m_key]}"
                     else:
                         attributes_[m_key] = str(attributes[m_key])
+                else:
+                    raise TypeError(f"Unknown type {m_value['type']} - do not know how to format {m_key}")
     return attributes_
 
 
