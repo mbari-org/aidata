@@ -1,6 +1,20 @@
 # CHANGELOG
 
 
+## v1.52.2 (2025-05-23)
+
+### Bug Fixes
+
+- Capture metadata from Path not str
+  ([`49d75b0`](https://github.com/mbari-org/aidata/commit/49d75b0d7dc8893e4326a7bf665a82f7df946001))
+
+### Performance Improvements
+
+- Faster processing of redis queue, improved handling of resolving url and local files, and handle
+  i2MAP special case processing prores/mov but previewing in mp4
+  ([`f1929c1`](https://github.com/mbari-org/aidata/commit/f1929c13561cce7c44ee862c06d09e7740996230))
+
+
 ## v1.52.1 (2025-04-25)
 
 ### Bug Fixes
