@@ -23,7 +23,7 @@ Instructions are in [database_setup.md](docs/database_setup.md)
 This will setup the remaining services needed for development, including a REDIS and NGINX server.
 ```shell
 cd mbari_aidata
-just setup-docker-dev #or follow the instructions in the Justfile
+just setup-docker-dev #or follow the instructions in the Justfile setup-docker-dev recipe if you don't have Just installed
 ```
  
 What you should see when you navigate to [http://localhost:8082/data](http://localhost:8082/data) is a list of images that are served from the `tests/data` directory. 
