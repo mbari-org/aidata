@@ -9,24 +9,20 @@ workflows.
 
 More documentation and examples are available at [https://docs.mbari.org/internal/ai/data](https://docs.mbari.org/internal/ai/data/).
  
-Features:
-
-* Loading object detection/classification/clustering output from [SDCAT](https://github.com/mbari-org/sdcat) formatted output
-* Downloads from [Tator](https://www.tatorapp.com/) into various formats for machine learning, e.g. COCO, CIFAR, or PASCAL VOC format.
-* Uploads triggered from a [Redis](https://redis.io) queue for workflows that need real-time loads. 
-* Loading metadata from SONY cameras, extracting timestamps from images and video, and loading VOC formatted data.  The plugin
-architecture allows for easy extension to other data sources and formats.  Media loads are generally handled in a
-project specific way by the [plugin/extractors](https://github.com/mbari-org/aidata/tree/main/mbari_aidata/plugins/extractors)
-module.
-* Media must exist through a URL accessible by the Tator server.  The media may be checked for duplicates and uploaded if necessary.
-* Augmentations are available for VOC downloaded data to create more training data using the [albumentations library](https://albumentations.ai/)
+## 🚀 Features
+* 🧠 Object Detection/Clustering Integration: Loads detection/classification/clustering output from SDCAT formatted results.
+* Flexible Data Export: Downloads from Tator into machine learning formats like COCO, CIFAR, or PASCAL VOC.
+* Real-Time Uploads: Pushes localizations to [Tator](https://www.tator.io/) via [Redis](https://redis.io/glossary/redis-queue/) queues for real-time workflows.
+* Metadata Extraction: Parses images metadata such as GPS/time/date through a plugin-based system (extractors).
+*️Duplicate Detection & flexible media references: Supports duplicate media load checks with the --check-duplicates flag. References images or video accessible through a web server without needing to upload them.
+* Augmentation Support: Augment VOC datasets with [Albumentations](https://albumentations.ai/) to boost your object detection model performance. See examples in the [docs](https://docs.mbari.org/internal/ai/data/commands/transform/?h=aug#transform-voc-to-yolo-with-augmentations).
 
 ## Requirements
 - Python 3.10 or higher
-- A Tator API token and Redis password for the .env file. Contact the MBARI AI team for access.
-- Docker for development and testing only, but it can also be used instead of a local Python installation.
+- A Tator API token and (optional) Redis password for the .env file. Contact the MBARI AI team for access.
+- 🐳Docker for development and testing only, but it can also be used instead of a local Python installation.
 
-## Installation 
+## 📦 Installation 
 Install as a Python package:
 
 ```shell
@@ -34,14 +30,15 @@ pip install mbari-aidata
 ```
  
 Create the .env file with the following contents in the root directory of the project:
-```shell
+
+```text
 TATOR_TOKEN=your_api_token
 REDIS_PASSWORD=your_redis_password
 ENVIRONMENT=testing or production
 ```
 
 Create a configuration file in the root directory of the project:
-```shell
+```bash
 touch config_cfe.yaml
 ```
 Or, use the project specific configuration from our docs server at
@@ -49,11 +46,11 @@ https://docs.mbari.org/internal/ai/projects/
 
 
 This file will be used to configure the project data, such as mounts, plugins, and database connections.
-```shell
+```bash
 aidata download --version Baseline --labels "Diatoms, Copepods" --config https://docs.mbari.org/internal/ai/projects/uav-901902/config_uav.yml
 ```
 
-Example configuration file:
+⚙️Example configuration file:
 ```yaml
 # config_cfe.yml
 # Config file for CFE project production
@@ -111,6 +108,7 @@ tator:
         type: bool
 ```
 
+## 🐳 Docker usage
 A docker version is also available at `mbari/aidata:latest` or `mbari/aidata:latest:cuda-124`.
 For example, to download data using the docker image:
 
@@ -129,6 +127,6 @@ docker run -it --rm -v $(pwd):/mnt mbari/aidata:latest aidata download --version
 Source code is available at [github.com/mbari-org/aidata](https://github.com/mbari-org/aidata/). 
 
 ## Development
-See the [Development Guide](https://github.com/mbari-org/aidata/blob/main/DEVELOPMENT.md) for more information on how to set up the development environment.
-
-**updated: 2025-04-07**
+See the [Development Guide](https://github.com/mbari-org/aidata/blob/main/DEVELOPMENT.md) for more information on how to set up the development environment or the [justfile](justfile)  
+ 
+🗓️ Last updated: 2025-06-01
