@@ -7,7 +7,7 @@ import click
 import redis
 
 from mbari_aidata import common_args
-from mbari_aidata.logger import create_logger_file, info
+from mbari_aidata.logger import info
 from mbari_aidata.plugins.loaders.tator.common import init_yaml_config
 from mbari_aidata.predictors.process_vits import ViTWrapper
 

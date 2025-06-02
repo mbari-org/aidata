@@ -3,6 +3,7 @@
 # Description: Load clusters from a directory with SDCAT formatted CSV files
 import click
 import pandas as pd
+import tator
 
 from mbari_aidata import common_args
 from pathlib import Path
@@ -17,7 +18,8 @@ from mbari_aidata.plugins.loaders.tator.common import init_yaml_config, find_box
 @common_args.version
 @click.option("--input", type=Path, required=True, help=" VOC xml or SDCAT formatted CSV files")
 @click.option("--max-num", type=int, help="Maximum number of cluster assignments to load")
-def load_clusters(token: str, config: str, version: str, input: Path, dry_run: bool, max_num: int) -> int:
+@click.option("--update", is_flag=True, default=False, help="Update localization instead of creating new ones")
+def load_clusters(token: str, config: str, version: str, input: Path, dry_run: bool, max_num: int, update: bool) -> int:
     """Load clusters from a directory SDCAT formatted CSV files. Returns the number of clusters loaded.
     Assumes that the data is already loaded into Tator and rows reference the database ids."""
 
@@ -68,23 +70,31 @@ def load_clusters(token: str, config: str, version: str, input: Path, dry_run: b
             info(f"Dry run - not loading {len(df)} cluster entries into Tator")
             return 0
 
-        # Check if the dataframe has the required column image_path and cluster
+        # Check if the dataframe has the required column image_path
         if "image_path" not in df.columns:
             err(f"No image_path column found in {input}")
             return 0
 
-        def get_index(row):
-            stem = Path(row.image_path).stem # Get the stem of the image path which is the media id, e.g. 390088.jpg
-            # Error if the index is not a number
-            try:
-                id = int(stem)
-            except ValueError:
-                err(f"Index {stem} is not a number. Please check the image_path column in {input}. Should be the media id followed by the image extension, e.g. 35661.jpg.")
-                return None
-            return id
+        if "id" not in df.columns:
+            def get_index_from_fname(row):
+                stem = Path(row.image_path).stem # Get the stem of the image path which is the media id, e.g. 390088.jpg
+                # Error if the index is not a number
+                try:
+                    id = int(stem)
+                except ValueError:
+                    err(f"Index {stem} is not a number. Please check the image_path column in {input}. Should be the media id followed by the image extension, e.g. 35661.jpg.")
+                    return None
+                return id
 
-        # Make a new column with the database id
-        df["id"] = df.apply(get_index, axis=1)
+            # Make a new column with the database id
+            df["id"] = df.apply(get_index_from_fname, axis=1)
+
+        # Drop rows with missing id
+        df = df.dropna(subset=["id"])
+        if len(df) == 0:
+            info(f"No data found in {input} after dropping rows with missing id")
+            return 0
+
         max_load = -1 if max_num is None else max_num
 
         # Truncate the boxes if the max number of boxes to load is set
@@ -95,7 +105,6 @@ def load_clusters(token: str, config: str, version: str, input: Path, dry_run: b
             info(f"Dry run - not loading {len(df)} cluster entries into Tator")
             return 0
 
-        params = {"type": box_type.id}
 
         # Helper to split a DataFrame into batches of N rows
         def batch_group(my_df, batch_size=5):
@@ -105,24 +114,59 @@ def load_clusters(token: str, config: str, version: str, input: Path, dry_run: b
         for group_name, group_df in df.groupby("cluster"):
             chunks = batch_group(group_df, 100)
 
-            cluster_name = f'Cluster C{group_name}'
-            for i, chunk in enumerate(chunks):
-                info(f"cluster: {group_name}, chunk: {i + 1}")
-                id_bulk_patch = {
-                    "attributes": {"cluster": cluster_name},
-                    "ids": chunk.id.values.tolist(),
-                    "in_place": 1,
-                }
-                try:
-                    info(id_bulk_patch)
-                    response = api.update_localization_list(project=tator_project.id, **params,
-                                                            localization_bulk_update=id_bulk_patch)
-                    debug(response)
-                except Exception as e:
-                    err(f"Failed to update localizations to {cluster_name}. Error: {e}")
-                    return 1
+            if update:
+                cluster_name = f'Cluster C{group_name}'
+                params = {"type": box_type.id}
+                for i, chunk in enumerate(chunks):
+                    info(f"cluster: {group_name}, chunk: {i + 1}")
+                    id_bulk_patch = {
+                        "attributes": {"cluster": cluster_name},
+                        "ids": chunk.id.values.tolist(),
+                        "in_place": 1,
+                    }
+                    try:
+                        info(id_bulk_patch)
+                        response = api.update_localization_list(project=tator_project.id, **params,
+                                                                localization_bulk_update=id_bulk_patch)
+                        debug(response)
+                    except Exception as e:
+                        err(f"Failed to update localizations to {cluster_name}. Error: {e}")
+                        return 1
 
-                info(f"Updated {len(chunk)} localizations to {cluster_name}")
+                    info(f"Updated {len(chunk)} localizations to {cluster_name} in version {version_id}")
+            else:
+                cluster_name = f'Cluster C{group_name}'
+                for i, chunk in enumerate(chunks):
+                    info(f"cluster: {group_name}, chunk: {i + 1}")
+                    specs = []
+                    for _, row in chunk.iterrows():
+                        spec = tator.models.LocalizationSpec(
+                            type=box_type.id,
+                            media_id=row.id,
+                            version=version_id,
+                            x=row.x if "x" in row else 0.0,
+                            y=row.y if "y" in row else 0.0,
+                            width=row.width if "width" in row else 1.0,
+                            height=row.height if "height" in row else 1.0,
+                            frame=row.frame if "frame" in row else 0,
+                            attributes={
+                                "Label": cluster_name,
+                                "label_s": row.label if "label" in row else cluster_name,
+                                "score": row.score if "score" in row else 1.0,
+                                "score_s": str(row.score) if "score" in row else "1.0",
+                                "cluster": cluster_name
+                            },
+                        )
+                        specs.append(spec)
+
+                    try:
+                        response = api.create_localization_list(project=tator_project.id, body=specs)
+                        debug(response)
+                    except Exception as e:
+                        err(f"Failed to create localizations for {cluster_name}. Error: {e}")
+                        return 1
+
+                    info(f"Created {len(chunk)} localizations for {cluster_name} in version {version_id}")
 
     except Exception as e:
         err(f"Error loading clusters: {e}")
