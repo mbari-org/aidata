@@ -79,7 +79,7 @@ def load_clusters(token: str, config: str, version: str, input: Path, dry_run: b
             try:
                 id = int(stem)
             except ValueError:
-                err(f"Index {id} is not a number")
+                err(f"Index {stem} is not a number. Please check the image_path column in {input}. Should be the media id followed by the image extension, e.g. 35661.jpg.")
                 return None
             return id
 
