@@ -119,7 +119,7 @@ def load_clusters(token: str, config: str, version: str, input: Path, dry_run: b
             chunks = batch_group(group_df, 100)
 
             if update:
-                cluster_name = f'Cluster C{group_name}'
+                cluster_name = f'Unknown C{group_name}'
                 params = {"type": box_type.id}
                 for i, chunk in enumerate(chunks):
                     info(f"cluster: {group_name}, chunk: {i + 1}")
@@ -139,7 +139,7 @@ def load_clusters(token: str, config: str, version: str, input: Path, dry_run: b
 
                     info(f"Updated {len(chunk)} localizations to {cluster_name} in version {version_id}")
             else:
-                cluster_name = f'Cluster C{group_name}'
+                cluster_name = f'Unknown C{group_name}'
 
                 for i, chunk in enumerate(chunks):
                     info(f"cluster: {group_name}, chunk: {i + 1}")
