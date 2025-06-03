@@ -95,6 +95,10 @@ def load_clusters(token: str, config: str, version: str, input: Path, dry_run: b
             info(f"No data found in {input} after dropping rows with missing id")
             return 0
 
+        # Rename the class_s column to Label if it exists since that is a reserved name
+        if "class" in df.columns:
+            df = df.rename(columns={"class": "label"})
+
         max_load = -1 if max_num is None else max_num
 
         # Truncate the boxes if the max number of boxes to load is set
@@ -136,6 +140,7 @@ def load_clusters(token: str, config: str, version: str, input: Path, dry_run: b
                     info(f"Updated {len(chunk)} localizations to {cluster_name} in version {version_id}")
             else:
                 cluster_name = f'Cluster C{group_name}'
+
                 for i, chunk in enumerate(chunks):
                     info(f"cluster: {group_name}, chunk: {i + 1}")
                     specs = []
@@ -150,10 +155,10 @@ def load_clusters(token: str, config: str, version: str, input: Path, dry_run: b
                             height=row.height if "height" in row else 1.0,
                             frame=row.frame if "frame" in row else 0,
                             attributes={
-                                "Label": cluster_name,
-                                "label_s": row.label if "label" in row else cluster_name,
+                                "Label": row.label if "label" in row else cluster_name,
+                                "label_s": row.class_s if "class_s" in row else cluster_name,
                                 "score": row.score if "score" in row else 1.0,
-                                "score_s": str(row.score) if "score" in row else "1.0",
+                                "score_s": str(row.score_s) if "score_s" in row else "1.0",
                                 "cluster": cluster_name
                             },
                         )
@@ -161,12 +166,12 @@ def load_clusters(token: str, config: str, version: str, input: Path, dry_run: b
 
                     try:
                         response = api.create_localization_list(project=tator_project.id, body=specs)
+                        info(f"Created {len(chunk)} localizations for {cluster_name} in version {version_id}")
                         debug(response)
                     except Exception as e:
                         err(f"Failed to create localizations for {cluster_name}. Error: {e}")
                         return 1
 
-                    info(f"Created {len(chunk)} localizations for {cluster_name} in version {version_id}")
 
     except Exception as e:
         err(f"Error loading clusters: {e}")
