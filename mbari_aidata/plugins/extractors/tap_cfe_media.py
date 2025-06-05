@@ -74,7 +74,7 @@ def extract_videos(media_path: Path, max_videos: Optional[int] = None) -> pd.Dat
             raise ValueError("No iso datetime found in video names")
 
         df["instrument"] = instrument_type
-        df["iso_datetime"] = iso_datetime
+        df["iso_start_datetime"] = iso_datetime
         df["media_type"] = MediaType.VIDEO
         return df
     except Exception as e:

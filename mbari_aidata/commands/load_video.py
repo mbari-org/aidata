@@ -101,7 +101,7 @@ def load_video(token: str, config: str, dry_run: bool, input: str, section: str,
         # Remove the file:// prefix and replace the mount path with the base url
         video_url = video_url.replace("file://", "")
         video_url = video_url.replace(media.mount_path.as_posix(), media.base_url)
-        iso_datetime = row['iso_datetime']
+        iso_datetime = row['iso_start_datetime']
 
         # Organize by year and month if no section is provided
         if section == "All Media" or len(section) == 0:

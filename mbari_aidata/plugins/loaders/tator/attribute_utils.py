@@ -33,7 +33,7 @@ def format_attributes(attributes: dict, attribute_mapping: dict) -> dict:
                         dt_str = attributes[a_key]
                     attributes_[a_key] = dt_str
                 # Convert boolean to string
-                if m_value["type"] == "bool":
+                elif m_value["type"] == "bool":
                     if attributes[m_key] == 1:
                         attributes_[m_key] = "True"
                     else:
