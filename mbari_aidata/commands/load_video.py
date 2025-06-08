@@ -49,7 +49,7 @@ def load_video(token: str, config: str, dry_run: bool, input: str, section: str,
     module = load_module(p["module"])
     extractor = getattr(module, p["function"])
 
-    # Get the ffmpeg path from the configuration - this is required to load the video
+    # Get the ffmpeg and  path from the configuration - this is required to load the video
     # into the database
     ffmpeg_path = config_dict["ffmpeg_path"]
     if not Path(ffmpeg_path).exists():
