@@ -49,12 +49,39 @@ def load_video(token: str, config: str, dry_run: bool, input: str, section: str,
     module = load_module(p["module"])
     extractor = getattr(module, p["function"])
 
-    # Get the ffmpeg and  path from the configuration - this is required to load the video
-    # into the database
+    # Get the needed tools from the configuration - this is required to load the video
+    # into the database, this is ffmpeg_path, mp4dump_path, and ffprobe_path
+    if "ffmpeg_path" not in config_dict:
+        err(f"Configuration file {config} does not contain ffmpeg_path")
+        return -1
+
+    if "mp4dump_path" not in config_dict:
+        err(f"Configuration file {config} does not contain mp4dump_path")
+        return -1
+
+    if "ffprobe_path" not in config_dict:
+        err(f"Configuration file {config} does not contain ffprobe_path")
+        return -1
+
     ffmpeg_path = config_dict["ffmpeg_path"]
     if not Path(ffmpeg_path).exists():
         info(f"FFMPEG path {ffmpeg_path} does not exist. Correct the configuration file {config}.")
         return -1
+    mp4dump_path = config_dict["mp4dump_path"]
+    if not Path(mp4dump_path).exists():
+        info(f"MP4DUMP path {mp4dump_path} does not exist. Correct the configuration file {config}.")
+        return -1
+    ffprobe_path = config_dict["ffprobe_path"]
+    if not Path(ffprobe_path).exists():
+        info(f"FFPROBE path {ffprobe_path} does not exist. Correct the configuration file {config}.")
+        return -1
+
+    # Put in kwargs for the loader
+    loader_kwargs = {
+        "ffmpeg_path": ffmpeg_path,
+        "mp4dump_path": mp4dump_path,
+        "ffprobe_path": ffprobe_path,
+    }
 
     df_media = extractor(media.input_path, max_videos)
     if len(df_media) == 0:
@@ -112,7 +139,6 @@ def load_video(token: str, config: str, dry_run: bool, input: str, section: str,
         }
         formatted_attributes = format_attributes(attributes, media.attributes)
         tator_id = load_media(
-            ffmpeg_path=ffmpeg_path,
             media_path=video_path.as_posix(),
             media_url=video_url,
             section=section,
@@ -121,6 +147,7 @@ def load_video(token: str, config: str, dry_run: bool, input: str, section: str,
             tator_project=tator_project,
             media_type=media_type,
             video_path=video_path,
+            **loader_kwargs,
         )
         if tator_id:
             num_loaded += 1

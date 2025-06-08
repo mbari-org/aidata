@@ -32,12 +32,6 @@ def gen_fragment_info(video_file, output_file, kwargs: Any = None) -> None:
     """
     mp4dump_path =  kwargs.get("mp4dump_path", "mp4dump")
     ffprobe_path = kwargs.get("ffprobe_path", "ffprobe")
-    if not Path(mp4dump_path).exists():
-        err(f"mp4dump path {mp4dump_path} does not exist. Please install mp4dump or provide the correct path.")
-        sys.exit(1)
-    if not Path(ffprobe_path).exists():
-        err(f"ffprobe path {ffprobe_path} does not exist. Please install ffprobe or provide the correct path.")
-        sys.exit(1)
     cmd=[mp4dump_path,
          "--format",
          "json",
@@ -526,13 +520,16 @@ if __name__ == "__main__":
     file_load_path = Path(__file__).parent.parent.parent.parent.parent / "tests" / "data" / "cfe" /"CFE_ISIIS-001-2023-07-12 09-14-56.898.mp4"
     api, project = init_api_project("http://localhost:8080", os.getenv("TATOR_TOKEN"), "902111-CFE")
     video_type = find_media_type(api, project.id, "Video")
-    load_media(ffmpeg_path='/usr/local/bin/ffmpeg',
-               mp4dump_path='/opt/homebrew/Bento4-SDK-1-6-0-641.universal-apple-macosx/bin/mp4dump',
-               ffprobe_path='/opt/homebrew/bin/ffprobe',
-               tator_project=project,
+    loader_kwargs = {
+        "ffmpeg_path": "/usr/local/bin/ffmpeg",
+        "mp4dump_path": "/opt/homebrew/Bento4-SDK-1-6-0-641.universal-apple-macosx/bin/mp4dump",
+        "ffprobe_path": "/opt/homebrew/bin/ffprobe",
+    }
+    load_media(tator_project=project,
                media_url=file_url,
                media_type=video_type,
                attributes={},
                media_path=file_load_path.as_posix(),
                section="cfe_test",
-               api=api)
+               api=api,
+               **loader_kwargs)
