@@ -18,12 +18,18 @@ def extract_media(media_path: Path, max_images: int = -1) -> pd.DataFrame:
     """Extracts I2MAP image meta data"""
 
     # Create a dataframe to store the combined data in an media_path column in sorted order
-    images_df = pd.DataFrame()
-    allowed_extensions = [".png", ".jpg", ".jpeg", ".JPEG", ".PNG"]
-    images_df["media_path"] = [str(file) for file in media_path.rglob("*") if file.suffix.lower() in allowed_extensions]
-    images_df.sort_values(by="media_path")
+    media_df = pd.DataFrame()
+    allowed_extensions = [".png", ".jpg", ".jpeg", ".JPEG", ".PNG", ".mp4", ".MP4"]
+    media_df["media_path"] = [str(file) for file in media_path.rglob("*") if file.suffix.lower() in allowed_extensions]
+    media_df.sort_values(by="media_path")
     if max_images and max_images > 0:
-        images_df = images_df.head(max_images)
+        media_df = media_df.head(max_images)
+
+    # If all .mp4, then set the media type to VIDEO
+    if all(media_df["media_path"].str.endswith(".mp4")):
+        media_type = MediaType.VIDEO
+    else:
+        media_type = MediaType.IMAGE
 
     pattern_date1 = re.compile(r"(\d{4})(\d{2})(\d{2})T(\d{2})(\d{2})(\d{2})Z")  # 20161025T184500Z
     pattern_date2 = re.compile(r"(\d{4})(\d{2})(\d{2})T(\d{2})(\d{2})(\d{2})Z\d*mF*")
@@ -50,9 +56,9 @@ def extract_media(media_path: Path, max_images: int = -1) -> pd.DataFrame:
         return 0
 
     index = 0
-    images_df = images_df.groupby("media_path").first().reset_index()
-    info(f"Found {len(images_df)} unique images")
-    for group, df in images_df.groupby("media_path"):
+    media_df = media_df.groupby("media_path").first().reset_index()
+    info(f"Found {len(media_df)} unique images")
+    for group, df in media_df.groupby("media_path"):
         image_name = Path(str(group)).name
         info(image_name)
         for depth_str in [
@@ -113,13 +119,16 @@ def extract_media(media_path: Path, max_images: int = -1) -> pd.DataFrame:
 
     # Add the depth, day, and night columns to the dataframe if they exist
     if len(depth) > 0:
-        images_df["depth"] = depth
-        images_df["depth"] = images_df["depth"].astype(int)
+        media_df["depth"] = depth
+        media_df["depth"] = media_df["depth"].astype(int)
     if len(day_flag) > 0:
-        images_df["is_day"] = day_flag
-        images_df["is_day"] = images_df["is_day"].astype(int)
+        media_df["is_day"] = day_flag
+        media_df["is_day"] = media_df["is_day"].astype(int)
     if len(iso_datetime) > 0:
-        images_df["iso_datetime"] = iso_datetime
+        if media_type == MediaType.VIDEO: 
+            media_df["iso_start_datetime"] = iso_datetime
+        else:
+            media_df["iso_datetime"] = iso_datetime
 
-    images_df["media_type"] = MediaType.IMAGE
-    return images_df
+    media_df["media_type"] = media_type
+    return media_df
