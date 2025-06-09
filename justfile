@@ -61,7 +61,7 @@ stop-docker-dev:
     cd tator && make clean && make tator
 
 # Setup the docker development environment
-setup-docker-dev:
+setup-docker-dev: build-docker
     #!/bin/bash
     docker stop nginx_images
     docker rm nginx_images
