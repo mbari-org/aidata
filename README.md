@@ -21,6 +21,7 @@ More documentation and examples are available at [https://docs.mbari.org/interna
 - Python 3.10 or higher
 - A Tator API token and (optional) Redis password for the .env file. Contact the MBARI AI team for access.
 - 🐳Docker for development and testing only, but it can also be used instead of a local Python installation.
+- For local installation, you will need to install the required Python packages listed in the `requirements.txt` file, [ffmpeg](https://ffmpeg.org/), and the mp4dump tool from https://www.bento4.com/
 
 ## 📦 Installation 
 Install as a Python package:
