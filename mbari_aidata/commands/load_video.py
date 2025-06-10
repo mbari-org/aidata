@@ -49,8 +49,23 @@ def load_video(token: str, config: str, dry_run: bool, input: str, section: str,
     module = load_module(p["module"])
     extractor = getattr(module, p["function"])
 
-    # Get the needed tools from the configuration - this is required to load the video
-    # into the database, this is ffmpeg_path, mp4dump_path, and ffprobe_path
+    # Check for the needed tools ffmpeg_path, mp4dump_path, and ffprobe_path - this is required to load video
+    binaries = ["ffmpeg", "mp4dump", "ffprobe"]
+    errors = []
+    for binary in binaries:
+        # Check if this exists by trying to run it in a subprocess
+        try:
+            import shutil
+            if not shutil.which(binary):
+                errors.append(binary)
+        except Exception as e:
+            err(f"Error checking for {binary}: {e}")
+
+    if len(errors) > 0:
+        err(f"The following binaries are missing: {', '.join(errors)}. Please install them or provide the correct path and try again.")
+        return -1
+
+
     if "ffmpeg_path" not in config_dict:
         err(f"Configuration file {config} does not contain ffmpeg_path")
         return -1
@@ -146,7 +161,6 @@ def load_video(token: str, config: str, dry_run: bool, input: str, section: str,
             attributes=formatted_attributes,
             tator_project=tator_project,
             media_type=media_type,
-            video_path=video_path,
             **loader_kwargs,
         )
         if tator_id:
