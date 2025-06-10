@@ -21,6 +21,7 @@ More documentation and examples are available at [https://docs.mbari.org/interna
 - Python 3.10 or higher
 - A Tator API token and (optional) Redis password for the .env file. Contact the MBARI AI team for access.
 - 🐳Docker for development and testing only, but it can also be used instead of a local Python installation.
+- For local installation, you will need to install the required Python packages listed in the `requirements.txt` file, [ffmpeg](https://ffmpeg.org/), and the mp4dump tool from https://www.bento4.com/
 
 ## 📦 Installation 
 Install as a Python package:
@@ -84,13 +85,13 @@ tator:
   host: "https://mantis.shore.mbari.org"
   image:
     attributes:
-      iso_datetime:
+      iso_datetime: #<-------Required for images
         type: datetime
       depth:
         type: float
   video:
     attributes:
-      iso_start_datetime:
+      iso_start_datetime:  #<-------Required for videos
         type: datetime
   box:
     attributes:
@@ -129,4 +130,4 @@ Source code is available at [github.com/mbari-org/aidata](https://github.com/mba
 ## Development
 See the [Development Guide](https://github.com/mbari-org/aidata/blob/main/DEVELOPMENT.md) for more information on how to set up the development environment or the [justfile](justfile)  
  
-🗓️ Last updated: 2025-06-01
+🗓️ Last updated: 2025-06-09

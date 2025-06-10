@@ -19,11 +19,6 @@ plugins:
   - name: "extractor"
     module: "mbari_aidata.plugins.extractors.tap_sony_media"
     function: "extract_media"
-  - name: "predictor"
-    module: "mbari_aidata.plugins.predictors.run_vss"
-    function: "predict"
-    classes:
-      [ "Buoy", "Seagull", "Otter" ]
 
 tator:
   project: "901902-uavs"

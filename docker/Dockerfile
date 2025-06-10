@@ -10,12 +10,21 @@ RUN apt-get update &&  \
     ffmpeg && \
     apt clean && rm -rf /var/lib/apt/lists/*
 
+ENV BENTO4_VERSION=Bento4-SDK-1-6-0-641.x86_64-unknown-linux
+ENV BENTO4_URL=https://www.bok.net/Bento4/binaries/${BENTO4_VERSION}.zip
+ENV BENTO4_HOME=/opt/bento4
+
+RUN curl -sSL ${BENTO4_URL} -o /tmp/bento4.zip && \
+    unzip /tmp/bento4.zip -d /opt && \
+    mv /opt/${BENTO4_VERSION} ${BENTO4_HOME} && \
+    rm /tmp/bento4.zip
+
 ARG GIT_VERSION=latest
 ARG IMAGE_URI=mbari/aidata:${GIT_VERSION}
 RUN python3 -m venv /venv
 
 # Set environment variables
-ENV PATH="/venv/bin:$PATH"
+ENV PATH="/venv/bin:$PATH:${BENTO4_HOME}/bin"
 ENV APP_HOME=/app
 ENV HF_HOME=/tmp/transformers_cache
 ENV NO_ALBUMENTATIONS_UPDATE=1

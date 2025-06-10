@@ -1,7 +1,7 @@
 # mbari_aidata, Apache-2.0 license
 # Filename: commands/load_video.py
 # Description: Load video into the database
-
+import shutil
 from pathlib import Path
 
 import click
@@ -49,11 +49,18 @@ def load_video(token: str, config: str, dry_run: bool, input: str, section: str,
     module = load_module(p["module"])
     extractor = getattr(module, p["function"])
 
-    # Get the ffmpeg path from the configuration - this is required to load the video
-    # into the database
-    ffmpeg_path = config_dict["ffmpeg_path"]
-    if not Path(ffmpeg_path).exists():
-        info(f"FFMPEG path {ffmpeg_path} does not exist. Correct the configuration file {config}.")
+    # Check for the needed tools ffmpeg_path, mp4dump_path, and ffprobe_path - this is required to load video
+    binaries = ["ffmpeg", "mp4dump", "ffprobe"]
+    errors = []
+    for binary in binaries:
+        try:
+            if not shutil.which(binary):
+                errors.append(binary)
+        except Exception as e:
+            err(f"Error checking for {binary}: {e}")
+
+    if len(errors) > 0:
+        err(f"The following binaries are missing: {', '.join(errors)}. Please install them or provide the correct path and try again.")
         return -1
 
     df_media = extractor(media.input_path, max_videos)
@@ -112,15 +119,13 @@ def load_video(token: str, config: str, dry_run: bool, input: str, section: str,
         }
         formatted_attributes = format_attributes(attributes, media.attributes)
         tator_id = load_media(
-            ffmpeg_path=ffmpeg_path,
             media_path=video_path.as_posix(),
             media_url=video_url,
             section=section,
             api=api,
             attributes=formatted_attributes,
             tator_project=tator_project,
-            media_type=media_type,
-            video_path=video_path,
+            media_type=media_type
         )
         if tator_id:
             num_loaded += 1

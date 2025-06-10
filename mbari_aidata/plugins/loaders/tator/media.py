@@ -2,9 +2,11 @@
 # Filename: plugins/loaders/tator/media.py
 # Description:  Database operations related to media
 import hashlib
+import json
 import os
 from tempfile import TemporaryDirectory
 from typing import List, Any, Dict
+from urllib.parse import urlparse
 
 from moviepy import VideoFileClip
 import mimetypes
@@ -19,6 +21,69 @@ from tator.util._upload_file import _upload_file  # type: ignore
 from tator.openapi.tator_openapi import MessageResponse  # type: ignore
 from mbari_aidata.logger import err, debug, info
 from mbari_aidata.plugins.loaders.tator.common import find_media_type, init_api_project
+
+FRAGMENT_VERSION=2
+
+def gen_fragment_info(video_path, output_file, **kwargs: Any) -> None:
+    """
+    Generate fragment information for a video file using mp4dump and ffprobe.
+    This is used to create a JSON representation of the video file's segments which
+    is used for media playback in Tator.
+    """
+    cmd = ["mp4dump",
+           "--format",
+           "json",
+           video_path]
+    proc = subprocess.Popen(cmd, stdout=subprocess.PIPE)
+    mp4_data, error = proc.communicate()
+
+    cmd = ["ffprobe",
+           "-v",
+           "error",
+           "-show_entries",
+           "stream",
+           "-print_format",
+           "json",
+           "-select_streams", "v",
+           video_path]
+    proc = subprocess.Popen(cmd, stdout=subprocess.PIPE)
+    ffprobe_output, error = proc.communicate()
+
+    ffprobe_data = json.loads(ffprobe_output)
+    start_time = 0
+    try:
+        for stream in ffprobe_data["streams"]:
+            if stream["codec_type"] == "video":
+                start_time = float(ffprobe_data["streams"][0]["start_time"])
+                break
+    except Exception as e:
+        print(e)
+
+    current_offset = 0
+    current_frame = 0
+    segment_info = {"file": {"start": start_time, "version": FRAGMENT_VERSION}, "segments": []}
+    obj = json.loads(mp4_data)
+    for data in obj:
+        block = {"name": data['name'],
+                 "offset": current_offset,
+                 "size": data['size']}
+
+        # Add time offset for moof blocks
+        if block['name'] == 'moof':
+            for child in data['children']:
+                if child['name'] == 'traf':
+                    for grandchild in child['children']:
+                        if grandchild['name'] == 'trun':
+                            block['frame_start'] = current_frame
+                            block['frame_samples'] = grandchild['sample count']
+                            current_frame += grandchild['sample count']
+        segment_info['segments'].append(block)
+
+        current_offset += block['size']
+
+    # Save the segment information to the output file in json format
+    with open(output_file, 'w') as f:
+        json.dump(segment_info, f, indent=4)
 
 
 def get_media_ids(
@@ -118,10 +183,11 @@ def gen_spec(file_loc: str, type_id: int, section: str, **kwargs) -> dict:
 
     return spec
 
-def gen_thumbnail_jpg(ffmpeg_path: str, video_path: str, thumb_jpg_path: str):
-    # Create jpg thumbnail in a single pass
+def gen_thumbnail_jpg(video_path: str, thumb_jpg_path: str, **kwargs: Any):
+    """ Generate a thumbnail image from the first frame of a video file.
+    """
     cmd = [
-        ffmpeg_path,
+        "ffmpeg",
         "-y",
         "-i",
         f'{video_path}',
@@ -135,9 +201,9 @@ def gen_thumbnail_jpg(ffmpeg_path: str, video_path: str, thumb_jpg_path: str):
     debug(' '.join(cmd))
     subprocess.run(cmd, check=True)
 
-def gen_thumbnail_gif(ffmpeg_path: str, num_frames: int, fps: float, video_path: str, thumb_gif_path: str):
+def gen_thumbnail_gif(num_frames: int, fps: float, video_path: str, thumb_gif_path: str, **kwargs: Any):
     # Create gif thumbnail in a single pass
-    # This logic makes a max 10 second summary video and saves as a gif
+    # This logic makes a max 10-second summary video and saves as a gif
     video_duration = int(num_frames / fps)
 
     # Max thumbnail duration is 10 seconds
@@ -146,7 +212,7 @@ def gen_thumbnail_gif(ffmpeg_path: str, num_frames: int, fps: float, video_path:
     # If the video duration is shorter than the thumb duration, adjust the gif to be the video duration
     if video_duration < 10:
         cmd = [
-            ffmpeg_path,
+            "ffmpeg",
             "-y",
             "-i",
             f'{video_path}',
@@ -161,7 +227,7 @@ def gen_thumbnail_gif(ffmpeg_path: str, num_frames: int, fps: float, video_path:
 
         debug(f"Creating {thumb_gif_path} frame_select={frame_select} speed_up={speed_up}")
         cmd = [
-            ffmpeg_path,
+            "ffmpeg",
             "-y",
             "-i",
             f'{video_path}',
@@ -223,11 +289,10 @@ def load_bulk_images(project_id: int, api: tatorapi, specs: list) -> List[int]:
         return []
 
 
-def load(ffmpeg_path: str, project_id: int, api: tatorapi, media_path: str, spec: Dict, **kwargs: Any) -> int or None:
+def load(project_id: int, api: tatorapi, media_path: str, spec: Dict, **kwargs: Any) -> int or None:
     """
     Load image/video reference to the database. This creates a media object,
     and a thumbnail gif representation of the video.
-    :param ffmpeg_path: Path to the ffmpeg binary
     :param project_id: The project ID
     :param api: The Tator API object.
     :param media_path: The media path to load
@@ -283,20 +348,24 @@ def load(ffmpeg_path: str, project_id: int, api: tatorapi, media_path: str, spec
 
         with TemporaryDirectory() as tmpdir:
             name = Path(spec["name"])
+
+            # Copy to the same directory as the video file
+            segment_json_path = Path(video_path).parent / f"{name.stem}_segments.json"
             thumb_path = f"/tmp/{name.stem}_thumbnail.jpg"
             thumb_gif_path = f"/{tmpdir}/{name.stem}_thumbnail_gif.gif"
-            gen_thumbnail_gif(
-                ffmpeg_path,
-                metadata["num_frames"],
-                metadata["frame_rate"],
-                media_path,
-                thumb_gif_path,
-            )
-            gen_thumbnail_jpg(
-                ffmpeg_path,
-                media_path,
-                thumb_path,
-            )
+            gen_fragment_info(media_path, segment_json_path, **kwargs)
+            gen_thumbnail_gif(metadata["num_frames"], metadata["frame_rate"], media_path, thumb_gif_path,**kwargs)
+            gen_thumbnail_jpg(media_path, thumb_path, **kwargs)
+
+            # Check if the segment json was created and is not empty
+            if not os.path.exists(segment_json_path) or os.stat(segment_json_path).st_size == 0:
+                raise Exception(f"Segment json {segment_json_path} not created or empty")
+
+            # Form the segment URL
+            parsed = urlparse(spec["url"])
+            parent_path = os.path.dirname(parsed.path)
+            segment_url = f"{parsed.scheme}://{parsed.netloc}{parent_path}/{Path(segment_json_path).name}"
+
             # Check if the thumbnail gif was created and is not empty
             if not os.path.exists(thumb_gif_path) or os.stat(thumb_gif_path).st_size == 0:
                 raise Exception(f"Thumbnail gif {thumb_gif_path} not created or empty")
@@ -346,7 +415,7 @@ def load(ffmpeg_path: str, project_id: int, api: tatorapi, media_path: str, spec
             if not isinstance(response, MessageResponse):
                 raise Exception(f"Creating thumbnail {thumb_path}")
 
-            # # Update the media object.
+            # Update the media object.
             response = api.update_media(
                 media_id,
                 media_update={
@@ -368,6 +437,7 @@ def load(ffmpeg_path: str, project_id: int, api: tatorapi, media_path: str, spec
                 "resolution": [metadata["resolution"][1], metadata["resolution"][0]],
                 "path": spec["url"],
                 "reference_only": 1,
+                "segment_info": segment_url
             }
             api.create_video_file(media_id, role="streaming", video_definition=video_def)
         return media_id
@@ -380,7 +450,6 @@ def load(ffmpeg_path: str, project_id: int, api: tatorapi, media_path: str, spec
 
 
 def load_media(
-    ffmpeg_path: str,
     media_path: str,
     media_url: str,
     attributes: dict,
@@ -392,7 +461,6 @@ def load_media(
 ) -> int:
     """
     Load media from url/local file system to the database
-    :param ffmpeg_path: Path to the ffmpeg binary
     :param media_path: Absolute path to the image/video to load
     :param media_url: URL (if hosted)
     :param attributes: Attributes to assign to the media
@@ -412,7 +480,6 @@ def load_media(
         **kwargs,
     )
     id = load(
-        ffmpeg_path=ffmpeg_path,
         project_id=tator_project.id,
         api=api,
         media_path=media_path,
@@ -428,8 +495,7 @@ if __name__ == "__main__":
     file_load_path = Path(__file__).parent.parent.parent.parent.parent / "tests" / "data" / "cfe" /"CFE_ISIIS-001-2023-07-12 09-14-56.898.mp4"
     api, project = init_api_project("http://localhost:8080", os.getenv("TATOR_TOKEN"), "902111-CFE")
     video_type = find_media_type(api, project.id, "Video")
-    load_media(ffmpeg_path='/usr/local/bin/ffmpeg',
-               tator_project=project,
+    load_media(tator_project=project,
                media_url=file_url,
                media_type=video_type,
                attributes={},
