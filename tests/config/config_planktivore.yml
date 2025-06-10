@@ -1,4 +1,4 @@
-# config_cfe.yml
+# config_planktivore.yml
 # Config file for planktivore project test
 mounts:
   - name: "image"

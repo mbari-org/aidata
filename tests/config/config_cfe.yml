@@ -51,5 +51,3 @@ tator:
         type: float
       area:
         type: int
-
-ffmpeg_path: "/opt/homebrew/bin/ffmpeg"
