@@ -1,7 +1,7 @@
 # mbari_aidata, Apache-2.0 license
 # Filename: commands/load_video.py
 # Description: Load video into the database
-
+import shutil
 from pathlib import Path
 
 import click
@@ -53,9 +53,7 @@ def load_video(token: str, config: str, dry_run: bool, input: str, section: str,
     binaries = ["ffmpeg", "mp4dump", "ffprobe"]
     errors = []
     for binary in binaries:
-        # Check if this exists by trying to run it in a subprocess
         try:
-            import shutil
             if not shutil.which(binary):
                 errors.append(binary)
         except Exception as e:
@@ -64,39 +62,6 @@ def load_video(token: str, config: str, dry_run: bool, input: str, section: str,
     if len(errors) > 0:
         err(f"The following binaries are missing: {', '.join(errors)}. Please install them or provide the correct path and try again.")
         return -1
-
-
-    if "ffmpeg_path" not in config_dict:
-        err(f"Configuration file {config} does not contain ffmpeg_path")
-        return -1
-
-    if "mp4dump_path" not in config_dict:
-        err(f"Configuration file {config} does not contain mp4dump_path")
-        return -1
-
-    if "ffprobe_path" not in config_dict:
-        err(f"Configuration file {config} does not contain ffprobe_path")
-        return -1
-
-    ffmpeg_path = config_dict["ffmpeg_path"]
-    if not Path(ffmpeg_path).exists():
-        info(f"FFMPEG path {ffmpeg_path} does not exist. Correct the configuration file {config}.")
-        return -1
-    mp4dump_path = config_dict["mp4dump_path"]
-    if not Path(mp4dump_path).exists():
-        info(f"MP4DUMP path {mp4dump_path} does not exist. Correct the configuration file {config}.")
-        return -1
-    ffprobe_path = config_dict["ffprobe_path"]
-    if not Path(ffprobe_path).exists():
-        info(f"FFPROBE path {ffprobe_path} does not exist. Correct the configuration file {config}.")
-        return -1
-
-    # Put in kwargs for the loader
-    loader_kwargs = {
-        "ffmpeg_path": ffmpeg_path,
-        "mp4dump_path": mp4dump_path,
-        "ffprobe_path": ffprobe_path,
-    }
 
     df_media = extractor(media.input_path, max_videos)
     if len(df_media) == 0:
@@ -160,8 +125,7 @@ def load_video(token: str, config: str, dry_run: bool, input: str, section: str,
             api=api,
             attributes=formatted_attributes,
             tator_project=tator_project,
-            media_type=media_type,
-            **loader_kwargs,
+            media_type=media_type
         )
         if tator_id:
             num_loaded += 1

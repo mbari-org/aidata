@@ -4,7 +4,6 @@
 import hashlib
 import json
 import os
-import sys
 from tempfile import TemporaryDirectory
 from typing import List, Any, Dict
 from urllib.parse import urlparse
@@ -31,16 +30,14 @@ def gen_fragment_info(video_path, output_file, **kwargs: Any) -> None:
     This is used to create a JSON representation of the video file's segments which
     is used for media playback in Tator.
     """
-    mp4dump_path = kwargs.get("mp4dump_path", "mp4dump")
-    ffprobe_path = kwargs.get("ffprobe_path", "ffprobe")
-    cmd = [mp4dump_path,
+    cmd = ["mp4dump",
            "--format",
            "json",
            video_path]
     proc = subprocess.Popen(cmd, stdout=subprocess.PIPE)
     mp4_data, error = proc.communicate()
 
-    cmd = [ffprobe_path,
+    cmd = ["ffprobe",
            "-v",
            "error",
            "-show_entries",
@@ -189,12 +186,8 @@ def gen_spec(file_loc: str, type_id: int, section: str, **kwargs) -> dict:
 def gen_thumbnail_jpg(video_path: str, thumb_jpg_path: str, **kwargs: Any):
     """ Generate a thumbnail image from the first frame of a video file.
     """
-    ffmpeg_path = kwargs.get("ffmpeg_path", "ffmpeg")
-    if not Path(ffmpeg_path).exists():
-        err(f"ffmpeg path {ffmpeg_path} does not exist. Please install ffmpeg or provide the correct path.")
-        sys.exit(1)
     cmd = [
-        ffmpeg_path,
+        "ffmpeg",
         "-y",
         "-i",
         f'{video_path}',
@@ -211,10 +204,6 @@ def gen_thumbnail_jpg(video_path: str, thumb_jpg_path: str, **kwargs: Any):
 def gen_thumbnail_gif(num_frames: int, fps: float, video_path: str, thumb_gif_path: str, **kwargs: Any):
     # Create gif thumbnail in a single pass
     # This logic makes a max 10-second summary video and saves as a gif
-    ffmpeg_path = kwargs.get("ffmpeg_path", "ffmpeg")
-    if not Path(ffmpeg_path).exists():
-        err(f"ffmpeg path {ffmpeg_path} does not exist. Please install ffmpeg or provide the correct path.")
-        sys.exit(1)
     video_duration = int(num_frames / fps)
 
     # Max thumbnail duration is 10 seconds
@@ -223,7 +212,7 @@ def gen_thumbnail_gif(num_frames: int, fps: float, video_path: str, thumb_gif_pa
     # If the video duration is shorter than the thumb duration, adjust the gif to be the video duration
     if video_duration < 10:
         cmd = [
-            ffmpeg_path,
+            "ffmpeg",
             "-y",
             "-i",
             f'{video_path}',
@@ -238,7 +227,7 @@ def gen_thumbnail_gif(num_frames: int, fps: float, video_path: str, thumb_gif_pa
 
         debug(f"Creating {thumb_gif_path} frame_select={frame_select} speed_up={speed_up}")
         cmd = [
-            ffmpeg_path,
+            "ffmpeg",
             "-y",
             "-i",
             f'{video_path}',
