@@ -14,7 +14,8 @@ More documentation and examples are available at [https://docs.mbari.org/interna
 * Flexible Data Export: Downloads from Tator into machine learning formats like COCO, CIFAR, or PASCAL VOC.
 * Real-Time Uploads: Pushes localizations to [Tator](https://www.tator.io/) via [Redis](https://redis.io/glossary/redis-queue/) queues for real-time workflows.
 * Metadata Extraction: Parses images metadata such as GPS/time/date through a plugin-based system (extractors).
-*️Duplicate Detection & flexible media references: Supports duplicate media load checks with the --check-duplicates flag. References images or video accessible through a web server without needing to upload them.
+* Duplicate Detection & flexible media references: Supports duplicate media load checks with the --check-duplicates flag. 
+* Images or video are made accessible through a web server without needing to upload or move them from your internal NFS project mounts (e.g. Thalassa)
 * Augmentation Support: Augment VOC datasets with [Albumentations](https://albumentations.ai/) to boost your object detection model performance. See examples in the [docs](https://docs.mbari.org/internal/ai/data/commands/transform/?h=aug#transform-voc-to-yolo-with-augmentations).
 
 ## Requirements
@@ -130,4 +131,4 @@ Source code is available at [github.com/mbari-org/aidata](https://github.com/mba
 ## Development
 See the [Development Guide](https://github.com/mbari-org/aidata/blob/main/DEVELOPMENT.md) for more information on how to set up the development environment or the [justfile](justfile)  
  
-🗓️ Last updated: 2025-06-09
+🗓️ Last updated: 2025-06-13
