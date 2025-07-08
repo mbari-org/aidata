@@ -46,7 +46,6 @@ def load_exemplars(config: str, input: Path, dry_run: bool, label: str, device: 
     """Load embeddings from a directory with SDCAT formatted exemplar CSV files. Returns the number of exemplar image
     embeddings loaded."""
     create_logger_file("load_exemplars")
-    num_exemplars = 0
     try:
         # Load the configuration file
         # Each project needs a separate redis server for exemplar embeddings - this
@@ -58,12 +57,6 @@ def load_exemplars(config: str, input: Path, dry_run: bool, label: str, device: 
         info(f"Connecting to REDIS server at {redis_host}:{redis_port}")
         r = redis.Redis(host=redis_host, port=redis_port, password=password)
         vits = ViTWrapper(r, model_name=model, device=device, batch_size=batch_size)
-
-        # Initialize the Tator API
-        project = config_dict["tator"]["project"]
-        host = config_dict["tator"]["host"]
-        api, tator_project = init_api_project(host, token, project)
-        box_type = find_box_type(api, tator_project.id, "Box")
 
         info(f"Loading exemplars from {input}")
         # If input is a directory, load the first CSV file found
@@ -89,6 +82,10 @@ def load_exemplars(config: str, input: Path, dry_run: bool, label: str, device: 
         info(f"Processing {len(df)} exemplars")
         image_paths = df.image_path.unique().tolist()  # noqa
         info(f"Found {len(image_paths)} unique exemplar images")
+
+        if len(image_paths) == 0:
+            err(f"No image paths found in the input CSV file {input}")
+            return 0
 
         # If image paths are relative, prepend the base path to the image paths
         if not Path(image_paths[0]).is_absolute():
