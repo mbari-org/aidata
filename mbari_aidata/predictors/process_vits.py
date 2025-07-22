@@ -7,7 +7,7 @@ import numpy as np
 import redis
 import torch
 from PIL import Image
-from transformers import AutoModelForImageClassification, AutoImageProcessor  # type: ignore
+from transformers import AutoModel, AutoImageProcessor  # type: ignore
 from typing import List
 
 from mbari_aidata.logger import info
@@ -25,7 +25,7 @@ class ViTWrapper:
         self.r = r
         self.batch_size = batch_size
         self.processor = AutoImageProcessor.from_pretrained(model_name)
-        self.model = AutoModelForImageClassification.from_pretrained(model_name)
+        self.model = AutoModel.from_pretrained(model_name)
         self.vs = VectorSimilarity(r, vector_dimensions=self.vector_dimensions, reset=reset)
 
         # Load the model and processor
