@@ -34,8 +34,8 @@ def extract_sdcat_csv(csv_path: Path) -> pd.DataFrame:
     if not all(col in combined_df.columns for col in ["x", "y", "xx", "xy"]):
         return combined_df
 
-    # Remove any duplicate rows; duplicates have the same .x, .y, .xx, .xy,
-    combined_df = combined_df.drop_duplicates(subset=["x", "y", "xx", "xy"])
+    # Remove any duplicate rows; duplicates have the same .x, .y, .xx, .xy, and image_path
+    combined_df = combined_df.drop_duplicates(subset=["x", "y", "xx", "xy", "image_path"])
 
     if "class" in combined_df.columns:
         combined_df["label"] = combined_df["class"]
