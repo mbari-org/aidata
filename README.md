@@ -112,11 +112,18 @@ tator:
 
 ## 🐳 Docker usage
 A docker version is also available at `mbari/aidata:latest` or `mbari/aidata:latest:cuda-124`.
-For example, to download data using the docker image:
+For example, to download data from version Baseline using the docker image:
 
 ```shell
 docker run -it --rm -v $(pwd):/mnt mbari/aidata:latest aidata download --version Baseline --labels "Diatoms, Copepods" --config config_cfe.yml
 ```
+
+to download multiple versions
+```shell
+docker run -it --rm -v $(pwd):/mnt mbari/aidata:latest aidata download --version Baseline,ver0 --labels "Diatoms, Copepods" --config config_cfe.yml`
+```
+
+```shell
 
 ## Commands
 

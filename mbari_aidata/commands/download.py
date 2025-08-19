@@ -94,9 +94,11 @@ def download(
         project = find_project(api, project)
         info(f"Found project id: {project.name} for project {project}")
 
-        # Download a dataset by its version if it exists
+        # Download a dataset by its version if it has been specified. Combine multiple versions with an underscore.
         if version:
-            data_path = base_path / version
+            version_list = version.split(",")
+            version_base_name = "_".join([v.strip() for v in version_list])
+            data_path = base_path / version_base_name
         else:
             data_path = base_path
         data_path.mkdir(exist_ok=True)
