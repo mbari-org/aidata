@@ -37,11 +37,18 @@ def extract_videos(media_path: Path, max_videos: Optional[int] = None) -> pd.Dat
 
     # Create a dataframe to store the combined data in a media_path column in sorted order
     df = pd.DataFrame()
-    if media_path.is_dir():
+    acceptable_extensions = ["mp4"]
+
+    if media_path.is_file() and media_path.suffix.lower() == '.txt':
+        with open(media_path, 'r') as f:
+            paths = [line.strip() for line in f if line.strip()]
+        df["media_path"] = [p for p in paths if Path(p).suffix.lower().lstrip('.') in [ext.lower() for ext in acceptable_extensions]]
+    elif media_path.is_dir():
         df["media_path"] = [f.as_posix() for f in media_path.rglob("*.mp4")]
     elif media_path.is_file():
         df["media_path"] = [media_path.as_posix()]
-    df.sort_values(by="media_path")
+        df = df[df["media_path"].str.endswith(tuple(acceptable_extensions))]
+
     if 0 < max_videos < len(df):
         df = df.iloc[:max_videos] # Limit the number of videos to process
 
@@ -81,19 +88,31 @@ def extract_videos(media_path: Path, max_videos: Optional[int] = None) -> pd.Dat
         exception(f"Error extracting video metadata: {e}")
         return pd.DataFrame()
 
+
 def extract_images(media_path: Path, max_images: Optional[int] = None) -> pd.DataFrame:
-    """Extracts data CFE image meta data"""
+    """Extracts data CFE image meta data from Path or txt file with list of paths"""
 
     # Create a dataframe to store the combined data in an media_path column in sorted order
     df = pd.DataFrame()
     acceptable_extensions = ["png", "jpg", "jpeg", "JPEG", "PNG"]
-    if media_path.is_dir():
+
+    # Check if media_path is a txt file containing list of paths
+    if media_path.is_file() and media_path.suffix.lower() == '.txt':
+        with open(media_path, 'r') as f:
+            paths = [line.strip() for line in f if line.strip()]
+        df["media_path"] = [p for p in paths if
+                            Path(p).suffix.lower().lstrip('.') in [ext.lower() for ext in acceptable_extensions]]
+    elif media_path.is_dir():
         df["media_path"] = [f.as_posix() for f in media_path.rglob("*")]
+        # Keep only the images with the acceptable extensions
+        df = df[df["media_path"].str.endswith(tuple(acceptable_extensions))]
     elif media_path.is_file():
         df["media_path"] = [media_path.as_posix()]
-    df.sort_values(by="media_path")
-    # Keep only the images with the acceptable extensions
-    df = df[df["media_path"].str.endswith(tuple(acceptable_extensions))]
+        # Keep only if it has acceptable extension
+        df = df[df["media_path"].str.endswith(tuple(acceptable_extensions))]
+
+    df = df.sort_values(by="media_path").reset_index(drop=True)
+
     if 0 < max_images < len(df):
         df = df.iloc[:max_images]
 

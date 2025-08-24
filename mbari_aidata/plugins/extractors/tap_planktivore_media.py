@@ -25,11 +25,23 @@ def extract_media(media_path: Path, max_images: Optional[int] = None) -> pd.Data
 
     # Create a dataframe to store the combined data in the media_path column in sorted order
     images_df = pd.DataFrame()
-
     allowed_extensions = [".png", ".jpg"]
-    images_df["media_path"] = [str(file) for file in media_path.rglob("*") if file.suffix.lower() in allowed_extensions]
-    images_df.sort_values(by="media_path")
-    if 0 < max_images < len(images_df):
+
+    # Check if media_path is a txt file containing list of paths
+    if media_path.is_file() and media_path.suffix.lower() == '.txt':
+        with open(media_path, 'r') as f:
+            paths = [line.strip() for line in f if line.strip()]
+        images_df["media_path"] = [p for p in paths if Path(p).suffix.lower() in [ext.lower() for ext in allowed_extensions]]
+    elif media_path.is_dir():
+        images_df["media_path"] = [str(file) for file in media_path.rglob("*") if file.suffix.lower() in allowed_extensions]
+    elif media_path.is_file():
+        images_df["media_path"] = [str(media_path)]
+        # Keep only if it has acceptable extension
+        images_df = images_df[images_df["media_path"].str.endswith(tuple(allowed_extensions))]
+
+    images_df = images_df.sort_values(by="media_path").reset_index(drop=True)
+
+    if max_images and max_images > 0:
         images_df = images_df.iloc[:max_images]
 
     pattern1 = re.compile(r'\d{8}T\d{6}\.\d+Z')

@@ -20,8 +20,23 @@ def extract_media(media_path: Path, max_images: int = -1) -> pd.DataFrame:
     # Create a dataframe to store the combined data in an media_path column in sorted order
     media_df = pd.DataFrame()
     allowed_extensions = [".png", ".jpg", ".jpeg", ".JPEG", ".PNG", ".mp4", ".MP4"]
-    media_df["media_path"] = [str(file) for file in media_path.rglob("*") if file.suffix.lower() in allowed_extensions]
-    media_df.sort_values(by="media_path")
+
+    # Check if media_path is a txt file containing list of paths
+    if media_path.is_file() and media_path.suffix.lower() == '.txt':
+        with open(media_path, 'r') as f:
+            paths = [line.strip() for line in f if line.strip()]
+        media_df["media_path"] = [p for p in paths if
+                                  Path(p).suffix.lower() in [ext.lower() for ext in allowed_extensions]]
+    elif media_path.is_dir():
+        media_df["media_path"] = [str(file) for file in media_path.rglob("*") if
+                                  file.suffix.lower() in allowed_extensions]
+    elif media_path.is_file():
+        media_df["media_path"] = [str(media_path)]
+        # Keep only if it has acceptable extension
+        media_df = media_df[media_df["media_path"].str.endswith(tuple(allowed_extensions))]
+
+    media_df = media_df.sort_values(by="media_path").reset_index(drop=True)
+
     if max_images and max_images > 0:
         media_df = media_df.head(max_images)
 
