@@ -55,7 +55,7 @@ def extract_media(media_path: Path, max_images: Optional[int] = None) -> pd.Data
         matches = re.findall(pattern1, image_name)
         if matches:
             datetime_str = matches[0]
-            info(f"Found datetime string: {datetime_str} in image name: {image_name}")
+            debug(f"Found datetime string: {datetime_str} in image name: {image_name}")
             dt = datetime.strptime(datetime_str, "%Y%m%dT%H%M%S.%fZ")
             dt_utc = pytz.utc.localize(dt)
             iso_datetime[index] = dt_utc
