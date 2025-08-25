@@ -63,7 +63,7 @@ def extract_media(media_path: Path, max_images: Optional[int] = None) -> pd.Data
         matches = re.findall(pattern2, image_name)
         if matches:
             us_timestamp = int(matches[0][1])
-            info(f"Found us timestamp: {us_timestamp} in image name: {image_name}")
+            debug(f"Found us timestamp: {us_timestamp} in image name: {image_name}")
             seconds = us_timestamp // 1_000_000
             microseconds = us_timestamp % 1_000_000
             dt_utc = datetime.fromtimestamp(seconds, tz=timezone.utc).replace(microsecond=microseconds)
