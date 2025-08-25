@@ -38,12 +38,12 @@ def load_images(token: str, config: str, dry_run: bool, input: str, section: str
 
         # If the input is a text file, arbitrarily choose the first file to check mounts
         if input.endswith(".txt"):
+            info(f"Input is a text file. Reading the first line of {input} to check mounts.")
             with open(input, "r") as f:
                 first_line = f.readline().strip()
-                input = first_line
-                media, rc = check_mounts(config_dict, input, "video")
+                media, rc = check_mounts(config_dict, first_line, "image")
         else:
-            media, rc = check_mounts(config_dict, input, "video")
+            media, rc = check_mounts(config_dict, input, "image")
         if rc == -1:
             return -1
 
@@ -82,7 +82,7 @@ def load_images(token: str, config: str, dry_run: bool, input: str, section: str
 
         specs = []
         num_checked = 0
-        for index, row in tqdm.tqdm(df_media.iterrows(), total=len(df_media), desc="Creating images specs"):
+        for index, row in tqdm(df_media.iterrows(), total=len(df_media), desc="Creating images specs"):
             file_loc_sans_root = row["media_path"].split(media.mount_path.as_posix())[-1]
             image_url = f"{media.base_url}{file_loc_sans_root}"
 
@@ -105,6 +105,7 @@ def load_images(token: str, config: str, dry_run: bool, input: str, section: str
                 err(f"Image {row.media_path} does not exist")
                 return -1
 
+            info("Formatting attributes")
             attributes = format_attributes(row.to_dict(), media.attributes)
 
             specs.append(

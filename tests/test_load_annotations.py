@@ -1,7 +1,9 @@
 # mbari_aidata, Apache-2.0 license
 # Filename: tests/test_load_annotations.py
 # Description: Tests loading annotations to a Tator database
+import os
 
+import dotenv
 import pytest
 from click.testing import CliRunner
 from pathlib import Path
@@ -20,6 +22,7 @@ HAS_DATABASE = False
 def setup():
     # Make sure the TATOR_TOKEN environment variable is set
     import os
+    dotenv.load_dotenv()
 
     # TODO: Add a check for the database presence
     assert "TATOR_TOKEN" in os.environ, "TATOR_TOKEN environment variable must be set"
@@ -41,6 +44,10 @@ def test_load_boxes_i2map():
             csv_path.as_posix(),
             "--config",
             config_yaml.as_posix(),
+            "--token",
+            os.environ["TATOR_TOKEN"],
+            "--version",
+            "Baseline"
         ],
     )
     print(result.output)
@@ -64,6 +71,10 @@ def test_load_boxes_i2map_version():
             "Baseline",
             "--config",
             config_yaml.as_posix(),
+            "--token",
+            os.environ["TATOR_TOKEN"],
+            "--version",
+            "Baseline"
         ],
     )
     print(result.output)

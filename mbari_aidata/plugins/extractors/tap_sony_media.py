@@ -17,7 +17,7 @@ def extract_media(media_path: Path, max_images: int = -1) -> pd.DataFrame:
 
     # Create a dataframe to store the combined data in an image_path column in sorted order
     images_df = pd.DataFrame()
-    allowed_extensions = [".png", ".jpg", ".jpeg", ".JPEG", ".PNG"]
+    allowed_extensions = [".png", ".jpg", ".jpeg", ".JPG", ".JPEG", ".PNG"]
 
     # Check if media_path is a txt file containing list of paths
     if media_path.is_file() and media_path.suffix.lower() == '.txt':

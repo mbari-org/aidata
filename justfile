@@ -14,6 +14,8 @@ env_dir := CONDA_PREFIX / "bin"
 # Uncomment the line below for cross-platform compatibility (Windows)
 ##export PATH := if os_family() == "windows" { env_dir + x";${PATH}" } else { env_dir + x":${PATH}" }
 export PATH := env_dir + x":${PATH}"
+# Figure out the path to `just`
+just-bin := if os() == "macos" { "/opt/homebrew/bin/just" } else { "just" }
 
 # List recipes
 list:
@@ -90,19 +92,17 @@ stop-docker-dev:
     cd tator && make clean
 
 # Setup the docker development environment
-setup-docker-dev: build-docker
+setup-docker-dev:
     #!/bin/bash
-    docker stop nginx_images
-    docker rm nginx_images
-    docker run -d -p 8082:8082  \
-        -v $PWD/tests/data/:/data  \
-        -v $PWD/tests/nginx.conf:/etc/nginx/conf.d/default.conf \
-        --restart always  \
-        --name nginx_images nginx:1.23.3
+    docker stop nginx_image
+    docker rm nginx_image
+    docker build -t mbari_nginx -f docker/Dockerfile.nginx .
+    docker run -p 8082:8082 \
+      -v $PWD/tests:/tests \
+      -v $PWD/tests/nginx.conf:/usr/local/nginx/conf/nginx.conf \
+      --restart always \
+      --name nginx_image mbari_nginx
     # Get the IP address of the host and add it to the host: field in all the test yaml files
-    export HOST_IP=$(ipconfig getifaddr en0)
-    git checkout tests/config/*.yml
-    sed -i '' "s/host: localhost/host: $HOST_IP/g" tests/config/*.yml
     docker volume create redis-test
     docker stop redis-test && docker rm redis-test || true
     docker run -d \
@@ -112,8 +112,9 @@ setup-docker-dev: build-docker
       -v redis-test:/var/lib/redis-stack \
       --restart always \
       redis/redis-stack-server \
-      /bin/sh -c 'redis-stack-server --port 6382 --appendonly yes --appendfsync everysec --requirepass "${REDIS_PASSWD:?REDIS_PASSWD variable is not set}"'
+      /bin/sh -c 'redis-stack-server --port 6379 --appendonly yes --appendfsync everysec --requirepass "${REDIS_PASSWORD:?REDIS_PASSWORD variable is not set}"'
     cd tator && make tator
+
 
 # Install development dependencies. Run before running tests
 install-dev:
@@ -128,25 +129,51 @@ load-i2map :
 load-i2map-txt :
     time conda run -n mbari_aidata --no-capture-output python3 mbari_aidata load images \
         --config ./tests/config/config_i2map.yml \
-        --input ./tests/data/i2map --token $TATOR_TOKEN --input-list ./tests/data/i2map/image_list.txt
+        --input ./tests/data/i2map_images.txt --token $TATOR_TOKEN
 # Load cfe video
 load-cfe:
     time conda run -n mbari_aidata --no-capture-output python3 mbari_aidata load videos \
         --config ./tests/config/config_cfe.yml \
         --input ./tests/data/cfe --token $TATOR_TOKEN
 
-# Test loading of i2map images
-test-load-i2map:
-    time conda run -n mbari_aidata --no-capture-output pytest -r tests/test_load_media.py -k test_load_image_i2map
+# Private base recipe for running pytest commands
+_base_cmd_test test_file="tests/test_load_media.py" test_function="test_load_image_i2map_by_dir":
+    #!/usr/bin/env bash
+    export PYTHONPATH=.
+    export NO_ALBUMENTATIONS_UPDATE=1
+    export TATOR_TOKEN=$TATOR_TOKEN
+    time conda run -n mbari_aidata --no-capture-output pytest -r {{test_file}} -k {{test_function}} --ignore tator
 
+# Generic public recipe that forwards args
+test-any test_file test_function:
+    {{just-bin}} _base_cmd_test {{test_file}} {{test_function}}
+
+# Test loading of i2map image
+test-load-i2map:
+    {{just-bin}} test-any tests/test_load_media.py test_load_image_i2map
+    {{just-bin}} test-any tests/test_load_media.py test_load_image_i2map_txt
+# Test all loads
+test-load-all:
+    #!/usr/bin/env bash
+    export PYTHONPATH=.
+    export NO_ALBUMENTATIONS_UPDATE=1
+    export TATOR_TOKEN=$TATOR_TOKEN
+    time conda run -n mbari_aidata --no-capture-output pytest -r tests/test_load_media.py --ignore tator
 # Test loading of cfe images
 test-load-cfe:
-    time conda run -n mbari_aidata --no-capture-output pytest -r tests/test_load_media.py -k test_load_image_cfe
+    {{just-bin}} test-any tests/test_load_media.py test_load_image_cfe
+    {{just-bin}} test-any tests/test_load_media.py test_load_image_cfe_txt
+
+# Test loading of planktivore images
+test-load-ptvr:
+    {{just-bin}} test-any tests/test_load_media.py test_load_planktivore_cfe
+    {{just-bin}} test-any tests/test_load_media.py test_load_planktivore_cfe_txt
 
 # Test dry-run loading of images or videos
-test-dryrun:
-    time conda run -n mbari_aidata --no-capture-output pytest -r tests/test_load_media.py -k test_load_image_dryrun
-    time conda run -n mbari_aidata --no-capture-output pytest -r tests/test_load_media.py -k test_load_video_dryrun
+test-dryrun: _base_cmd_test
+    {{just-bin}} tests/test_load_media.py test_load_image_dryrun
+    {{just-bin}} tests/test_load_media.py test_load_video_dryrun
+
 # Download all verified data from the i2map project at 300m depth
 download-300m-data:
     time conda run -n mbari_aidata --no-capture-output python3 mbari_aidata download dataset --base-path ./data/i2map --version Baseline --depth 300  --labels "all" --config config_i2map.yml

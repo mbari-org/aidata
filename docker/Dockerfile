@@ -7,6 +7,7 @@ LABEL license="Apache License 2.0"
 RUN apt-get update &&  \
     apt-get install --no-install-recommends -y \
     curl \
+    unzip \
     ffmpeg && \
     apt clean && rm -rf /var/lib/apt/lists/*
 

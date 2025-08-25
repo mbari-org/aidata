@@ -2,9 +2,9 @@
 # Config file for SONY image metadata extraction
 mounts:
   - name: "image"
-    path: "./tests/data/uav"
+    path: "."
     host: localhost
-    nginx_root: "/data/uav"
+    nginx_root: "/tests"
     port: 8082
 
 redis:

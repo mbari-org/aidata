@@ -60,6 +60,8 @@ def extract_videos(media_path: Path, max_videos: Optional[int] = None) -> pd.Dat
     iso_datetime = {}
     instrument_type = {}
     info(f"Found {len(df)} unique videos")
+    if len(df) == 0:
+        return pd.DataFrame()
     try:
         for index, row in df.iterrows():
             image_name = Path(str(row.media_path)).name
@@ -116,8 +118,13 @@ def extract_images(media_path: Path, max_images: Optional[int] = None) -> pd.Dat
     if 0 < max_images < len(df):
         df = df.iloc[:max_images]
 
-    # 'CFE_ISIIS-010-2024-01-26 10-14-07.102_0835_8.3m.png'
-    pattern = re.compile(r"CFE_(.*?)-(\d+)-(\d{4}-\d{2}-\d{2} \d{2}-\d{2}-\d{2}\.\d{3})_(\d{4})_(\d+\.\d+)m\.(png|jpg|jpeg|JPEG|PNG)")
+    if len(df) == 0:
+        return pd.DataFrame()
+
+    # CFE_ISIIS-010-2024-01-26 10-14-07.102_0835_8.3m.png
+    pattern = re.compile(r"CFE_(.*?)-(\d+)-(\d{4}-\d{2}-\d{2} \d{2}-\d{2}-\d{2}\.\d{3})_(\d{4})_(\d+\.\d+)m\.(png|jpg|jpeg)", re.IGNORECASE)
+    # or CFE_ISIIS-010-2024-01-26 10-14-07.102_0835.png
+    pattern_no_depth = re.compile(r"CFE_(.*?)-(\d+)-(\d{4}-\d{2}-\d{2} \d{2}-\d{2}-\d{2}\.\d{3})_(\d{4})\.(png|jpg|jpeg)", re.IGNORECASE)
 
     index = 0
     # Grab any additional metadata from the image name,
@@ -130,7 +137,7 @@ def extract_images(media_path: Path, max_images: Optional[int] = None) -> pd.Dat
         df = df.groupby("media_path").first().reset_index()
         for group, df in df.groupby("media_path"):
             image_name = Path(str(group)).name
-            info(image_name)
+            info(f'Processing image: {image_name}')
             matches = re.findall(pattern, image_name)
             if matches:
                 instrument, _, datetime_str, frame_num, depth_str, ext = matches[0]
@@ -143,6 +150,20 @@ def extract_images(media_path: Path, max_images: Optional[int] = None) -> pd.Dat
                 increment_mseconds = int(int(frame_num) * 1e6 / fps)
                 iso_datetime[index] = iso_datetime[index] + pd.Timedelta(microseconds=increment_mseconds)
                 index += 1
+            else:
+                matches = re.findall(pattern_no_depth, image_name)
+                if matches:
+                    instrument, _, datetime_str, frame_num, ext = matches[0]
+                    datetime_str = datetime_str + "Z"
+                    dt = datetime.strptime(datetime_str, "%Y-%m-%d %H-%M-%S.%fZ")
+                    dt_utc = pytz.utc.localize(dt)
+                    iso_datetime[index] = dt_utc
+                    instrument_type[index] = instrument
+                    depth[index] = None
+                    increment_mseconds = int(int(frame_num) * 1e6 / fps)
+                    iso_datetime[index] = iso_datetime[index] + pd.Timedelta(microseconds=increment_mseconds)
+                    index += 1
+
 
         if len(instrument_type) == 0:
             raise ValueError("No instrument type found in CFE image names")

@@ -55,6 +55,7 @@ def extract_media(media_path: Path, max_images: Optional[int] = None) -> pd.Data
         matches = re.findall(pattern1, image_name)
         if matches:
             datetime_str = matches[0]
+            info(f"Found datetime string: {datetime_str} in image name: {image_name}")
             dt = datetime.strptime(datetime_str, "%Y%m%dT%H%M%S.%fZ")
             dt_utc = pytz.utc.localize(dt)
             iso_datetime[index] = dt_utc
@@ -62,6 +63,7 @@ def extract_media(media_path: Path, max_images: Optional[int] = None) -> pd.Data
         matches = re.findall(pattern2, image_name)
         if matches:
             us_timestamp = int(matches[0][1])
+            info(f"Found us timestamp: {us_timestamp} in image name: {image_name}")
             seconds = us_timestamp // 1_000_000
             microseconds = us_timestamp % 1_000_000
             dt_utc = datetime.fromtimestamp(seconds, tz=timezone.utc).replace(microsecond=microseconds)
@@ -69,4 +71,7 @@ def extract_media(media_path: Path, max_images: Optional[int] = None) -> pd.Data
 
     images_df["iso_datetime"] = iso_datetime
     images_df["media_type"] =  MediaType.IMAGE
+
+    # Check for NaT in iso_datetime and drop those rows
+    images_df = images_df.dropna(subset=["iso_datetime"]).reset_index(drop=True)
     return images_df

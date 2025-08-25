@@ -2,9 +2,9 @@
 # Config file for planktivore project test
 mounts:
   - name: "image"
-    path: "./tests/data/planktivore"
+    path: "."
     host: localhost
-    nginx_root: "/data/planktivore"
+    nginx_root: "/tests"
     port: 8082
 
 plugins:

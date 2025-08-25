@@ -72,7 +72,7 @@ def extract_media(media_path: Path, max_images: int = -1) -> pd.DataFrame:
 
     index = 0
     media_df = media_df.groupby("media_path").first().reset_index()
-    info(f"Found {len(media_df)} unique images")
+    info(f"Found {len(media_df)} unique media files")
     for group, df in media_df.groupby("media_path"):
         image_name = Path(str(group)).name
         info(image_name)
