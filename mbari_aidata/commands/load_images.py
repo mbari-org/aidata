@@ -18,12 +18,12 @@ from mbari_aidata.plugins.loaders.tator.attribute_utils import format_attributes
 from mbari_aidata.plugins.loaders.tator.common import init_api_project, find_media_type, init_yaml_config
 
 
-@click.command("images", help="Load images from a directory or a single image file")
+@click.command("images", help="Load images from a directory, a single image file, or a text file with a list of images")
 @common_args.token
 @common_args.yaml_config
 @common_args.dry_run
 @common_args.duplicates
-@click.option("--input", type=str, required=True, help="Path to directory with input images")
+@click.option("--input", type=str, required=True, help="Path to directory with input images, a single image, or a text file with a list of images")
 @click.option("--section", type=str, default="All Media", help="Section to load images into. Default is 'All Media'")
 @click.option("--max-images", type=int, default=-1, help="Only load up to max-images. Useful for testing. Default is to load all images")
 def load_images(token: str, config: str, dry_run: bool, input: str, section: str, max_images: int, check_duplicates) -> int:
@@ -36,7 +36,14 @@ def load_images(token: str, config: str, dry_run: bool, input: str, section: str
         host = config_dict["tator"]["host"]
         plugins = config_dict["plugins"]
 
-        media, rc = check_mounts(config_dict, input, "image")
+        # If the input is a text file, arbitrarily choose the first file to check mounts
+        if input.endswith(".txt"):
+            info(f"Input is a text file. Reading the first line of {input} to check mounts.")
+            with open(input, "r") as f:
+                first_line = f.readline().strip()
+                media, rc = check_mounts(config_dict, first_line, "image")
+        else:
+            media, rc = check_mounts(config_dict, input, "image")
         if rc == -1:
             return -1
 
@@ -75,7 +82,7 @@ def load_images(token: str, config: str, dry_run: bool, input: str, section: str
 
         specs = []
         num_checked = 0
-        for index, row in tqdm.tqdm(df_media.iterrows(), total=len(df_media), desc="Creating images specs"):
+        for index, row in tqdm(df_media.iterrows(), total=len(df_media), desc="Creating images specs"):
             file_loc_sans_root = row["media_path"].split(media.mount_path.as_posix())[-1]
             image_url = f"{media.base_url}{file_loc_sans_root}"
 
@@ -98,6 +105,7 @@ def load_images(token: str, config: str, dry_run: bool, input: str, section: str
                 err(f"Image {row.media_path} does not exist")
                 return -1
 
+            info("Formatting attributes")
             attributes = format_attributes(row.to_dict(), media.attributes)
 
             specs.append(

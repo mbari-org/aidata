@@ -7,6 +7,7 @@ LABEL license="Apache License 2.0"
 RUN apt-get update &&  \
     apt-get install --no-install-recommends -y \
     curl \
+    unzip \
     ffmpeg && \
     apt clean && rm -rf /var/lib/apt/lists/*
 
@@ -32,7 +33,16 @@ ENV NO_ALBUMENTATIONS_UPDATE=1
 RUN pip install --upgrade pip
 RUN if GIT_VERSION=latest; then pip install mbari-aidata; else pip install mbari-aidata==${GIT_VERSION}; fi
 
+# Create non-root user
+RUN groupadd -r aidata && useradd -r -g aidata -d ${APP_HOME} -s /bin/bash aidata
+
 WORKDIR ${APP_HOME}
 ENV HOME=${APP_HOME}
-RUN chmod a+rwx -R ${APP_HOME}
+RUN chmod a+rwx -R ${APP_HOME} && \
+    chown -R aidata:aidata ${APP_HOME} && \
+    chown -R aidata:aidata /venv
+
+# Switch to non-root user
+USER aidata
+
 ENTRYPOINT ["aidata"]

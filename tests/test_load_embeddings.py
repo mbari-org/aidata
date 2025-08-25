@@ -1,6 +1,8 @@
 # mbari_aidata, Apache-2.0 license
 # Filename: tests/test_load_embeddings.py
 # Description: Tests loading embeddings to a Redis database with RediSearch
+import os
+import dotenv
 import pytest
 import redis
 from click.testing import CliRunner
@@ -19,10 +21,11 @@ HAS_DATABASE = False
 
 
 def setup():
+    dotenv.load_dotenv()
     config_dict = init_yaml_config(config_path / "config_uav.yml")
     redis_host = config_dict["redis"]["host"]
     redis_port = config_dict["redis"]["port"]
-    connection = redis.Redis(host=redis_host, port=redis_port, password="mbari_aidata")
+    connection = redis.Redis(host=redis_host, port=redis_port, password=os.getenv("REDIS_PASSWORD", ""))
 
     try:
         if connection.ping():
@@ -45,12 +48,14 @@ def test_load_exemplars_dryrun():
             "load",
             "exemplars",
             "--dry-run",
-            "--password", "mbari_aidata",
+            "--password", os.getenv("REDIS_PASSWORD", ""),
             "--label", "Otter",
             "--input",
             csv_path.as_posix(),
             "--config",
             config_yaml.as_posix(),
+            "--token",
+            os.environ["TATOR_TOKEN"]
         ],
     )
     print(result.output)
@@ -67,13 +72,14 @@ def test_load_exemplar():
         [
             "load",
             "exemplars",
-            "--password", "mbari_aidata",
-            "--reset",
+            "--password", os.getenv("REDIS_PASSWORD", ""),
             "--label", "Otter",
             "--input",
             csv_path.as_posix(),
             "--config",
             config_yaml.as_posix(),
+            "--token",
+            os.environ["TATOR_TOKEN"]
         ],
     )
     print(result.output)

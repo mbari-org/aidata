@@ -33,7 +33,7 @@ def check_mounts(config_dict: Dict, input:str, media_type: str) -> (MediaHelper,
         err("No image mount found in configuration")
         return None, -1
 
-    if 'http' in media_mount["host"]:
+    if media_mount["host"].startswith("http"):
         base_url = media_mount["host"]
     else:
         base_url = f'http://{media_mount["host"]}' # assuming http protocol which may not be correct
@@ -52,7 +52,7 @@ def check_mounts(config_dict: Dict, input:str, media_type: str) -> (MediaHelper,
     input_path = input_path.resolve()
 
     if not input_path.exists():
-        err(f"{input_path} does not exist")
+        err(f"Media input {input_path} does not exist")
         return None, -1
 
     media = MediaHelper()
@@ -62,12 +62,7 @@ def check_mounts(config_dict: Dict, input:str, media_type: str) -> (MediaHelper,
     media.attributes = attributes
 
     if not mount_path.exists():
-        err(f"{mount_path} does not exist")
-        return None, -1
-
-    # Check if the image path exists
-    if not input_path.exists():
-        err(f"{input_path} does not exist")
+        err(f"Mount path {mount_path} does not exist. Check your configuration mount settings for correct path.")
         return None, -1
 
     # If the input path is a directory, check if it is a subdirectory of the media mount path

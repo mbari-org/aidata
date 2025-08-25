@@ -107,7 +107,34 @@ def test_load_image_i2map():
 
 
 @pytest.mark.skipif(not HAS_DATABASE, reason="This test is excluded because it requires a database")
-def test_load_media_cfe():
+def test_load_image_i2map_txt():
+    setup()
+    runner = CliRunner()
+    """Test that the process command works when passing arguments with a text listing of image locations"""
+    image_listing =  data_path / "i2map_images.txt"
+    config_yaml = config_path / "config_i2map.yml"
+    print(config_yaml.as_posix())
+    args = ["load", "images", "--input", image_listing.as_posix(), "--config", config_yaml.as_posix(), "--token", os.environ["TATOR_TOKEN"]]
+    print(' '.join(args))
+    result = runner.invoke(
+        cli,
+        [
+            "load",
+            "images",
+            "--input",
+            image_listing.as_posix(),
+            "--config",
+            config_yaml.as_posix(),
+            "--token",
+            os.environ["TATOR_TOKEN"]
+        ],
+    )
+    print(result.output)
+    assert result.exit_code == 0
+
+
+@pytest.mark.skipif(not HAS_DATABASE, reason="This test is excluded because it requires a database")
+def test_load_image_cfe():
     setup()
     runner = CliRunner()
     """Test that the process command works when passing arguments with a single image"""
@@ -132,7 +159,32 @@ def test_load_media_cfe():
 
 
 @pytest.mark.skipif(not HAS_DATABASE, reason="This test is excluded because it requires a database")
-def test_load_media_uav():
+def test_load_image_cfe_txt():
+    setup()
+    runner = CliRunner()
+    """Test that the process command works when passing arguments with a text listing of image locations"""
+    image_listing =  data_path / "cfe_images.txt"
+    config_yaml = config_path / "config_cfe.yml"
+    print(config_yaml.as_posix())
+    result = runner.invoke(
+        cli,
+        [
+            "load",
+            "images",
+            "--input",
+            image_listing.as_posix(),
+            "--config",
+            config_yaml.as_posix(),
+            "--token",
+            os.environ["TATOR_TOKEN"]
+        ],
+    )
+    print(result.output)
+    assert result.exit_code == 0
+
+
+@pytest.mark.skipif(not HAS_DATABASE, reason="This test is excluded because it requires a database")
+def test_load_image_uav():
     runner = CliRunner()
     """Test that the process command works when passing arguments with a single image"""
     image_path = data_path / "uav"
@@ -154,9 +206,33 @@ def test_load_media_uav():
     print(result.output)
     assert result.exit_code == 0
 
+@pytest.mark.skipif(not HAS_DATABASE, reason="This test is excluded because it requires a database")
+def test_load_image_uav_txt():
+    setup()
+    runner = CliRunner()
+    """Test that the process command works when passing arguments with a text listing of image locations"""
+    image_listing =  data_path / "uav_images.txt"
+    config_yaml = config_path / "config_uav.yml"
+    print(config_yaml.as_posix())
+    result = runner.invoke(
+        cli,
+        [
+            "load",
+            "images",
+            "--input",
+            image_listing.as_posix(),
+            "--config",
+            config_yaml.as_posix(),
+            "--token",
+            os.environ["TATOR_TOKEN"]
+        ],
+    )
+    print(result.output)
+    assert result.exit_code == 0
+
 
 @pytest.mark.skipif(not HAS_DATABASE, reason="This test is excluded because it requires a database")
-def test_load_media_planktivore():
+def test_load_image_planktivore():
     runner = CliRunner()
     """Test that the process command works when passing arguments with a single image"""
     image_path = data_path / "planktivore"
@@ -169,6 +245,31 @@ def test_load_media_planktivore():
             "images",
             "--input",
             image_path.as_posix(),
+            "--config",
+            config_yaml.as_posix(),
+            "--token",
+            os.environ["TATOR_TOKEN"]
+        ],
+    )
+    print(result.output)
+    assert result.exit_code == 0
+
+
+@pytest.mark.skipif(not HAS_DATABASE, reason="This test is excluded because it requires a database")
+def test_load_image_planktivore_txt():
+    setup()
+    runner = CliRunner()
+    """Test that the process command works when passing arguments with a text listing of image locations"""
+    image_listing =  data_path / "planktivore_images.txt"
+    config_yaml = config_path / "config_planktivore.yml"
+    print(config_yaml.as_posix())
+    result = runner.invoke(
+        cli,
+        [
+            "load",
+            "images",
+            "--input",
+            image_listing.as_posix(),
             "--config",
             config_yaml.as_posix(),
             "--token",

@@ -1,0 +1,48 @@
+FROM ubuntu:24.10
+
+# Credit to M3 deploy for the original Dockerfile this is based on with added auth_request_module
+
+ENV NGINX_VERSION 1.27.4
+ENV SRC_ROOT /usr/local/src
+ENV NGINX_HOME=/usr/local/nginx
+
+RUN apt-get update \
+    && apt-get upgrade -y \
+    && apt-get install -y ca-certificates wget build-essential git-core libssl-dev libpcre3-dev zlib1g-dev libcap2-bin \
+    && cd ${SRC_ROOT} \
+    && git clone https://github.com/arut/nginx-rtmp-module.git \
+    && git clone https://github.com/aperezdc/ngx-fancyindex.git \
+    && wget -qO- http://nginx.org/download/nginx-${NGINX_VERSION}.tar.gz | tar -xz \
+    && cd nginx-${NGINX_VERSION} \
+    && ./configure --prefix=${NGINX_HOME} \
+        --with-http_auth_request_module \
+        --with-http_flv_module \
+        --with-http_mp4_module \
+        --with-http_ssl_module \
+        --with-http_v2_module \
+        --with-http_gunzip_module \
+        --with-http_gzip_static_module \
+        --with-http_stub_status_module \
+        --add-module=${SRC_ROOT}/nginx-rtmp-module \
+        --add-module=${SRC_ROOT}/ngx-fancyindex \
+    && make \
+    && make install \
+    && apt-get -y remove --purge wget build-essential git-core pkg-config checkinstall \
+    && apt-get -y autoremove \
+    && apt-get install -y vim \
+    && rm -rf /var/lib/apt/lists/* /var/tmp/* ${SRC_ROOT}/* \
+    && setcap 'cap_net_bind_service=+ep' ${NGINX_HOME}/sbin/nginx
+
+RUN groupadd -r --gid 1001 docker && \
+    useradd -r --uid 12065 -g docker docker_user && \
+    chmod -R 777 ${NGINX_HOME} && \
+    mkdir -p /var/cache/nginx && \
+    chmod -R 777 /var/cache/nginx && \
+    chmod -R 777 /usr/local/nginx/logs/
+
+USER docker_user
+
+ENV PATH="${NGINX_HOME}/sbin:${PATH}"
+EXPOSE 8082
+
+CMD ["nginx", "-g", "daemon off;"]

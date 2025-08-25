@@ -15,26 +15,26 @@ from mbari_aidata.logger import info, debug, err
 
 
 def create_version(api: TatorApi, project: Project, version: str) -> int:
-        """
-        Create a version in the given project
-        :param api: :class:`TatorApi` object
-        :param project: project object
-        :param version: version name
-        :return: version ID
-        """
-        try:
-            # Create another version that is based off the baseline
-            baseline_version = api.get_version_list(project.id)[0].id
-            version_obj = api.create_version(project.id, version_spec={
-                "name": version,
-                "description": version,
-                "show_empty": True,
-                "bases": [baseline_version]
-                })
-            return version_obj.id
-        except Exception as e:
-            err(f"Error creating version {version}: {e}")
-            raise e
+    """
+    Create a version in the given project
+    :param api: :class:`TatorApi` object
+    :param project: project object
+    :param version: version name
+    :return: version ID
+    """
+    try:
+        # Create another version that is based off the baseline
+        baseline_version = api.get_version_list(project.id)[0].id
+        version_obj = api.create_version(project.id, version_spec={
+            "name": version,
+            "description": version,
+            "show_empty": True,
+            "bases": [baseline_version]
+            })
+        return version_obj.id
+    except Exception as e:
+        err(f"Error creating version {version}: {e}")
+        raise e
 
 def get_version_id(api: TatorApi, project: Project, version: str) -> int:
     """
