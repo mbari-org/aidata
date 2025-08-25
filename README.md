@@ -122,9 +122,7 @@ to download multiple versions
 ```shell
 docker run -it --rm -v $(pwd):/mnt mbari/aidata:latest aidata download --version Baseline,ver0 --labels "Diatoms, Copepods" --config config_cfe.yml`
 ```
-
-```shell
-
+ 
 ## Commands
 
 * `aidata download --help` -  Download data, such as images, boxes, into various formats for machine learning e.g. COCO, CIFAR, or PASCAL VOC format. Augmentation supported for VOC exported data using Albumentations.
@@ -138,4 +136,4 @@ Source code is available at [github.com/mbari-org/aidata](https://github.com/mba
 ## Development
 See the [Development Guide](https://github.com/mbari-org/aidata/blob/main/DEVELOPMENT.md) for more information on how to set up the development environment or the [justfile](justfile)  
  
-🗓️ Last updated: 2025-06-13
+🗓️ Last updated: 2025-08-25
