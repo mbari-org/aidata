@@ -25,7 +25,7 @@ def setup():
     config_dict = init_yaml_config(config_path / "config_uav.yml")
     redis_host = config_dict["redis"]["host"]
     redis_port = config_dict["redis"]["port"]
-    connection = redis.Redis(host=redis_host, port=redis_port, password=os.environ["REDIS_PASSWORD"])
+    connection = redis.Redis(host=redis_host, port=redis_port, password=os.getenv("REDIS_PASSWORD", ""))
 
     try:
         if connection.ping():
@@ -48,7 +48,7 @@ def test_load_exemplars_dryrun():
             "load",
             "exemplars",
             "--dry-run",
-            "--password", os.environ["REDIS_PASSWORD"],
+            "--password", os.getenv("REDIS_PASSWORD", ""),
             "--label", "Otter",
             "--input",
             csv_path.as_posix(),
@@ -72,7 +72,7 @@ def test_load_exemplar():
         [
             "load",
             "exemplars",
-            "--password", os.environ["REDIS_PASSWORD"],
+            "--password", os.getenv("REDIS_PASSWORD", ""),
             "--label", "Otter",
             "--input",
             csv_path.as_posix(),
