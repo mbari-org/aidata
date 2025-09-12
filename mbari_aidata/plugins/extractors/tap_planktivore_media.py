@@ -10,7 +10,7 @@ import pytz
 import pandas as pd
 from pathlib import Path
 
-from mbari_aidata.logger import info
+from mbari_aidata.logger import info,debug
 from mbari_aidata.plugins.extractors.media_types import MediaType
 
 

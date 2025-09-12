@@ -59,9 +59,9 @@ def load_images(token: str, config: str, dry_run: bool, input: str, section: str
             err("Could not find media type Image")
             return -1
 
-        df_media = extractor(media.input_path, max_images)
+        df_media = extractor(Path(input), max_images)
         if len(df_media) == 0:
-            info(f"No images found in {media.input_path}")
+            info(f"No images found in {input}")
             return 0
 
         # Keep only the IMAGE media
@@ -90,10 +90,10 @@ def load_images(token: str, config: str, dry_run: bool, input: str, section: str
                 # Check if the URL is valid, but only for the first 100 images
                 info(f"Checking if the url {image_url} is valid")
                 try:
-                    timeout = 15
+                    timeout = 30
                     r = requests.head(image_url, timeout=timeout)
                     if r.status_code != 200:
-                        err(f"URL {image_url} is not valid")
+                        err(f"URL {image_url} is not valid status code {r.status_code}")
                         return -1
                     num_checked += 1
                 except Exception as e:
