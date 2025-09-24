@@ -16,7 +16,7 @@ More documentation and examples are available at [https://docs.mbari.org/interna
 * Metadata Extraction: Parses images metadata such as GPS/time/date through a plugin-based system (extractors).
 * Duplicate Detection & flexible media references: Supports duplicate media load checks with the --check-duplicates flag. 
 * Images or video are made accessible through a web server without needing to upload or move them from your internal NFS project mounts (e.g. Thalassa)
-* Augmentation Support: Augment VOC datasets with [Albumentations](https://albumentations.ai/) to boost your object detection model performance. See examples in the [docs](https://docs.mbari.org/internal/ai/data/commands/transform/?h=aug#transform-voc-to-yolo-with-augmentations).
+* Augmentation Support: Augment VOC datasets with [Albumentations](https://albumentations.ai/) to boost your object detection model performance.
 
 ## Requirements
 - Python 3.10 or higher
