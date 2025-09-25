@@ -27,3 +27,8 @@ version = click.option(
 )
 duplicates = click.option("--check-duplicates", is_flag=True,
                           help="Check if the images are already loaded to avoid duplicates")
+disable_ssl_verify = click.option(
+    "--disable-ssl-verify",
+    is_flag=True,
+    help="Disable SSL verification",
+)

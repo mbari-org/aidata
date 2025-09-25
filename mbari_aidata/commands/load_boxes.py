@@ -15,6 +15,7 @@ from mbari_aidata.plugins.loaders.tator.media import get_media_ids
 
 @click.command("boxes", help="Load boxes from a directory with VOC or SDCAT formatted CSV files")
 @common_args.token
+@common_args.disable_ssl_verify
 @common_args.yaml_config
 @common_args.dry_run
 @common_args.version
@@ -22,7 +23,7 @@ from mbari_aidata.plugins.loaders.tator.media import get_media_ids
 @click.option("--input", type=Path, required=True, help=" VOC xml or SDCAT formatted CSV files")
 @click.option("--max-num", type=int, help="Maximum number of boxes to load")
 @click.option("--min-score", type=float, help="Minimum score to load between 0 and 1")
-def load_boxes(token: str, config: str, version: str, input: Path, dry_run: bool, max_num: int, min_score:float, exclude: str) -> int:
+def load_boxes(token: str, disable_ssl_verify: bool, config: str, version: str, input: Path, dry_run: bool, max_num: int, min_score:float, exclude: str) -> int:
     """Load boxes from a directory with VOC or SDCAT formatted CSV files. Returns the number of boxes loaded."""
 
     try:
@@ -33,7 +34,7 @@ def load_boxes(token: str, config: str, version: str, input: Path, dry_run: bool
         host = config_dict["tator"]["host"]
 
         # Initialize the Tator API
-        api, tator_project = init_api_project(host, token, project)
+        api, tator_project = init_api_project(host, token, project, disable_ssl_verify)
         box_type = find_box_type(api, tator_project.id, "Box")
         image_type = find_media_type(api, tator_project.id, "Image")
         version_id = get_version_id(api, tator_project, version)

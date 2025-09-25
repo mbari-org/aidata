@@ -6,8 +6,9 @@ from typing import Tuple, Any
 from urllib.parse import urlparse
 
 import yaml
+from tator.openapi import tator_openapi
 
-from tator.openapi.tator_openapi import TatorApi  # type: ignore
+from tator.openapi.tator_openapi import TatorApi, CreateListResponse, CreateResponse  # type: ignore
 from tator.openapi.tator_openapi.models import Project  # type: ignore
 import tator  # type: ignore
 
@@ -62,18 +63,56 @@ def get_version_id(api: TatorApi, project: Project, version: str) -> int:
         raise ValueError(f"Found multiple versions with name {version}")
     return version_match[0].id
 
+def get_api(host='https://cloud.tator.io', token=os.getenv('TATOR_TOKEN'), disable_ssl_verify=False) -> TatorApi:
+    """ Retrieves a :class:`tator.api` instance using the given host and token.
 
-def init_api_project(host: str, token: str, project: str) -> Tuple[TatorApi, tator.models.Project]:
+    :param host: URL of host. Default is https://cloud.tator.io.
+    :param token: API token.
+    :param disable_ssl_verify: Disable SSL verification
+    :returns: :class:`tator.api` object.
+    """
+    config = tator_openapi.Configuration()
+    config.host = host
+    if disable_ssl_verify:
+        config.verify_ssl = False
+    if token:
+        config.api_key['Authorization'] = token
+        config.api_key_prefix['Authorization'] = 'Token'
+
+    api = tator_openapi.TatorApi(tator_openapi.ApiClient(config))
+    api._create_media_list_impl = api.create_media_list
+
+    def create_media_list_wrapper(*args, **kwargs):
+        response = api._create_media_list_impl(*args, **kwargs)
+        if "id" in response and isinstance(response["id"], list):
+            try:
+                return CreateListResponse(**response)
+            except Exception:
+                return response
+        try:
+            return CreateResponse(**response)
+        except Exception:
+            return response
+
+    api.create_media_list = create_media_list_wrapper
+    def legacy_create_media(project, media_spec, **kwargs):
+        return api.create_media_list(project, media_spec, **kwargs)
+
+    api.create_media = legacy_create_media
+    return api
+
+def init_api_project(host: str, token: str, project: str, disable_ssl_verify=False) -> Tuple[TatorApi, tator.models.Project]:
     """
     Fetch the Tator API and project
     :param host: hostname, e.g. localhost
     :param token: api token
     :param project:  project name
+    :param disable_ssl_verify: Disable SSL verification
     :return:
     """
     try:
         info(f"Connecting to Tator at {host}")
-        api = tator.get_api(host, token)
+        api = get_api(host=host, token=token, disable_ssl_verify=disable_ssl_verify)
     except Exception as e:
         raise e
 

@@ -19,6 +19,7 @@ DEFAULT_BASE_DIR = Path.home() / "mbari_aidata" / "datasets"
 
 @click.command(name="dataset", help="Download a dataset for training detection or classification models")
 @common_args.token
+@common_args.disable_ssl_verify
 @common_args.yaml_config
 @common_args.version
 @click.option(
@@ -55,6 +56,7 @@ DEFAULT_BASE_DIR = Path.home() / "mbari_aidata" / "datasets"
 )
 def download(
     token: str,
+    disable_ssl_verify: bool,
     config: str,
     base_path: Path,
     group: str,
@@ -88,7 +90,7 @@ def download(
         host = config_dict["tator"]["host"]
 
         # Initialize the Tator API
-        api, tator_project = init_api_project(host, token, project)
+        api, tator_project = init_api_project(host, token, project, disable_ssl_verify)
 
         # Find the project
         project = find_project(api, project)

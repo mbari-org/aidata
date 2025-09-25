@@ -18,13 +18,14 @@ from mbari_aidata.plugins.loaders.tator.common import init_api_project, find_med
 
 @click.command("videos", help="Load videos from a directory or a single video")
 @common_args.token
+@common_args.disable_ssl_verify
 @common_args.yaml_config
 @common_args.dry_run
 @common_args.duplicates
 @click.option("--input", type=str, required=True, help="Path to directory with input video or single video")
 @click.option("--section", type=str, default="All Media", help="Section to load images into. Default is 'All Media'")
 @click.option("--max-videos", type=int, default=-1, help="Only load up to max-videos. Useful for testing. Default is to load all mp4 videos found")
-def load_video(token: str, config: str, dry_run: bool, input: str, section: str, max_videos: int, check_duplicates: bool) -> int:
+def load_video(token: str, disable_ssl_verify: bool, config: str, dry_run: bool, input: str, section: str, max_videos: int, check_duplicates: bool) -> int:
     """Load video(s) from a directory. Returns the number of video loaded."""
     create_logger_file("load_videos")
     # Load the configuration file
@@ -37,7 +38,7 @@ def load_video(token: str, config: str, dry_run: bool, input: str, section: str,
     if rc == -1:
         return -1
 
-    api, tator_project = init_api_project(host, token, project)
+    api, tator_project = init_api_project(host, token, project, disable_ssl_verify)
 
     media_type = find_media_type(api, tator_project.id, "Video")
 

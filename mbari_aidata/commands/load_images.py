@@ -20,13 +20,14 @@ from mbari_aidata.plugins.loaders.tator.common import init_api_project, find_med
 
 @click.command("images", help="Load images from a directory, a single image file, or a text file with a list of images")
 @common_args.token
+@common_args.disable_ssl_verify
 @common_args.yaml_config
 @common_args.dry_run
 @common_args.duplicates
 @click.option("--input", type=str, required=True, help="Path to directory with input images, a single image, or a text file with a list of images")
 @click.option("--section", type=str, default="All Media", help="Section to load images into. Default is 'All Media'")
 @click.option("--max-images", type=int, default=-1, help="Only load up to max-images. Useful for testing. Default is to load all images")
-def load_images(token: str, config: str, dry_run: bool, input: str, section: str, max_images: int, check_duplicates) -> int:
+def load_images(token: str, disable_ssl_verify: bool, config: str, dry_run: bool, input: str, section: str, max_images: int, check_duplicates) -> int:
     """Load images from a directory. Assumes the images are available via a web server. Returns the number of images loaded."""
     create_logger_file("load_images")
     try:
@@ -52,7 +53,7 @@ def load_images(token: str, config: str, dry_run: bool, input: str, section: str
         extractor = getattr(module, p["function"])
 
         # Initialize the Tator API
-        api, tator_project = init_api_project(host, token, project)
+        api, tator_project = init_api_project(host, token, project, disable_ssl_verify)
         media_type = find_media_type(api, tator_project.id, "Image")
 
         if not media_type:

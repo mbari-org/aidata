@@ -19,9 +19,10 @@ from mbari_aidata.plugins.loaders.tator.common import init_yaml_config, init_api
 
 @click.command("queue", help="Load data from a Redis message queue")
 @common_args.token
+@common_args.disable_ssl_verify
 @common_args.yaml_config
 @click.option("--reset", is_flag=True, help="Reset the Redis queue. CAUTION: This will delete all data in the queue.")
-def load_queue(token: str, config: str, reset: bool) -> None:
+def load_queue(token: str, disable_ssl_verify: bool, config: str, reset: bool) -> None:
     """Load data from a Redis message queue."""
     create_logger_file("load_queue")
 
@@ -43,7 +44,7 @@ def load_queue(token: str, config: str, reset: bool) -> None:
         info("Redis queue reset")
 
     # Initialize the Tator API
-    api, tator_project = init_api_project(host, token, project)
+    api, tator_project = init_api_project(host, token, project, disable_ssl_verify)
     media_type_v = find_media_type(api, tator_project.id, "Video")
     box_type = find_box_type(api, tator_project.id, "Box")
     if box_type is None:

@@ -13,13 +13,14 @@ from mbari_aidata.plugins.loaders.tator.common import init_yaml_config, find_box
 
 @click.command("clusters", help="Load cluster from a SDCAT formatted CSV files")
 @common_args.token
+@common_args.disable_ssl_verify
 @common_args.yaml_config
 @common_args.dry_run
 @common_args.version
 @click.option("--input", type=Path, required=True, help=" VOC xml or SDCAT formatted CSV files")
 @click.option("--max-num", type=int, help="Maximum number of cluster assignments to load")
 @click.option("--update", is_flag=True, default=False, help="Update localization instead of creating new ones")
-def load_clusters(token: str, config: str, version: str, input: Path, dry_run: bool, max_num: int, update: bool) -> int:
+def load_clusters(token: str, disable_ssl_verify: bool, config: str, version: str, input: Path, dry_run: bool, max_num: int, update: bool) -> int:
     """Load clusters from a directory SDCAT formatted CSV files. Returns the number of clusters loaded.
     Assumes that the data is already loaded into Tator and rows reference the database ids."""
 
@@ -32,7 +33,7 @@ def load_clusters(token: str, config: str, version: str, input: Path, dry_run: b
         host = config_dict["tator"]["host"]
 
         # Initialize the Tator API
-        api, tator_project = init_api_project(host, token, project)
+        api, tator_project = init_api_project(host, token, project, disable_ssl_verify)
         box_type = find_box_type(api, tator_project.id, "Box")
         version_id = get_version_id(api, tator_project, version)
         assert box_type is not None, f"No box type found in project {project}"
