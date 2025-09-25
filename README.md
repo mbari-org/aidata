@@ -3,9 +3,13 @@
 [![License](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
 [![Python](https://img.shields.io/badge/language-Python-blue.svg)](https://www.python.org/downloads/)
 
-*mbari-aidata* is a command line tool to do extract, transform, load and download operations
+*mbari-aidata* is a command line tool to do extract, transform, load (ETL) and download operations
 on AI data for a number of projects at MBARI that require detection, clustering or classification
-workflows.
+workflows.  This tool is designed to work with [Tator](https://www.tator.io/), a web based
+platform for video and image annotation and data management and [Redis](https://redis.io/) 
+queues for ingesting data from real-time workflows.
+
+===========
 
 More documentation and examples are available at [https://docs.mbari.org/internal/ai/data](https://docs.mbari.org/internal/ai/data/).
  
