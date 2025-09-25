@@ -25,7 +25,6 @@ def parse_id(input_str):
 @click.command("exemplars", help="Load exemplars from a SDCAT formatted CSV exemplar file into a REDIS server")
 @common_args.yaml_config
 @common_args.dry_run
-@common_args.token
 @click.option(
     "--input",
     type=Path,
@@ -42,7 +41,7 @@ def parse_id(input_str):
     help="Class label for the exemplars. This is used as the base class name for the "
     "exemplar images, e.g. Otter:0, Otter:1, etc.",
 )
-def load_exemplars(config: str, input: Path, dry_run: bool, label: str, device: str, batch_size, password: str, token: str) -> int:
+def load_exemplars(config: str, input: Path, dry_run: bool, label: str, device: str, batch_size, password: str) -> int:
     """Load embeddings from a directory with SDCAT formatted exemplar CSV files. Returns the number of exemplar image
     embeddings loaded."""
     create_logger_file("load_exemplars")
@@ -99,17 +98,6 @@ def load_exemplars(config: str, input: Path, dry_run: bool, label: str, device: 
         vits.load(image_paths, class_names)
         num_exemplars = len(image_paths)
 
-        # Disable exemplar flagging for now - this overwrites the user who labeled the exemplar images
-        # Image names that are indexed per the database id, 12467.jpg, 12468.jpg, etc.
-        # Search and flag the exemplar images in the tator database
-        # params = {"type": box_type.id}
-        # id_bulk_patch = {
-        #     "attributes": {"exemplar": True},
-        #     "ids": ids,
-        #     "in_place": 1,
-        # }
-        # response = api.update_localization_list(project=tator_project.id, **params, localization_bulk_update=id_bulk_patch)
-        # info(response)
         return num_exemplars
     except Exception as e:
         err(f"Error: {e}")
