@@ -43,7 +43,7 @@ def sample_dataset():
             # Create corresponding label file
             label_path = labels_dir / f"image_{i:03d}.txt"
             with open(label_path, 'w') as f:
-                f.write(f"0 0.5 0.5 0.3 0.3\n")
+                f.write("0 0.5 0.5 0.3 0.3\n")
         
         yield test_input, test_output
 
@@ -126,7 +126,7 @@ def test_split_small_dataset():
             
             label_path = labels_dir / f"image_{i}.txt"
             with open(label_path, 'w') as f:
-                f.write(f"0 0.5 0.5 0.3 0.3\n")
+                f.write("0 0.5 0.5 0.3 0.3\n")
         
         # Should not fail even with small dataset
         split(test_input, test_output)
