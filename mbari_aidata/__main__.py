@@ -19,6 +19,7 @@ from mbari_aidata.commands.load_video import load_video
 from mbari_aidata.commands.load_exemplars import load_exemplars
 from mbari_aidata.commands.db_utils import reset_redis
 from mbari_aidata.commands.transform import transform, voc_to_yolo
+from mbari_aidata.commands.split import split_command
 from mbari_aidata.logger import err, info
 
 from mbari_aidata import __version__
@@ -90,6 +91,7 @@ def cli_transform():
 cli.add_command(cli_transform)
 cli_transform.add_command(transform)
 cli_transform.add_command(voc_to_yolo)
+cli_transform.add_command(split_command)
 
 if __name__ == "__main__":
     try:
