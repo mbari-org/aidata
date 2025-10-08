@@ -96,7 +96,7 @@ def get_media_ids(
         `Get the media ids that match the filter
         :param api:  tator api
         :param kwargs:  filter arguments to pass to the get_media_list function
-        :return: media name to id mapping
+        :return: elemental id to id mapping
         """
         media_map = {}
         media_count = api.get_media_count(project=project.id, type=image_type, **kwargs)
@@ -109,7 +109,7 @@ def get_media_ids(
             media = api.get_media_list(project=project.id, start=i, stop=i + batch_size, **kwargs)
             info(f"Found {len(media)} medias with {kwargs} {i} {i + batch_size}")
             for m in media:
-                media_map[m.name] = m.id
+                media_map[m.elemental_id] = m.id
                 debug(f"Found {len(media_map)} medias with {kwargs}")
         return media_map
 
