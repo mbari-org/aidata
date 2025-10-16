@@ -377,10 +377,11 @@ def download(
                         for frame, in_frame_loc in df_localizations.groupby('frame'):
                             debug(f"Processing frame {frame} in {media.name}")
                             for c in in_frame_loc.itertuples():
+                                crop_id = c.attributes.get("elemental_id", c.id)
                                 if c.attributes["Label"]:
                                     output_file = crop_path / c.attributes["Label"] / f"{c.id}.jpg"
                                 else:
-                                    output_file = crop_path / f"{c.id}.jpg"
+                                    output_file = crop_path / f"{crop_id}.jpg"
                                 if output_file.exists():
                                     continue
 
