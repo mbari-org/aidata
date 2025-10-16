@@ -16,10 +16,12 @@ More documentation and examples are available at [https://docs.mbari.org/interna
 ## 🚀 Features
 * 🧠 Object Detection/Clustering Integration: Loads detection/classification/clustering output from SDCAT formatted results.
 * Flexible Data Export: Downloads from Tator into machine learning formats like COCO, CIFAR, or PASCAL VOC.
+* Crop localizaions into optimized datasets for training classification models.
 * Real-Time Uploads: Pushes localizations to [Tator](https://www.tator.io/) via [Redis](https://redis.io/glossary/redis-queue/) queues for real-time workflows.
 * Metadata Extraction: Parses images metadata such as GPS/time/date through a plugin-based system (extractors).
 * Duplicate Detection & flexible media references: Supports duplicate media load checks with the --check-duplicates flag. 
-* Images or video are made accessible through a web server without needing to upload or move them from your internal NFS project mounts (e.g. Thalassa)
+* Images or video are loaded through a web server without needing to upload or move them from your internal NFS project mounts (e.g. Thalassa)
+* Combine multiple data versions into a single dataset for training or evaluation using the --version flag with comma separated values. Data is combined through Non-Maximum Suppression (NMS) to remove duplicate boxes.
 * Augmentation Support: Augment VOC datasets with [Albumentations](https://albumentations.ai/) to boost your object detection model performance.
 
 ## Requirements
