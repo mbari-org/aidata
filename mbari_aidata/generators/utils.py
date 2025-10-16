@@ -3,7 +3,8 @@
 # Description: Algorithms to run on lists of localizations to combine them and crop frames
 from typing import List
 from tator.openapi.tator_openapi import Localization  # type: ignore
-import pandas as pd
+import torch
+from torchvision.ops import nms
 import xml.etree.ElementTree as ET
 import subprocess
 import os
@@ -28,48 +29,69 @@ def crop_frame(args):
         err(str(e))
         return 0
 
-def combine_localizations(boxes: List[Localization]) -> List[Localization]:
+def combine_localizations(boxes: List[Localization], iou_threshold: float = 0.5) -> List[Localization]:
     """
-    Combine localizations using a voting algorithm on a list of localizations
+    Combine localizations using torch/torchvision NMS (per class).
+    Keeps highest-score boxes and suppresses overlaps >= IoU threshold.
+
     :param boxes: List of Localization objects with x, y, width, height, label, and score attributes
+    :param iou_threshold: IoU threshold for suppressing overlapping boxes (default: 0.5)
     :return: List of Localization objects
     """
-    # First, convert the list of localizations to a DataFrame
-    labels = [box.attributes["Label"] for box in boxes]
-    score = [box.attributes["score"] for box in boxes]
-    x = [box.x for box in boxes]
-    y = [box.y for box in boxes]
-    width = [box.width for box in boxes]
-    height = [box.height for box in boxes]
-    df = pd.DataFrame({"x": x, "y": y, "width": width, "height": height, "label": labels, "score": score})
+    if not boxes:
+        return []
 
-    # Assign unique x, y, width, height a unique identifier - this will be used to group the localizations
-    df["id"] = df.groupby(["x", "y", "width", "height"]).ngroup()
+    # Group indices by label for class-wise NMS
+    label_to_indices = {}
+    for idx, box in enumerate(boxes):
+        label = box.attributes.get("Label", "Unknown")
+        if label not in label_to_indices:
+            label_to_indices[label] = []
+        label_to_indices[label].append(idx)
 
-    # Group by 'id', count occurrences, and find the label with the maximum count
-    # Note that in the case of a tie, the first label will be chosen
-    max_labels = df.groupby("id")["label"].apply(lambda x: x.value_counts().idxmax()).reset_index(name="max_label")
+    kept_indices: List[int] = []
 
-    # Merge the maximum labels with the original data
-    max_labels = max_labels.merge(df, on="id", how="left")
+    for label, idxs in label_to_indices.items():
+        # Build xyxy tensor and scores tensor
+        xyxy = torch.tensor([
+            [
+                boxes[i].x,
+                boxes[i].y,
+                boxes[i].x + boxes[i].width,
+                boxes[i].y + boxes[i].height,
+            ]
+            for i in idxs
+        ], dtype=torch.float32)
 
-    # Drop any duplicate rows - we only want one row per 'id'
-    max_labels.drop_duplicates(subset=["id"], inplace=True)
+        scores = torch.tensor([
+            float(boxes[i].attributes.get("score", 0.0))
+            for i in idxs
+        ], dtype=torch.float32)
 
-    # Create a new list of Localization objects with the winners
-    max_boxes = []
-    for index, row in max_labels.iterrows():
-        max_boxes.append(
+        if xyxy.numel() == 0:
+            continue
+
+        keep_rel = nms(xyxy, scores, iou_threshold)
+        kept_indices.extend([idxs[i] for i in keep_rel.tolist()])
+
+    # Reconstruct Localization objects for kept boxes
+    result: List[Localization] = []
+    for i in kept_indices:
+        b = boxes[i]
+        attrs = dict(b.attributes)
+        if "score" not in attrs:
+            attrs["score"] = float(attrs.get("score", 0.0))
+        result.append(
             Localization(
-                x=row["x"],
-                y=row["y"],
-                width=row["width"],
-                height=row["height"],
-                attributes={"Label": row["label"], "score": row["score"]},
+                x=b.x,
+                y=b.y,
+                width=b.width,
+                height=b.height,
+                attributes=attrs,
             )
         )
 
-    return max_boxes
+    return result
 
 
 def parse_voc_xml(xml_file) -> List:

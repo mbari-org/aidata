@@ -17,6 +17,7 @@ from pascal_voc_writer import Writer  # type: ignore
 from mbari_aidata.logger import debug, info, err, exception
 from mbari_aidata.generators.cifar import create_cifar_dataset
 from mbari_aidata.generators.utils import combine_localizations, crop_frame
+from tator.openapi.tator_openapi import Localization  
 
 def download(
     api: tator.api,
@@ -376,11 +377,18 @@ def download(
                         # Group by frame, prepare crop arguments
                         for frame, in_frame_loc in df_localizations.groupby('frame'):
                             debug(f"Processing frame {frame} in {media.name}")
-                            for c in in_frame_loc.itertuples():
+
+                            if len(version_ids) > 1:
+                                # Create List of Localization from the Localization
+                                loc_list = [Localization(**l) for l in in_frame_loc.to_dict(orient='records')]
+                                in_frame_loc = combine_localizations(loc_list)
+
+                            for c in in_frame_loc:
+                                crop_id = c.attributes.get("elemental_id", c.id)
                                 if c.attributes["Label"]:
                                     output_file = crop_path / c.attributes["Label"] / f"{c.id}.jpg"
                                 else:
-                                    output_file = crop_path / f"{c.id}.jpg"
+                                    output_file = crop_path / f"{crop_id}.jpg"
                                 if output_file.exists():
                                     continue
 
