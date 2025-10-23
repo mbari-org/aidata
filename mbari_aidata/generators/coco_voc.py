@@ -386,7 +386,7 @@ def download(
                             for c in in_frame_loc:
                                 crop_id = c.attributes.get("elemental_id", c.id)
                                 if c.attributes["Label"]:
-                                    output_file = crop_path / c.attributes["Label"] / f"{c.crop_id}.jpg"
+                                    output_file = crop_path / c.attributes["Label"] / f"{crop_id}.jpg"
                                 else:
                                     output_file = crop_path / f"{crop_id}.jpg"
                                 if output_file.exists():
