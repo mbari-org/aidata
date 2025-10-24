@@ -8,9 +8,7 @@ on AI data for a number of projects at MBARI that require detection, clustering 
 workflows.  This tool is designed to work with [Tator](https://www.tator.io/), a web based
 platform for video and image annotation and data management and [Redis](https://redis.io/) 
 queues for ingesting data from real-time workflows.
-
-===========
-
+---
 More documentation and examples are available at [https://docs.mbari.org/internal/ai/data](https://docs.mbari.org/internal/ai/data/).
  
 ## 🚀 Features
