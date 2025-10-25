@@ -75,22 +75,7 @@ def combine_localizations(boxes: List[Localization], iou_threshold: float = 0.5)
         kept_indices.extend([idxs[i] for i in keep_rel.tolist()])
 
     # Reconstruct Localization objects for kept boxes
-    result: List[Localization] = []
-    for i in kept_indices:
-        b = boxes[i]
-        attrs = dict(b.attributes)
-        if "score" not in attrs:
-            attrs["score"] = float(attrs.get("score", 0.0))
-        result.append(
-            Localization(
-                x=b.x,
-                y=b.y,
-                width=b.width,
-                height=b.height,
-                attributes=attrs,
-            )
-        )
-
+    result: List[Localization] = [boxes[i] for i in kept_indices]
     return result
 
 

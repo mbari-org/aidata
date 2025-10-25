@@ -266,13 +266,12 @@ def download(
                         media=l.media,
                         attributes=l.attributes,
                         id=l.id,
-                        frame=l.frame
+                        frame=l.frame,
+                        elemental_id=l.elemental_id,
                     )
                     if single_class:
                         loc.attributes["Label"] = single_class
-                    if l.attributes["Label"] not in label_counts.keys():
-                        label_counts[l.attributes["Label"]] = 0
-                    label_counts[l.attributes["Label"]] += 1
+
                     # Append the localization to the media
                     localizations_by_media_id[l.media].append(loc)
 
@@ -290,8 +289,39 @@ def download(
             if len(localizations_by_media_id[media_id]) == 0:
                 localizations_by_media_id.pop(media_id)
 
-        # Count the number of localizations which is the sum of all the localizations for each media
-        num_localizations = sum([len(locs) for locs in localizations_by_media_id.values()])
+        # Run NMS on the localizations for each media if there are multiple versions
+        if len(version_ids) > 1:
+            for media_id, locs in localizations_by_media_id.items():
+                # Group by frame, combine localizations per frame
+                df_localizations = pd.DataFrame([l.to_dict() for l in locs])
+                for frame, in_frame_loc in df_localizations.groupby('frame'):
+                    # Convert in_frame_loc to List[Localization]
+                    tmp_locs = []
+                    for _, row in in_frame_loc.iterrows():
+                        loc = Localization(
+                            x=row['x'],
+                            y=row['y'],
+                            width=row['width'],
+                            height=row['height'],
+                            media=row['media'],
+                            attributes=row.get('attributes', {}),
+                            id=row['id'],
+                            frame=row['frame'],
+                            elemental_id=row.get('elemental_id', None),
+                        )
+                        tmp_locs.append(loc)
+                    combined_locs = combine_localizations(tmp_locs)
+                    localizations_by_media_id[media_id] = combined_locs
+
+        # Count the number of labels and num_localizations
+        num_localizations = 0
+        for locs in localizations_by_media_id.values():
+            for loc in locs:
+                label = loc.attributes.get("Label", "Unknown")
+                if label not in label_counts:
+                    label_counts[label] = 0
+                label_counts[label] += 1
+                num_localizations += 1
 
         info(
             f"Found {num_localizations} records for version {version_list}, generator {generator}, "
@@ -377,16 +407,22 @@ def download(
                         # Group by frame, prepare crop arguments
                         for frame, in_frame_loc in df_localizations.groupby('frame'):
                             debug(f"Processing frame {frame} in {media.name}")
-
-                            if len(version_ids) > 1:
-                                # Create List of Localization from the Localization
-                                loc_list = [Localization(**l) for l in in_frame_loc.to_dict(orient='records')]
-                                in_frame_loc = combine_localizations(loc_list)
-
-                            for c in in_frame_loc:
-                                crop_id = c.attributes.get("elemental_id", c.id)
-                                if c.attributes["Label"]:
-                                    output_file = crop_path / c.attributes["Label"] / f"{crop_id}.jpg"
+                            for _, row_loc in in_frame_loc.iterrows():
+                                c = Localization(
+                                    x=row_loc['x'],
+                                    y=row_loc['y'],
+                                    width=row_loc['width'],
+                                    height=row_loc['height'],
+                                    media=row_loc['media'],
+                                    attributes=row_loc.get('attributes', {}),
+                                    id=row_loc['id'],
+                                    frame=row_loc['frame'],
+                                    elemental_id=row_loc.get('elemental_id', None),
+                                )
+                                crop_id = c.elemental_id if c.elemental_id else c.id
+                                label = c.attributes.get("Label", "Unknown")
+                                if label:
+                                    output_file = crop_path / label / f"{crop_id}.jpg"
                                 else:
                                     output_file = crop_path / f"{crop_id}.jpg"
                                 if output_file.exists():
@@ -426,7 +462,21 @@ def download(
                                 "http"):
                             local_media = media.media_files.streaming[0].path
                             in_media = localizations_by_media_id[media.id]
-                            df_localizations = pd.DataFrame([l.to_dict() for l in in_media])
+
+                            # Normalize localizations for streaming case as well
+                            flat_locs = []
+                            for item in in_media:
+                                if isinstance(item, (list, tuple)):
+                                    for sub in item:
+                                        if isinstance(sub, tator.models.Localization):
+                                            flat_locs.append(sub)
+                                elif isinstance(item, tator.models.Localization):
+                                    flat_locs.append(item)
+
+                            if len(flat_locs) == 0:
+                                df_localizations = pd.DataFrame(columns=['x', 'y', 'width', 'height', 'media', 'attributes', 'id', 'frame'])
+                            else:
+                                df_localizations = pd.DataFrame([l.to_dict() for l in flat_locs])
                             df_localizations = df_localizations.sort_values(by=['frame'], ascending=True)
 
                             for frame, in_frame_loc in df_localizations.groupby('frame'):
