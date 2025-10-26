@@ -49,30 +49,13 @@ def combine_localizations(boxes: List[Localization], iou_threshold: float = 0.5)
             label_to_indices[label] = []
         label_to_indices[label].append(idx)
 
-    kept_indices: List[int] = []
+    idxs = range(len(boxes))
 
-    for label, idxs in label_to_indices.items():
-        # Build xyxy tensor and scores tensor
-        xyxy = torch.tensor([
-            [
-                boxes[i].x,
-                boxes[i].y,
-                boxes[i].x + boxes[i].width,
-                boxes[i].y + boxes[i].height,
-            ]
-            for i in idxs
-        ], dtype=torch.float32)
+    xyxy = torch.tensor([ [ b.x, b.y, b.x + b.width, b.y + b.height ] for b in boxes], dtype=torch.float32)
+    scores = torch.tensor([ float(b.attributes.get("score", 0.0)) for b in boxes ], dtype=torch.float32)
 
-        scores = torch.tensor([
-            float(boxes[i].attributes.get("score", 0.0))
-            for i in idxs
-        ], dtype=torch.float32)
-
-        if xyxy.numel() == 0:
-            continue
-
-        keep_rel = nms(xyxy, scores, iou_threshold)
-        kept_indices.extend([idxs[i] for i in keep_rel.tolist()])
+    keep_rel = nms(xyxy, scores, iou_threshold)
+    kept_indices = [idxs[i] for i in keep_rel.tolist()]
 
     # Reconstruct Localization objects for kept boxes
     result: List[Localization] = [boxes[i] for i in kept_indices]

@@ -529,14 +529,6 @@ def download(
             for m in all_media:
                 media_localizations = localizations_by_media_id[m.id]
 
-                # Add default values for score if missing - this is used to combine localizations
-                for loc in media_localizations:
-                    if "score" not in loc.attributes:
-                        loc.attributes["score"] = 0
-
-                if len(version_ids) > 1:
-                    media_localizations = combine_localizations(media_localizations)
-
                 for loc in media_localizations:
                     label = loc.attributes.get("Label", "Unknown")
                     score = loc.attributes.get("score", 0)
@@ -566,10 +558,6 @@ def download(
         for m in tqdm(all_media, desc="Creating VOC formats", unit="iteration"):
             # Get all the localizations for this media
             media_localizations = localizations_by_media_id[m.id]
-
-            # If there is more than one version, we need to combine the localizations
-            if len(version_ids) > 1:
-                media_localizations = combine_localizations(media_localizations)
 
             media_lookup_by_id[m.id] = media_path / m.name
             yolo_path = label_path / f"{m.name}.txt"
