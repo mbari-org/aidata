@@ -491,7 +491,7 @@ def load_media(
     return id
 
 
-def upload_media_with_transcode(
+def upload_media(
     media_path: str,
     attributes: dict,
     api: tatorapi,
@@ -502,8 +502,8 @@ def upload_media_with_transcode(
     **kwargs,
 ) -> int or None:
     """
-    Upload media file to Tator with transcoding, wait for completion, and return media ID.
-    This function extracts metadata before upload and passes it as attributes.
+    Upload media file to Tator and return media ID. Transcoding will be triggered automatically.
+    Does not wait for transcoding to complete.
     
     :param media_path: Absolute path to the video to upload
     :param attributes: Attributes to assign to the media (will be merged with metadata)
@@ -526,14 +526,25 @@ def upload_media_with_transcode(
         
         # Merge user attributes with metadata (user attributes take precedence)
         combined_attributes = attributes.copy() if attributes else {}
-        
-        info(f"Uploading {media_path} to Tator")
+        info(f"Uploading {media_path} to Tator with section={section}")
+
+        # Create the media object
+        media_spec = {
+            "type": media_type.id,
+            "section": section,
+            "name": video_path.name,
+            "md5": local_md5_partial(media_path),
+            "attributes": combined_attributes,
+        }
+        response = api.create_media_list(project=tator_project.id, body=[media_spec])
+        media_id = response.id[0]
         
         # Upload the media with attributes
         for progress, response in tator.util.upload_media(
             api=api,
             type_id=media_type.id,
             path=media_path,
+            media_id=media_id,
             chunk_size=chunk_size,
             section=section,
             attributes=combined_attributes,
@@ -544,28 +555,7 @@ def upload_media_with_transcode(
             err(f"Upload failed for {media_path}")
             return None
             
-        info(response.message)
-        transcode_id = response.id
-        
-        # Wait for transcode to complete
-        info(f"Waiting for transcode to complete for {media_path}")
-        while True:
-            transcode = api.get_transcode(transcode_id)
-            status = transcode.job.status.lower()
-            if status == "succeeded":
-                info(f"Transcode succeeded for {media_path}")
-                break
-            elif status == "failed":
-                err(f"Transcode failed for {media_path}")
-                return None
-            else:
-                debug(f"Transcode status: {status}")
-            time.sleep(10)
-        
-        # Get the media ID from the transcode response
-        media_id = transcode.media
-        info(f"Successfully uploaded and transcoded {media_path} with media ID {media_id}")
-        
+        info(f"Successfully uploaded media ID {media_id}. Transcoding will be triggered automatically. media_id={media_id}")        
         return media_id
         
     except Exception as e:

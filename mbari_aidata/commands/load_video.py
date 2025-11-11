@@ -10,7 +10,7 @@ from mbari_aidata import common_args
 from mbari_aidata.commands.load_common import check_mounts, check_duplicate_media, get_media_attributes
 from mbari_aidata.logger import info, err, create_logger_file
 from mbari_aidata.plugins.loaders.tator.attribute_utils import format_attributes
-from mbari_aidata.plugins.loaders.tator.media import load_media, upload_media_with_transcode
+from mbari_aidata.plugins.loaders.tator.media import load_media, upload_media
 from mbari_aidata.plugins.module_utils import load_module
 from mbari_aidata.plugins.extractors.media_types import MediaType
 from mbari_aidata.plugins.loaders.tator.common import init_api_project, find_media_type, init_yaml_config
@@ -116,8 +116,9 @@ def load_video(token: str, disable_ssl_verify: bool, config: str, dry_run: bool,
         if not row['iso_start_datetime']:
             info(f"Video {video_path.name} does not have iso_start_datetime")
             continue
-
+ 
         iso_datetime = row['iso_start_datetime']
+        info(f"Using iso_start_datetime: {iso_datetime}")
 
         media_attributes = get_media_attributes(config_dict, "video")
 
@@ -126,15 +127,17 @@ def load_video(token: str, disable_ssl_verify: bool, config: str, dry_run: bool,
         if section == "All Media" or len(section) == 0:
             video_section = f"Video/{iso_datetime.year:02}/{iso_datetime.month:02}"
 
-        attributes = {
-            "iso_start_datetime": iso_datetime,
-        }
+        info(f"Using video_section: {video_section}")
+
+        # Merge all the row attributes into a single dictionary
+        attributes = row.to_dict()
+        info(f"Attributes: {attributes}")
         
         # Use upload or reference-only loading based on flag
         if upload:
             # Upload flow: format attributes without media.attributes
             formatted_attributes = format_attributes(attributes, media_attributes)
-            tator_id = upload_media_with_transcode(
+            tator_id = upload_media(
                 media_path=video_path.as_posix(),
                 section=video_section,
                 api=api,

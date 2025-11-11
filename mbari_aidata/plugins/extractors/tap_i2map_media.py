@@ -50,6 +50,7 @@ def extract_media(media_path: Path, max_images: int = -1) -> pd.DataFrame:
     pattern_date2 = re.compile(r"(\d{4})(\d{2})(\d{2})T(\d{2})(\d{2})(\d{2})Z\d*mF*")
     pattern_date3 = re.compile(r"(\d{2})(\d{2})(\d{2})T(\d{2})(\d{2})(\d{2})Z")  # 161025T184500Z
     pattern_date4 = re.compile(r"(\d{2})-(\d{2})-(\d{2})T(\d{2})_(\d{2})_(\d{2})-")  # 16-06-06T16_04_54
+    pattern_depth = re.compile(r"_(\d+)m_")  # _<number>m_
 
     # Grab any additional metadata from the image name, e.g. depth, day/night
     depth = {}
@@ -76,26 +77,9 @@ def extract_media(media_path: Path, max_images: int = -1) -> pd.DataFrame:
     for group, df in media_df.groupby("media_path"):
         image_name = Path(str(group)).name
         info(image_name)
-        for depth_str in [
-            "50m",
-            "100m",
-            "200m",
-            "300m",
-            "400m",
-            "500m",
-            "299m",
-            "250m",
-            "150m",
-            "199m",
-            "800m",
-            "900m",
-            "700m",
-            "600m",
-            "1000m",
-        ]:
-            if depth_str in image_name:
-                depth[index] = int(depth_str.split("m")[0])
-                break
+        depth_match = pattern_depth.search(image_name)
+        if depth_match:
+            depth[index] = int(depth_match.group(1))
         if pattern_date1.search(image_name):
             match = pattern_date1.search(image_name)
             if match is None:
