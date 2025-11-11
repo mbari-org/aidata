@@ -3,7 +3,7 @@
 [![License](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
 [![Python](https://img.shields.io/badge/language-Python-blue.svg)](https://www.python.org/downloads/)
 
-*mbari-aidata* is a command line tool to do extract, transform, load (ETL) and download operations
+__mbari-aidata__ is a command line tool to do extract, transform, load (ETL) and download operations
 on AI data for a number of projects at MBARI that require detection, clustering or classification
 workflows.  This tool is designed to work with [Tator](https://www.tator.io/), a web based
 platform for video and image annotation and data management and [Redis](https://redis.io/) 
@@ -18,8 +18,9 @@ More documentation and examples are available at [https://docs.mbari.org/interna
 * Real-Time Uploads: Pushes localizations to [Tator](https://www.tator.io/) via [Redis](https://redis.io/glossary/redis-queue/) queues for real-time workflows.
 * Metadata Extraction: Parses images metadata such as GPS/time/date through a plugin-based system (extractors).
 * Duplicate Detection & flexible media references: Supports duplicate media load checks with the --check-duplicates flag. 
-* Images or video are loaded through a web server without needing to upload or move them from your internal NFS project mounts (e.g. Thalassa)
-* Combine multiple data versions into a single dataset for training or evaluation using the --version flag with comma separated values. Data is combined through Non-Maximum Suppression (NMS) to remove duplicate boxes.
+* Images or video can be loaded through a web server without needing to upload or move them from your internal NFS project mounts (e.g. Thalassa)
+* Video can be uploaded without needing to figure out how to do the video transcoding required for web viewing.
+* Multiple data versions can be downloaded into a single dataset for training or evaluation using the --version flag with comma separated values. Data is combined through Non-Maximum Suppression (NMS) to remove duplicate boxes.
 * Augmentation Support: Augment VOC datasets with [Albumentations](https://albumentations.ai/) to boost your object detection model performance.
 
 ## Requirements
@@ -140,4 +141,4 @@ Source code is available at [github.com/mbari-org/aidata](https://github.com/mba
 ## Development
 See the [Development Guide](https://github.com/mbari-org/aidata/blob/main/DEVELOPMENT.md) for more information on how to set up the development environment or the [justfile](justfile)  
  
-🗓️ Last updated: 2025-08-25
+🗓️ Last updated: 2025-11-10
