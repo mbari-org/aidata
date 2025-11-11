@@ -25,6 +25,10 @@ def check_duplicate_media(api: TatorApi, project_id:int, media_type:int, df_medi
             media_names.append(name)
     return media_names
 
+def get_media_attributes(config_dict: Dict, media_type: str) -> dict:
+    attributes = config_dict["tator"][media_type.lower()]["attributes"]
+    return attributes
+
 def check_mounts(config_dict: Dict, input:str, media_type: str) -> (MediaHelper, int):
     mounts = config_dict["mounts"]
     media_mount = next((mount for mount in mounts if mount["name"] == media_type), None)
