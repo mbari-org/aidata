@@ -4,6 +4,7 @@
 [![downloads](https://img.shields.io/pypi/dm/mbari-aidata)](https://pypistats.org/packages/mbari-aidata)
 
 __mbari-aidata__
+
 A command line tool to do extract, transform, load (ETL) and download operations
 on AI data for a number of projects at MBARI that require detection, clustering or classification
 workflows.  This tool is designed to work with [Tator](https://www.tator.io/), a web based
