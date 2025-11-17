@@ -140,6 +140,18 @@ def find_project(api: TatorApi, project_name: str) -> tator.models.Project:
             return p
     return None
 
+def find_state_type(api: TatorApi, project: int, type_name: str = "Track") -> tator.models.StateType:
+    """
+    Find the state type for the given project
+    :param type_name:  String that identifies type, e.g. "Track"
+    :param api: :class:`TatorApi` object
+    :param project: project ID
+    """
+    types = api.get_state_type_list(project=project)
+    for t in types:
+        if t.name == type_name:
+            return t
+    return None
 
 def find_box_type(api: TatorApi, project: int, type_name: str = "Box") -> tator.models.LocalizationType:
     """
