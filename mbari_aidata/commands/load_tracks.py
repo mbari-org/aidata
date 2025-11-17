@@ -224,7 +224,6 @@ def load_tracks(token: str, disable_ssl_verify: bool, config: str, version: str,
                     "version": version_id,
                     "frame": middle_frame,
                 }
-                import pdb; pdb.set_trace()
                 states.append(state)
 
             # Load tracks

@@ -278,3 +278,29 @@ def test_load_image_planktivore_txt():
     )
     print(result.output)
     assert result.exit_code == 0
+
+
+
+@pytest.mark.skipif(not HAS_DATABASE, reason="This test is excluded because it requires a database")
+def test_load_tracks_i2map_dryrun():
+    setup()
+    runner = CliRunner()
+    # Test loading tracks from an i2MAP tar.gz using dry-run to avoid writes
+    tracks_tar = data_path / "i2map" / "i2MAP_20250403T092817Z_1000m_F031_25-tracks.tar.gz"
+    config_yaml = config_path / "config_i2map.yml"
+    print(config_yaml.as_posix())
+    args = [
+        "load",
+        "tracks",
+        "--dry-run",
+        "--input",
+        tracks_tar.as_posix(),
+        "--config",
+        config_yaml.as_posix(),
+        "--token",
+        os.environ["TATOR_TOKEN"],
+    ]
+    print(' '.join(args))
+    result = runner.invoke(cli, args)
+    print(result.output)
+    assert result.exit_code == 0

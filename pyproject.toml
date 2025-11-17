@@ -1,6 +1,10 @@
 [tool.ruff]
 line-length = 170
 
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+norecursedirs = ["tator", ".*", "dist", "build", "*.egg", "data", "logs", "docker", "transformers_cache"]
+
 [tool.poetry]
 name = "mbari-aidata"
 version = "1.60.6"
