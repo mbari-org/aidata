@@ -3,6 +3,8 @@ line-length = 170
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
+# Exclude 'data' directories from pytest test discovery to prevent collecting test data files as tests.
+# Do not place test code in any 'data' directory.
 norecursedirs = ["tator", ".*", "dist", "build", "*.egg", "data", "logs", "docker", "transformers_cache"]
 
 [tool.poetry]
