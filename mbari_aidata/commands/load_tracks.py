@@ -248,7 +248,7 @@ if __name__ == "__main__":
 
     # To run this script, you need to have the TATOR_TOKEN environment variable set
     os.environ["ENVIRONMENT"] = "TESTING"
-    test_path = Path(__file__).parent.parent.parent / "tests" / "data" / "tracks" / "test_tracks.tar.gz"
+    test_path = Path(__file__).parent.parent.parent / "tests" / "data" / "i2map" / "i2MAP_20250403T092817Z_1000m_F031_25-tracks.tar.gz"
     yaml_path = Path(__file__).parent.parent.parent / "tests" / "config" / "config_i2map.yml"
     tator_token = os.getenv("TATOR_TOKEN")
 
