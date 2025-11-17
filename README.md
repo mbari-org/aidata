@@ -134,11 +134,6 @@ aidata load tracks --input video-tracks/tracks.tar.gz --dry-run --config config_
 ```
 
 video-tracks/tracks.tar.gz. This compressed file contains a structure like:
-video-tracks/
-  ├── detections.csv
-  ├── detections.json
-  ├── metadata.json
-  ├── tracks.csv
 
 The detections.csv file contains the detections for each frame, e.g.
 
