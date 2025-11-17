@@ -196,7 +196,7 @@ def load_tracks(token: str, disable_ssl_verify: bool, config: str, version: str,
                     localization_ids[tracker_id].append(box_id)
 
                 # Update the number of boxes loaded and finish if the max number of boxes to load is set
-                num_loaded_boxes += len(box_ids)
+                num_loaded_boxes += len(box_ids_)
                 if 0 < max_load <= num_loaded_boxes:
                     break
 
