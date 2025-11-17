@@ -175,7 +175,7 @@ def load_tracks(token: str, disable_ssl_verify: bool, config: str, version: str,
                             type_id=box_type.id,
                             media_id=media_id,
                             project_id=tator_project.id,
-                            normalize=False,  # sdcat is already normalized between 0-1
+                            normalize=False,  # Data is already normalized between 0-1 as specified in detections.csv
                         )
                     )
                     tracker_id = obj["tracker_id"]
