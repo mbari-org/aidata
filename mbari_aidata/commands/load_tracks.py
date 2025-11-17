@@ -127,7 +127,9 @@ def load_tracks(token: str, disable_ssl_verify: bool, config: str, version: str,
             info(f"Found {len(df_boxes)} detections across {df_boxes['tracker_id'].nunique()} tracks")
 
             video_name = metadata.get('video_name', tar_prefix.replace('-tracks', '') + '.mp4')
-            video_name = video_name.replace('.mov', '.mp4') #only support .mp4 videos for now
+            # For compatibility, if the video name ends with .mov, replace it with .mp4.
+            # Note: The video file must already be uploaded as .mp4 format, even if the original filename was .mov.
+            video_name = video_name.replace('.mov', '.mp4')
             video_width = metadata.get('video_width', 1920)
             video_height = metadata.get('video_height', 1080)
 
