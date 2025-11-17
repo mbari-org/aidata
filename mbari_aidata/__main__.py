@@ -25,6 +25,7 @@ from mbari_aidata.logger import err, info
 from mbari_aidata import __version__
 from mbari_aidata.commands.load_queue import load_queue
 from mbari_aidata.commands.load_boxes import load_boxes
+from mbari_aidata.commands.load_tracks import load_tracks
 
 if "LOG_PATH" not in locals():
     LOG_PATH = Path.home().as_posix()
@@ -51,6 +52,7 @@ cli.add_command(cli_load)
 cli_load.add_command(load_images)
 cli_load.add_command(load_video)
 cli_load.add_command(load_boxes)
+cli_load.add_command(load_tracks)
 cli_load.add_command(load_queue)
 cli_load.add_command(load_exemplars)
 cli_load.add_command(load_clusters)

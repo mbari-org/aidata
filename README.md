@@ -22,6 +22,7 @@ More documentation and examples are available at [https://docs.mbari.org/interna
 * Duplicate Detection & flexible media references: Supports duplicate media load checks with the --check-duplicates flag. 
 * Images or video can be loaded through a web server without needing to upload or move them from your internal NFS project mounts (e.g. Thalassa)
 * Video can be uploaded without needing to figure out how to do the video transcoding required for web viewing.
+* Video tracks can be uploaded into Tator for training and evaluation.
 * Multiple data versions can be downloaded into a single dataset for training or evaluation using the --version flag with comma separated values. Data is combined through Non-Maximum Suppression (NMS) to remove duplicate boxes.
 * Augmentation Support: Augment VOC datasets with [Albumentations](https://albumentations.ai/) to boost your object detection model performance.
 
@@ -115,7 +116,63 @@ tator:
         type: int
       exemplar:
         type: bool
+
+  track_state:
+    attributes:
+      Label:
+        type: string
+      score:
+        type: float
 ```
+
+## Tracks Format
+
+Track data is stored in a compressed .tar.gz file with the -tracks.tar.gz, e.g.
+
+```shell
+aidata load tracks --input video-tracks/tracks.tar.gz --dry-run --config config_cfe.yml
+```
+
+video-tracks/tracks.tar.gz. This compressed file contains a structure like:
+video-tracks/
+  ├── detections.csv
+  ├── detections.json
+  ├── metadata.json
+  ├── tracks.csv
+
+The detections.csv file contains the detections for each frame, e.g.
+
+| frame | tracker_id | label    | score           | x                   | y                   | xx                  | xy                  |
+|-------|------------|----------|-----------------------|----------------------|----------------------|----------------------|----------------------|
+| 3     | 2          | Copepod  | 0.6826763153076172    | 0.7003568708896637   | 0.4995344939055266   | 0.7221783697605133   | 0.5368460761176215   |
+| 3     | 1          | Copepod  | 0.7094097137451172    | 0.2693319320678711   | 0.6148265485410337   | 0.29686012864112854  | 0.6434915330674913   |
+| 3     | 3          | Detritus | 0.2776843011379242    | 0.2693319320678711   | 0.6148265485410337   | 0.29686012864112854  | 0.6434915330674913   |
+| 4     | 1          | Copepod  | 0.49819645285606384   | 0.2683655321598053   | 0.6125818323206018   | 0.2965434789657593   | 0.6455737643771702   |
+
+Metadata about video is in the metadata.json file, e.g.
+```json
+{ "video_name": "video.mp4", 
+  "video_path": "/data/input/video.mp4", 
+  "processed_at": "2025-11-15T13:37:35.997007Z", 
+  "total_frames": 12000, 
+  "video_width": 1920, 
+  "video_height": 1080, 
+  "video_fps": 10, 
+  "total_detections": 3000, 
+  "unique_tracks": 148, 
+  "detection_threshold": 0.15, 
+  "min_track_frames": 5, 
+  "slice_size": 800, 
+  "rfdetr_model": "/mnt/models/best/checkpoint_best_total.pth" }
+```
+
+The tracks.csv file contains the tracks for each frame, e.g.
+
+| tracker_id | label         | first_frame | last_frame | frame_count | avg_score |
+|------------|---------------|-------------|------------|-------------|----------------------|
+| 2          | Detritus | 3           | 37         | 35          | 0.3780171153800829   |
+| 1          | Copepod  | 3           | 36         | 31          | 0.5898609180604258   |
+| 3          | Copepod  | 3           | 37         | 34          | 0.5619616565458914   |
 
 ## 🐳 Docker usage
 A docker version is also available at `mbari/aidata:latest` or `mbari/aidata:latest:cuda-124`.
@@ -143,4 +200,4 @@ Source code is available at [github.com/mbari-org/aidata](https://github.com/mba
 ## Development
 See the [Development Guide](https://github.com/mbari-org/aidata/blob/main/DEVELOPMENT.md) for more information on how to set up the development environment or the [justfile](justfile)  
  
-🗓️ Last updated: 2025-11-10
+🗓️ Last updated: 2025-11-17
