@@ -218,6 +218,8 @@ def load_tracks(token: str, disable_ssl_verify: bool, config: str, version: str,
                 first_frame = obj["first_frame"]
                 last_frame = obj["last_frame"]
                 middle_frame = (first_frame + last_frame) // 2
+                if 'label' in attributes:
+                    attributes["Label"] = attributes.pop("label")
                 state = {
                     "type": track_type.id,
                     "media_ids": [media_id],
