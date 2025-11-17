@@ -238,7 +238,7 @@ def load_tracks(token: str, disable_ssl_verify: bool, config: str, version: str,
             info(f"Created {len(state_ids)} tracks!")
 
             info(f"Successfully loaded {num_loaded_boxes} localizations and {num_loaded_tracks} tracks into Tator")
-
+            return num_loaded_tracks
 
     except Exception as e:
         err(f"Error: {e}")
