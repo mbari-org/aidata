@@ -1,6 +1,10 @@
 [tool.ruff]
 line-length = 170
 
+[build-system]
+requires = ["poetry-core>=1.0.0"]
+build-backend = "poetry.core.masonry.api"
+
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 # Exclude 'data' directories from pytest test discovery to prevent collecting test data files as tests.
@@ -25,7 +29,7 @@ exclude = ["tests", "logs", "data", "docker", "transformers_cache"]
 aidata = "mbari_aidata.__main__:cli"
 
 [tool.poetry.dependencies]
-python = ">=3.10,<3.12"
+python = ">=3.10,<3.13"
 redis = "5.0.7"
 tator = "1.2.3"
 ephem = ">=4.1.6"
@@ -35,8 +39,6 @@ pytz = ">=2024.1"
 piexif = ">=1.1.3"
 click = ">=8.1.7"
 tqdm = "4.67.1"
-transformers = "^4.42.4"
-torchvision = "0.18.1"
 requests = ">=2.32.3"
 pascal-voc-writer = ">=0.1.4"
 albumentations = ">=1.4.15"
@@ -44,6 +46,9 @@ albucore = ">=0.0.16"
 pandas = "^2.0"
 pyarrow = "^15.0"
 numpy = ">=1.24,<2"
+torch = "2.2.0"
+torchvision = "0.17.0"
+transformers = "^4.42.4"
 
 [tool.semantic_release]
 branch = "main"
