@@ -550,9 +550,8 @@ def upload_media(
             attributes=combined_attributes,
         ):
             info(f"Upload progress: {progress}%")
-            if progress == 100:
-            	return media_id
-        
+            time.sleep(5)
+
         if not response:
             err(f"Upload failed for {media_path}")
             return None
