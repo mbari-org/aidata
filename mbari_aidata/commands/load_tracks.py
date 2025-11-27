@@ -14,6 +14,9 @@ from mbari_aidata.plugins.loaders.tator.localization import gen_spec as gen_loca
 from mbari_aidata.plugins.loaders.tator.attribute_utils import format_attributes
 import tator  # type: ignore
 
+from dataclasses import dataclass
+import math
+from typing import Optional, Tuple, List
 
 @click.command("tracks", help="Load tracks from a .tar.gz file with track data")
 @common_args.token
@@ -117,6 +120,8 @@ def load_tracks(token: str, disable_ssl_verify: bool, config: str, version: str,
             # Read the detections CSV
             info(f"Reading detections from {detections_csv}")
             df_boxes = pd.read_csv(detections_csv)
+            # Only keep detections between frames 12000 and 12175
+            df_boxes = df_boxes[(df_boxes['frame'] >= 12000) & (df_boxes['frame'] <= 12175)]
 
             if df_boxes.empty:
                 warn(f"No detections found in {detections_csv}")
@@ -159,6 +164,7 @@ def load_tracks(token: str, disable_ssl_verify: bool, config: str, version: str,
             num_loaded_boxes = 0
             box_ids = []
             localization_ids = {}
+            track_tdwa = {}
             for i in range(0, box_count, batch_size):
                 df_batch = df_boxes[i:i + batch_size]
                 specs = []
@@ -183,6 +189,11 @@ def load_tracks(token: str, disable_ssl_verify: bool, config: str, version: str,
                     tracker_id = obj["tracker_id"]
                     if tracker_id not in localization_ids:
                         localization_ids[tracker_id] = []
+                        track_tdwa[tracker_id] = TimeDecayWeightedAverage()
+
+                    if 'score' not in obj:
+                        obj['score'] = 1.0
+                    track_tdwa[tracker_id].add(obj["label"], obj["score"], obj["frame"])
 
                 # Truncate the boxes if the max number of boxes to load is set
                 if 0 < max_load <= len(specs):
@@ -191,6 +202,9 @@ def load_tracks(token: str, disable_ssl_verify: bool, config: str, version: str,
                 box_ids_ = load_bulk_boxes(tator_project.id, api, specs)
                 info(f"Loaded {len(box_ids_)} boxes of {box_count} into Tator")
                 box_ids += box_ids_
+                # Generate mock box_ids
+                # box_ids_ = [i for i in range(len(specs))]
+                # box_ids += box_ids_
 
                 for tracker_id, box_id in zip(df_batch['tracker_id'], box_ids_):
                     if tracker_id not in localization_ids:
@@ -204,20 +218,18 @@ def load_tracks(token: str, disable_ssl_verify: bool, config: str, version: str,
 
             # Load tracks
             states = []
-            for i, row in df_tracks.iterrows():
-                obj = row.to_dict()
-                tracker_id = obj["tracker_id"]
-                if tracker_id not in localization_ids:
-                    warn(f"No localizations found for track {tracker_id}")
-                    continue
-                if len(localization_ids[tracker_id]) == 0:
-                    warn(f"No localizations found for track {tracker_id}")
-                    continue
-                info(f"Row {i} Track {tracker_id}: frames {obj['first_frame']} to {obj['last_frame']}")
-                attributes = format_attributes(obj, track_attributes)
-                first_frame = obj["first_frame"]
-                last_frame = obj["last_frame"]
-                middle_frame = (first_frame + last_frame) // 2
+            for tracker_id in track_tdwa:
+                track = df_tracks[df_tracks['tracker_id'] == tracker_id]
+                last_frame = track.iloc[-1]['last_frame']
+                # Get the time-decayed average prediction
+                best_label, confidence, best_frame = track_tdwa[tracker_id].time_decay_average(last_frame)
+
+                info(f"Best label for tracker {tracker_id}: {best_label} with confidence {confidence} at frame {best_frame}")
+                attributes_best = {
+                    "label": best_label,
+                    "max_score": confidence,
+                }
+                attributes = format_attributes(attributes_best, track_attributes)
                 if 'label' in attributes:
                     attributes["Label"] = attributes.pop("label")
                 state = {
@@ -226,7 +238,7 @@ def load_tracks(token: str, disable_ssl_verify: bool, config: str, version: str,
                     "localization_ids": localization_ids[tracker_id],
                     "attributes": attributes,
                     "version": version_id,
-                    "frame": middle_frame,
+                    "frame": best_frame,
                 }
                 states.append(state)
 
@@ -246,6 +258,98 @@ def load_tracks(token: str, disable_ssl_verify: bool, config: str, version: str,
         err(f"Error: {e}")
         raise e
 
+
+@dataclass
+class Prediction:
+    """Single prediction event."""
+    label: str
+    confidence: float
+    timestamp: float   # seconds, or any monotonic value
+
+
+class TimeDecayWeightedAverage:
+    """
+    Computes a time-decayed weighted average of predictions.
+    Also tracks the best individual prediction.
+    """
+
+    def __init__(self, half_life: float = 3.0):
+        """
+        half_life: time where weight = 0.8
+        """
+        self.half_life = half_life
+        self.decay_const = math.log(2) / half_life
+
+        self.predictions: List[Prediction] = []
+        self.best_prediction: Optional[Prediction] = None
+
+    def add(self, label: str, confidence: float, timestamp: float):
+        p = Prediction(label, confidence, timestamp)
+        self.predictions.append(p)
+
+        # Track best (highest-confidence) prediction
+        if (self.best_prediction is None or
+            confidence > self.best_prediction.confidence):
+            self.best_prediction = p
+
+    def _weight(self, t_now, t_pred):
+        dt = t_pred - t_now  # negative for older
+        return math.exp(self.decay_const * dt)
+
+    def time_decay_average(self, current_time: float) -> Tuple[str, float]:
+        """
+        Returns (label, weighted_score)
+        where weighted_score is aggregated across all predictions.
+        """
+        if not self.predictions:
+            return "", 0.0, current_time
+
+        # Aggregate scores by label
+        scores = {}
+        weights = {}
+
+        for p in self.predictions:
+            w = self._weight(current_time, p.timestamp)
+
+            scores[p.label] = scores.get(p.label, 0.0) + p.confidence * w
+            weights[p.label] = weights.get(p.label, 0.0) + w
+
+        # Print the weights
+        for label, weight in weights.items():
+            print(f"{label}: {weight}")
+
+        # Weighted average per label
+        weighted_avgs = {
+            label: scores[label] / weights[label]
+            for label in scores
+        }
+
+        for label, score in weighted_avgs.items():
+            print(f"{label}: weighted {score}")
+
+        # Choose the label with the highest weighted avg
+        best = max(weighted_avgs.items(), key=lambda x: x[1])
+
+        # Get all labels with the best
+        all_best_predictions = [p for p in self.predictions if p.label == best[0]]
+        # Get the maximum score for the best label
+        best_score = max([p.confidence for p in all_best_predictions])
+        # Get the timestamp of the best prediction
+        best_timestamp = max([p.timestamp for p in all_best_predictions])
+        best_label = best[0]
+        # weighted_avg = best[1]
+        return best_label, best_score, best_timestamp
+
+    def best_individual(self) -> Optional[Tuple[str, float, float]]:
+        """
+        Returns (label, confidence, timestamp)
+        for the best single prediction.
+        """
+        if not self.best_prediction:
+            return None
+
+        p = self.best_prediction
+        return p.label, p.confidence, p.timestamp
 
 if __name__ == "__main__":
     import os
