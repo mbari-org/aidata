@@ -5,6 +5,7 @@ import shutil
 from pathlib import Path
 
 import click
+import tator
 
 from mbari_aidata import common_args
 from mbari_aidata.commands.load_common import check_mounts, check_duplicate_media, get_media_attributes

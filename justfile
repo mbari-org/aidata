@@ -79,11 +79,7 @@ setup-db:
 
 run-db:
     cd tator && make tator
-# TODO: Add a command to initialize the database from the yaml file
-# See sightwire code for an example of how to do this
-## Initialize the database
-#init-db:
-#    conda run -n mbari_aidata --no-capture-output python3 mbari_aidata db create
+    conda run -n mbari_aidata --no-capture-output python3 mbari_aidata db create
 
 # Stop the docker development environment
 stop-docker-dev:
