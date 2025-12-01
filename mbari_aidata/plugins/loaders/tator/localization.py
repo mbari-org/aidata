@@ -38,36 +38,29 @@ def gen_spec(
     """
     attributes["Label"] = label
     x1, y1, x2, y2 = box
+
     if normalize:
-        w = (x2 - x1) / width
-        h = (y2 - y1) / height
-        x = x1 / width
-        y = y1 / height
+        x, y = x1 / width, y1 / height
+        w, h = (x2 - x1) / width, (y2 - y1) / height
     else:
-        x = x1
-        y = y1
-        w = x2 - x1
-        h = y2 - y1
-    if w < 0.0:
-        info(f"Localization width negative {w} {box}")
-        w = 0.0
-    if h < 0.0:
-        info(f"Localization height negative {h} {box}")
-        h = 0.0
-    if w > 1.0:
-        info(f"Localization height too large {w} {box}")
-        w = 1.0
-    if h > 1.0:
-        info(f"Localization width too large {h} {box}")
-        h = 1.0
-    if w + x > 1.0:
-        offset = 1.0 - (w + x)
-        info(f"Localization too large {x}+{w} by {offset} {box}")
-        w -= offset
-    if h + y > 1.0:
-        offset = 1.0 - (h + y)
-        info(f"Localization too large {y}+{h} by {offset} {box}")
-        h -= offset
+        x, y = x1, y1
+        w, h = x2 - x1, y2 - y1
+
+    # Clamp dimensions to valid range
+    w = max(0.0, min(1.0, w))
+    h = max(0.0, min(1.0, h))
+
+    # Adjust if box extends beyond boundaries
+    if x + w > 1.0:
+        w = 1.0 - x
+        info(f"Localization too large {x}+{w} {box}")
+    if y + h > 1.0:
+        h = 1.0 - y
+        info(f"Localization too large {y}+{h} {box}")
+
+    # Final position clamping
+    x = max(0.0, min(1.0, x))
+    y = max(0.0, min(1.0, y))
 
     spec = {
         "version": version_id,
