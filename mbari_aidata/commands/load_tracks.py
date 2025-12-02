@@ -120,8 +120,6 @@ def load_tracks(token: str, disable_ssl_verify: bool, config: str, version: str,
             # Read the detections CSV
             info(f"Reading detections from {detections_csv}")
             df_boxes = pd.read_csv(detections_csv)
-            # Only keep detections between frames 12000 and 12175
-            df_boxes = df_boxes[(df_boxes['frame'] >= 12000) & (df_boxes['frame'] <= 12175)]
 
             if df_boxes.empty:
                 warn(f"No detections found in {detections_csv}")
