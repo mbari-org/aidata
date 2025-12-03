@@ -214,20 +214,87 @@ def load_tracks(token: str, disable_ssl_verify: bool, config: str, version: str,
                 if 0 < max_load <= num_loaded_boxes:
                     break
 
-            # Load tracks
-            states = []
+            # Load tracks and compute best labels first
+            track_info = {}  # tracker_id -> {best_label, confidence, best_frame, first_frame, last_frame}
             for tracker_id in track_tdwa:
                 track = df_tracks[df_tracks['tracker_id'] == tracker_id]
+                first_frame = track.iloc[0]['first_frame']
                 last_frame = track.iloc[-1]['last_frame']
                 # Get the time-decayed average prediction
                 best_label, confidence, best_frame = track_tdwa[tracker_id].time_decay_average(last_frame)
-
+                
+                track_info[tracker_id] = {
+                    "best_label": best_label,
+                    "confidence": confidence,
+                    "best_frame": best_frame,
+                    "first_frame": first_frame,
+                    "last_frame": last_frame
+                }
                 info(f"Best label for tracker {tracker_id}: {best_label} with confidence {confidence} at frame {best_frame}")
+
+            # Merge adjacent tracks with the same best_label
+            # Sort tracks by first_frame to process them in order
+            sorted_tracker_ids = sorted(track_info.keys(), key=lambda tid: track_info[tid]["first_frame"])
+            merged_tracker_map = {}  # old_tracker_id -> new_tracker_id (for merged tracks)
+            
+            for i, tracker_id in enumerate(sorted_tracker_ids):
+                # Skip if already merged into another track
+                if tracker_id in merged_tracker_map:
+                    continue
+                    
+                current_info = track_info[tracker_id]
+                current_last_frame = current_info["last_frame"]
+                current_label = current_info["best_label"]
+                
+                # Look for adjacent tracks that could be merged
+                for j in range(i + 1, len(sorted_tracker_ids)):
+                    next_tracker_id = sorted_tracker_ids[j]
+                    
+                    # Skip if already merged
+                    if next_tracker_id in merged_tracker_map:
+                        continue
+                    
+                    next_info = track_info[next_tracker_id]
+                    next_first_frame = next_info["first_frame"]
+                    next_label = next_info["best_label"]
+                    
+                    # Check if tracks are adjacent and have the same label
+                    if (current_last_frame + 1 == next_first_frame and 
+                        current_label == next_label):
+                        info(f"Merging tracker {next_tracker_id} into {tracker_id} (both label: {current_label}, frames {current_last_frame}→{next_first_frame})")
+                        
+                        # Merge localizations from next_tracker_id into tracker_id
+                        localization_ids[tracker_id].extend(localization_ids[next_tracker_id])
+                        
+                        # Update the last_frame for the merged track
+                        track_info[tracker_id]["last_frame"] = next_info["last_frame"]
+                        current_last_frame = next_info["last_frame"]
+                        
+                        # Update best_frame and confidence if next track has better confidence
+                        if next_info["confidence"] > track_info[tracker_id]["confidence"]:
+                            track_info[tracker_id]["best_frame"] = next_info["best_frame"]
+                            track_info[tracker_id]["confidence"] = next_info["confidence"]
+                        
+                        # Mark next_tracker_id as merged
+                        merged_tracker_map[next_tracker_id] = tracker_id
+                    
+                    # If not adjacent, break since tracks are sorted by first_frame
+                    elif next_first_frame > current_last_frame + 1:
+                        break
+
+            # Create states only for non-merged tracks
+            states = []
+            for tracker_id in track_info:
+                # Skip if this track was merged into another
+                if tracker_id in merged_tracker_map:
+                    continue
+                
+                info_data = track_info[tracker_id]
                 attributes_best = {
-                    "label": best_label,
-                    "max_score": confidence,
+                    "label": info_data["best_label"],
+                    "max_score": info_data["confidence"],
                     "verified": True,
-                    "num_frames": last_frame - track.iloc[0]['first_frame'] + 1
+                    "num_frames": info_data["last_frame"] - info_data["first_frame"] + 1
                 }
                 attributes = format_attributes(attributes_best, track_attributes)
                 if 'label' in attributes:
@@ -238,7 +305,7 @@ def load_tracks(token: str, disable_ssl_verify: bool, config: str, version: str,
                     "localization_ids": localization_ids[tracker_id],
                     "attributes": attributes,
                     "version": version_id,
-                    "frame": best_frame,
+                    "frame": info_data["best_frame"],
                 }
                 states.append(state)
 
