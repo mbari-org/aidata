@@ -16,6 +16,7 @@ import tator  # type: ignore
 
 from dataclasses import dataclass
 import math
+import numpy as np
 from typing import Optional, Tuple, List
 
 @click.command("tracks", help="Load tracks from a .tar.gz file with track data")
@@ -26,7 +27,9 @@ from typing import Optional, Tuple, List
 @common_args.version
 @click.option("--input", type=Path, required=True, help=".tar.gz file containing track data")
 @click.option("--max-num", type=int, help="Maximum number of localizations in tracks to load")
-def load_tracks(token: str, disable_ssl_verify: bool, config: str, version: str, input: Path, dry_run: bool, max_num: int) -> int:
+@click.option("--iou-threshold", type=float, default=0.3, help="Soft IOU threshold for merging adjacent tracks (default: 0.3)")
+@click.option("--frame-gap", type=int, default=5, help="Maximum frame gap to consider for merging tracks (default: 5)")
+def load_tracks(token: str, disable_ssl_verify: bool, config: str, version: str, input: Path, dry_run: bool, max_num: int, iou_threshold: float, frame_gap: int) -> int:
     """Load tracks from a .tar.gz file with track data. Returns the number of tracks loaded."""
 
     try:
@@ -214,20 +217,125 @@ def load_tracks(token: str, disable_ssl_verify: bool, config: str, version: str,
                 if 0 < max_load <= num_loaded_boxes:
                     break
 
-            # Load tracks
-            states = []
+            # Load tracks and compute best labels first
+            track_info = {}  # tracker_id -> {best_label, confidence, best_frame, first_frame, last_frame}
             for tracker_id in track_tdwa:
                 track = df_tracks[df_tracks['tracker_id'] == tracker_id]
+                first_frame = track.iloc[0]['first_frame']
                 last_frame = track.iloc[-1]['last_frame']
                 # Get the time-decayed average prediction
                 best_label, confidence, best_frame = track_tdwa[tracker_id].time_decay_average(last_frame)
-
+                
+                track_info[tracker_id] = {
+                    "best_label": best_label,
+                    "confidence": confidence,
+                    "best_frame": best_frame,
+                    "first_frame": first_frame,
+                    "last_frame": last_frame
+                }
                 info(f"Best label for tracker {tracker_id}: {best_label} with confidence {confidence} at frame {best_frame}")
+
+            # Merge tracks within frame_gap frames with sufficient IOU
+            # Sort tracks by first_frame to process them in order
+            sorted_tracker_ids = sorted(track_info.keys(), key=lambda tid: track_info[tid]["first_frame"])
+            merged_tracker_map = {}  # old_tracker_id -> new_tracker_id (for merged tracks)
+            
+            for i, tracker_id in enumerate(sorted_tracker_ids):
+                # Skip if already merged into another track
+                if tracker_id in merged_tracker_map:
+                    continue
+                    
+                current_info = track_info[tracker_id]
+                current_last_frame = current_info["last_frame"]
+                current_label = current_info["best_label"]
+                
+                # Look for adjacent tracks that could be merged
+                for j in range(i + 1, len(sorted_tracker_ids)):
+                    next_tracker_id = sorted_tracker_ids[j]
+                    
+                    # Skip if already merged
+                    if next_tracker_id in merged_tracker_map:
+                        continue
+                    
+                    next_info = track_info[next_tracker_id]
+                    next_first_frame = next_info["first_frame"]
+                    next_label = next_info["best_label"]
+                    
+                    # Check if tracks are within frame_gap frames (ignore label matching)
+                    frame_distance = next_first_frame - current_last_frame
+                    if 1 <= frame_distance <= frame_gap:
+                        
+                        # Get the last bounding box of current track
+                        current_last_box = df_boxes[
+                            (df_boxes['tracker_id'] == tracker_id) & 
+                            (df_boxes['frame'] == current_last_frame)
+                        ]
+                        
+                        # Get the first bounding box of next track
+                        next_first_box = df_boxes[
+                            (df_boxes['tracker_id'] == next_tracker_id) & 
+                            (df_boxes['frame'] == next_first_frame)
+                        ]
+                        
+                        # Check if we have boxes at both frames
+                        if not current_last_box.empty and not next_first_box.empty:
+                            # Get bounding box coordinates
+                            box1 = (
+                                current_last_box.iloc[0]['x'],
+                                current_last_box.iloc[0]['y'],
+                                current_last_box.iloc[0]['xx'],
+                                current_last_box.iloc[0]['xy']
+                            )
+                            box2 = (
+                                next_first_box.iloc[0]['x'],
+                                next_first_box.iloc[0]['y'],
+                                next_first_box.iloc[0]['xx'],
+                                next_first_box.iloc[0]['xy']
+                            )
+                            
+                            # Calculate soft IOU
+                            iou_value = soft_iou(box1, box2)
+                            
+                            # Only merge if IOU exceeds threshold
+                            if iou_value >= iou_threshold:
+                                info(f"Merging tracker {next_tracker_id} (label: {next_label}) into {tracker_id} (label: {current_label}), frames {current_last_frame}→{next_first_frame} (gap: {frame_distance}), soft IOU: {iou_value:.3f}")
+                                
+                                # Merge localizations from next_tracker_id into tracker_id
+                                localization_ids[tracker_id].extend(localization_ids[next_tracker_id])
+                                
+                                # Update the last_frame for the merged track
+                                track_info[tracker_id]["last_frame"] = next_info["last_frame"]
+                                current_last_frame = next_info["last_frame"]
+                                
+                                # Update best_frame and confidence if next track has better confidence
+                                if next_info["confidence"] > track_info[tracker_id]["confidence"]:
+                                    track_info[tracker_id]["best_frame"] = next_info["best_frame"]
+                                    track_info[tracker_id]["confidence"] = next_info["confidence"]
+                                    # Update best_label to the higher confidence track
+                                    track_info[tracker_id]["best_label"] = next_label
+                                
+                                # Mark next_tracker_id as merged
+                                merged_tracker_map[next_tracker_id] = tracker_id
+                            else:
+                                info(f"Skipping merge of tracker {next_tracker_id} (label: {next_label}) into {tracker_id} (label: {current_label}), frames {current_last_frame}→{next_first_frame} (gap: {frame_distance}), soft IOU {iou_value:.3f} < threshold {iou_threshold}")
+                    
+                    # If beyond frame gap, break since tracks are sorted by first_frame
+                    elif next_first_frame > current_last_frame + frame_gap:
+                        break
+
+            # Create states only for non-merged tracks
+            states = []
+            for tracker_id in track_info:
+                # Skip if this track was merged into another
+                if tracker_id in merged_tracker_map:
+                    continue
+                
+                info_data = track_info[tracker_id]
                 attributes_best = {
-                    "label": best_label,
-                    "max_score": confidence,
+                    "label": info_data["best_label"],
+                    "max_score": info_data["confidence"],
                     "verified": True,
-                    "num_frames": last_frame - track.iloc[0]['first_frame'] + 1
+                    "num_frames": info_data["last_frame"] - info_data["first_frame"] + 1
                 }
                 attributes = format_attributes(attributes_best, track_attributes)
                 if 'label' in attributes:
@@ -238,7 +346,7 @@ def load_tracks(token: str, disable_ssl_verify: bool, config: str, version: str,
                     "localization_ids": localization_ids[tracker_id],
                     "attributes": attributes,
                     "version": version_id,
-                    "frame": best_frame,
+                    "frame": info_data["best_frame"],
                 }
                 states.append(state)
 
@@ -257,6 +365,69 @@ def load_tracks(token: str, disable_ssl_verify: bool, config: str, version: str,
     except Exception as e:
         err(f"Error: {e}")
         raise e
+
+
+def soft_iou(box1: Tuple[float, float, float, float], 
+             box2: Tuple[float, float, float, float],
+             sigma: float = 0.5) -> float:
+    """
+    Compute soft IoU between two bounding boxes using Gaussian weighting.
+    
+    Args:
+        box1: (x1, y1, x2, y2) - first bounding box
+        box2: (x1, y1, x2, y2) - second bounding box
+        sigma: Gaussian sigma for soft weighting (default 0.5)
+    
+    Returns:
+        Soft IoU value between 0 and 1
+    """
+    x1_1, y1_1, x2_1, y2_1 = box1
+    x1_2, y1_2, x2_2, y2_2 = box2
+    
+    # Calculate intersection
+    x_left = max(x1_1, x1_2)
+    y_top = max(y1_1, y1_2)
+    x_right = min(x2_1, x2_2)
+    y_bottom = min(y2_1, y2_2)
+    
+    if x_right < x_left or y_bottom < y_top:
+        intersection = 0.0
+    else:
+        intersection = (x_right - x_left) * (y_bottom - y_top)
+    
+    # Calculate areas
+    area1 = (x2_1 - x1_1) * (y2_1 - y1_1)
+    area2 = (x2_2 - x1_2) * (y2_2 - y1_2)
+    union = area1 + area2 - intersection
+    
+    if union == 0:
+        return 0.0
+    
+    # Standard IoU
+    iou = intersection / union
+    
+    # Calculate center distance for soft weighting
+    center1 = np.array([(x1_1 + x2_1) / 2, (y1_1 + y2_1) / 2])
+    center2 = np.array([(x1_2 + x2_2) / 2, (y1_2 + y2_2) / 2])
+    center_dist = np.linalg.norm(center1 - center2)
+    
+    # Normalize distance by diagonal of union box
+    x_min_union = min(x1_1, x1_2)
+    y_min_union = min(y1_1, y1_2)
+    x_max_union = max(x2_1, x2_2)
+    y_max_union = max(y2_1, y2_2)
+    diagonal = np.sqrt((x_max_union - x_min_union)**2 + (y_max_union - y_min_union)**2)
+    
+    if diagonal > 0:
+        normalized_dist = center_dist / diagonal
+    else:
+        normalized_dist = 0
+    
+    # Apply Gaussian weighting to IoU based on center distance
+    weight = np.exp(-(normalized_dist ** 2) / (2 * sigma ** 2))
+    soft_iou_value = iou * weight
+    
+    return soft_iou_value
 
 
 @dataclass
@@ -368,7 +539,9 @@ if __name__ == "__main__":
             version="Baseline",
             input=test_path,
             max_num=10,
-            disable_ssl_verify=False
+            disable_ssl_verify=False,
+            iou_threshold=0.3,
+            frame_gap=5
         )
     else:
         print(f"Test file {test_path} does not exist")
