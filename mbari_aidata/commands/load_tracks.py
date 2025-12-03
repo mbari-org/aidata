@@ -444,7 +444,7 @@ class TimeDecayWeightedAverage:
     Also tracks the best individual prediction.
     """
 
-    def __init__(self, half_life: float = 3.0):
+    def __init__(self, half_life: float = 15.0):
         """
         half_life: time where weight = 0.8
         """
