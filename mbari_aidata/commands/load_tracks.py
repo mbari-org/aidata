@@ -226,6 +226,8 @@ def load_tracks(token: str, disable_ssl_verify: bool, config: str, version: str,
                 attributes_best = {
                     "label": best_label,
                     "max_score": confidence,
+                    "verified": True,
+                    "num_frames": last_frame - track.iloc[0]['first_frame'] + 1
                 }
                 attributes = format_attributes(attributes_best, track_attributes)
                 if 'label' in attributes:
