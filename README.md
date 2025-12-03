@@ -121,8 +121,13 @@ tator:
     attributes:
       Label:
         type: string
-      score:
+      max_score:
         type: float
+      num_frames:
+        type: int
+      verified:
+        type: bool
+    
 ```
 
 ## Tracks Format
