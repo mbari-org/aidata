@@ -33,7 +33,8 @@ from typing import Optional, Tuple, List
 @click.option("--compute-embeddings", is_flag=True, help="Compute embeddings and similarity ranking for TDWA boxes")
 @click.option("--redis-password", type=str, help="Redis password for embedding computation")
 @click.option("--device", type=str, default="cpu", help="Device for embedding computation (cpu or cuda:X)")
-def load_tracks(token: str, disable_ssl_verify: bool, config: str, version: str, input: Path, dry_run: bool, max_num: int, iou_threshold: float, frame_gap: int, compute_embeddings: bool, redis_password: str, device: str) -> int:
+@click.option("--video-dir", type=Path, help="Directory containing video files for embedding computation (videos should have .mov extension)")
+def load_tracks(token: str, disable_ssl_verify: bool, config: str, version: str, input: Path, dry_run: bool, max_num: int, iou_threshold: float, frame_gap: int, compute_embeddings: bool, redis_password: str, device: str, video_dir: Path) -> int:
     """Load tracks from a .tar.gz file with track data. Returns the number of tracks loaded."""
 
     try:
@@ -75,6 +76,8 @@ def load_tracks(token: str, disable_ssl_verify: bool, config: str, version: str,
             assert "host" in config_dict["redis"], "Missing required 'redis.host' key in configuration file"
             assert "port" in config_dict["redis"], "Missing required 'redis.port' key in configuration file"
             assert redis_password is not None, "Redis password is required when computing embeddings"
+            assert video_dir is not None, "Video directory is required when computing embeddings"
+            assert video_dir.exists(), f"Video directory {video_dir} does not exist"
 
         box_attributes = config_dict["tator"]["box"]["attributes"]
         track_attributes = config_dict["tator"]["track_state"]["attributes"]
@@ -386,9 +389,14 @@ def load_tracks(token: str, disable_ssl_verify: bool, config: str, version: str,
                     })
 
                 # Compute rankings
+                # Use .mov extension for video file in the specified video directory
+                video_filename_mov = video_name.replace('.mp4', '.mov')
+                video_path = video_dir / video_filename_mov
+                assert video_path.exists(), f"Video file {video_path} does not exist"
+
                 rankings = rank_tdwa_boxes_by_similarity(
                     tdwa_boxes=tdwa_box_data,
-                    video_path=str(track_dir / video_name),
+                    video_path=str(video_path),
                     fps=metadata.get('video_fps', 30.0),  # Default to 30 fps if not specified
                     video_width=video_width,
                     video_height=video_height,
