@@ -12,6 +12,7 @@ from mbari_aidata.logger import create_logger_file, info, err, warn
 from mbari_aidata.plugins.loaders.tator.common import init_yaml_config, init_api_project, get_version_id, find_box_type, find_media_type, find_state_type
 from mbari_aidata.plugins.loaders.tator.localization import gen_spec as gen_localization_spec, load_bulk_boxes
 from mbari_aidata.plugins.loaders.tator.attribute_utils import format_attributes
+from mbari_aidata.commands.embedding_rank import rank_tdwa_boxes_by_similarity
 import tator  # type: ignore
 
 from dataclasses import dataclass
@@ -29,7 +30,10 @@ from typing import Optional, Tuple, List
 @click.option("--max-num", type=int, help="Maximum number of localizations in tracks to load")
 @click.option("--iou-threshold", type=float, default=0.3, help="Soft IOU threshold for merging adjacent tracks (default: 0.3)")
 @click.option("--frame-gap", type=int, default=5, help="Maximum frame gap to consider for merging tracks (default: 5)")
-def load_tracks(token: str, disable_ssl_verify: bool, config: str, version: str, input: Path, dry_run: bool, max_num: int, iou_threshold: float, frame_gap: int) -> int:
+@click.option("--compute-embeddings", is_flag=True, help="Compute embeddings and similarity ranking for TDWA boxes")
+@click.option("--redis-password", type=str, help="Redis password for embedding computation")
+@click.option("--device", type=str, default="cpu", help="Device for embedding computation (cpu or cuda:X)")
+def load_tracks(token: str, disable_ssl_verify: bool, config: str, version: str, input: Path, dry_run: bool, max_num: int, iou_threshold: float, frame_gap: int, compute_embeddings: bool, redis_password: str, device: str) -> int:
     """Load tracks from a .tar.gz file with track data. Returns the number of tracks loaded."""
 
     try:
@@ -56,16 +60,30 @@ def load_tracks(token: str, disable_ssl_verify: bool, config: str, version: str,
         # Get all types and check configuration
         track_type = find_state_type(api, tator_project.id, "Track")
         box_type = find_box_type(api, tator_project.id, "Box")
+        tdwa_box_type = find_box_type(api, tator_project.id, "TDWABox")
         video_type = find_media_type(api, tator_project.id, "Video")
 
         assert "box" in config_dict["tator"], "Missing required 'box' key in configuration file"
         assert "track_state" in config_dict["tator"], "Missing required 'track_state' key in configuration file"
+        assert "tdwa_box" in config_dict["tator"], "Missing required 'tdwa_box' key in configuration file"
+
+        # Validate VSS and Redis configuration if embeddings are to be computed
+        if compute_embeddings:
+            assert "vss" in config_dict, "Missing required 'vss' key in configuration file for embedding computation"
+            assert "model" in config_dict["vss"], "Missing required 'vss.model' key in configuration file"
+            assert "redis" in config_dict, "Missing required 'redis' key in configuration file for embedding computation"
+            assert "host" in config_dict["redis"], "Missing required 'redis.host' key in configuration file"
+            assert "port" in config_dict["redis"], "Missing required 'redis.port' key in configuration file"
+            assert redis_password is not None, "Redis password is required when computing embeddings"
 
         box_attributes = config_dict["tator"]["box"]["attributes"]
         track_attributes = config_dict["tator"]["track_state"]["attributes"]
+        tdwa_box_attributes = config_dict["tator"]["tdwa_box"]["attributes"]
+        assert tdwa_box_attributes is not None, f"No TDWABox attributes found in configuration file"
 
         assert version_id is not None, f"No version found in project {project}"
         assert box_type is not None, f"No box type found in project {project} for type Box"
+        assert tdwa_box_type is not None, f"No TDWABox type found in project {project} for type TDWABox"
         assert track_type is not None, f"No state type found in project {project} for type Track"
         assert video_type is not None, f"No track type found in project {project} for type Video"
 
@@ -194,7 +212,7 @@ def load_tracks(token: str, disable_ssl_verify: bool, config: str, version: str,
 
                     if 'score' not in obj:
                         obj['score'] = 1.0
-                    track_tdwa[tracker_id].add(obj["label"], obj["score"], obj["frame"])
+                    track_tdwa[tracker_id].add(obj["label"], obj["score"], obj["frame"], index)
 
                 # Truncate the boxes if the max number of boxes to load is set
                 if 0 < max_load <= len(specs):
@@ -203,9 +221,6 @@ def load_tracks(token: str, disable_ssl_verify: bool, config: str, version: str,
                 box_ids_ = load_bulk_boxes(tator_project.id, api, specs)
                 info(f"Loaded {len(box_ids_)} boxes of {box_count} into Tator")
                 box_ids += box_ids_
-                # Generate mock box_ids
-                # box_ids_ = [i for i in range(len(specs))]
-                # box_ids += box_ids_
 
                 for tracker_id, box_id in zip(df_batch['tracker_id'], box_ids_):
                     if tracker_id not in localization_ids:
@@ -218,22 +233,23 @@ def load_tracks(token: str, disable_ssl_verify: bool, config: str, version: str,
                     break
 
             # Load tracks and compute best labels first
-            track_info = {}  # tracker_id -> {best_label, confidence, best_frame, first_frame, last_frame}
+            track_info = {}  # tracker_id -> {best_label, score, best_frame, first_frame, last_frame, best_box}
             for tracker_id in track_tdwa:
                 track = df_tracks[df_tracks['tracker_id'] == tracker_id]
                 first_frame = track.iloc[0]['first_frame']
                 last_frame = track.iloc[-1]['last_frame']
                 # Get the time-decayed average prediction
-                best_label, confidence, best_frame = track_tdwa[tracker_id].time_decay_average(last_frame)
+                best_label, score, best_frame, df_row_index = track_tdwa[tracker_id].time_decay_average(last_frame)
                 
                 track_info[tracker_id] = {
                     "best_label": best_label,
-                    "confidence": confidence,
+                    "score": score,
                     "best_frame": best_frame,
                     "first_frame": first_frame,
-                    "last_frame": last_frame
+                    "last_frame": last_frame,
+                    "df_row_index": df_row_index,
                 }
-                info(f"Best label for tracker {tracker_id}: {best_label} with confidence {confidence} at frame {best_frame}")
+                info(f"Best label for tracker {tracker_id}: {best_label} with score {score} at frame {best_frame}")
 
             # Merge tracks within frame_gap frames with sufficient IOU
             # Sort tracks by first_frame to process them in order
@@ -307,11 +323,11 @@ def load_tracks(token: str, disable_ssl_verify: bool, config: str, version: str,
                                 track_info[tracker_id]["last_frame"] = next_info["last_frame"]
                                 current_last_frame = next_info["last_frame"]
                                 
-                                # Update best_frame and confidence if next track has better confidence
-                                if next_info["confidence"] > track_info[tracker_id]["confidence"]:
+                                # Update best_frame and score if next track has better score
+                                if next_info["score"] > track_info[tracker_id]["score"]:
                                     track_info[tracker_id]["best_frame"] = next_info["best_frame"]
-                                    track_info[tracker_id]["confidence"] = next_info["confidence"]
-                                    # Update best_label to the higher confidence track
+                                    track_info[tracker_id]["score"] = next_info["score"]
+                                    # Update best_label to the higher score track
                                     track_info[tracker_id]["best_label"] = next_label
                                 
                                 # Mark next_tracker_id as merged
@@ -323,7 +339,76 @@ def load_tracks(token: str, disable_ssl_verify: bool, config: str, version: str,
                     elif next_first_frame > current_last_frame + frame_gap:
                         break
 
-            # Create states only for non-merged tracks
+            # Create tdwa_box specs for non-merged tracks
+            tdwa_box_specs = []
+            for tracker_id in track_info:
+                if tracker_id in merged_tracker_map:
+                    continue
+                info_data = track_info[tracker_id]
+                obj = df_boxes.iloc[info_data["df_row_index"]].to_dict()
+                attributes = format_attributes(obj, tdwa_box_attributes)
+                tdwa_box_specs.append(gen_localization_spec(
+                    box=[obj["x"], obj["y"], obj["xx"], obj["xy"]],
+                    version_id=version_id,
+                    label=info_data["best_label"][0],
+                    width=video_width,
+                    height=video_height,
+                    attributes=attributes,
+                    frame_number=info_data["best_frame"],
+                    type_id=tdwa_box_type.id,
+                    media_id=media_id,
+                    project_id=tator_project.id,
+                    normalize=False,
+                ))
+
+            # Load tdwa_box
+            tdwa_box_ids = load_bulk_boxes(tator_project.id, api, tdwa_box_specs)
+            info(f"Loaded {len(tdwa_box_ids)} tdwa_boxes into Tator")
+
+            # Compute embeddings and similarity ranking for TDWA boxes if requested
+            if compute_embeddings:
+                info("Computing embeddings and similarity ranking for TDWA boxes")
+
+                # Prepare TDWA box data for embedding computation
+                tdwa_box_data = []
+                for tracker_id in track_info:
+                    if tracker_id in merged_tracker_map:
+                        continue  # Skip merged tracks
+                    info_data = track_info[tracker_id]
+                    obj = df_boxes.iloc[info_data["df_row_index"]].to_dict()
+                    tdwa_box_data.append({
+                        'id': tracker_id,
+                        'x': obj["x"],
+                        'y': obj["y"],
+                        'xx': obj["xx"],
+                        'xy': obj["xy"],
+                        'frame': info_data["best_frame"]
+                    })
+
+                # Compute rankings
+                rankings = rank_tdwa_boxes_by_similarity(
+                    tdwa_box_data=tdwa_box_data,
+                    video_path=str(track_dir / video_name),
+                    fps=metadata.get('video_fps', 30.0),  # Default to 30 fps if not specified
+                    video_width=video_width,
+                    video_height=video_height,
+                    config_dict=config_dict,
+                    redis_password=redis_password,
+                    device=device
+                )
+
+                if rankings:
+                    info(f"Computed similarity rankings for {len(rankings)} TDWA boxes")
+                    # Here you could save the rankings to a file or store them in Tator
+                    # For now, we'll just log a summary
+                    for box_id, ranking in rankings.items():
+                        if ranking:
+                            top_similar = ranking[0]
+                            info(f"Box {box_id}: most similar to {top_similar[0]} (similarity: {top_similar[1]:.3f})")
+                else:
+                    warn("No similarity rankings were computed")
+
+            # Create states for non-merged tracks
             states = []
             for tracker_id in track_info:
                 # Skip if this track was merged into another
@@ -333,7 +418,7 @@ def load_tracks(token: str, disable_ssl_verify: bool, config: str, version: str,
                 info_data = track_info[tracker_id]
                 attributes_best = {
                     "label": info_data["best_label"],
-                    "max_score": info_data["confidence"],
+                    "max_score": info_data["score"],
                     "verified": True,
                     "num_frames": info_data["last_frame"] - info_data["first_frame"] + 1
                 }
@@ -434,8 +519,9 @@ def soft_iou(box1: Tuple[float, float, float, float],
 class Prediction:
     """Single prediction event."""
     label: str
-    confidence: float
-    timestamp: float   # seconds, or any monotonic value
+    score: float
+    frame_num: float   # seconds, or any monotonic value
+    df_row_index: int # row index of the box in the dataframe
 
 
 class TimeDecayWeightedAverage:
@@ -452,37 +538,31 @@ class TimeDecayWeightedAverage:
         self.decay_const = math.log(2) / half_life
 
         self.predictions: List[Prediction] = []
-        self.best_prediction: Optional[Prediction] = None
 
-    def add(self, label: str, confidence: float, timestamp: float):
-        p = Prediction(label, confidence, timestamp)
+    def add(self, label: str, score: float, frame_num: float, df_row_index: int):
+        p = Prediction(label, score, frame_num, df_row_index)
         self.predictions.append(p)
-
-        # Track best (highest-confidence) prediction
-        if (self.best_prediction is None or
-            confidence > self.best_prediction.confidence):
-            self.best_prediction = p
 
     def _weight(self, t_now, t_pred):
         dt = t_pred - t_now  # negative for older
         return math.exp(self.decay_const * dt)
 
-    def time_decay_average(self, current_time: float) -> Tuple[str, float]:
+    def time_decay_average(self, current_frame_num: float) -> Tuple[str, float, float, int]:
         """
-        Returns (label, weighted_score)
+        Returns (label, weighted_score, frame_num, box_row_index) for the best prediction.
         where weighted_score is aggregated across all predictions.
         """
         if not self.predictions:
-            return "", 0.0, current_time
+            return "", 0.0, current_frame_num, -1
 
         # Aggregate scores by label
         scores = {}
         weights = {}
 
         for p in self.predictions:
-            w = self._weight(current_time, p.timestamp)
+            w = self._weight(current_frame_num, p.frame_num)
 
-            scores[p.label] = scores.get(p.label, 0.0) + p.confidence * w
+            scores[p.label] = scores.get(p.label, 0.0) + p.score * w
             weights[p.label] = weights.get(p.label, 0.0) + w
 
         # Print the weights
@@ -499,28 +579,18 @@ class TimeDecayWeightedAverage:
             print(f"{label}: weighted {score}")
 
         # Choose the label with the highest weighted avg
-        best = max(weighted_avgs.items(), key=lambda x: x[1])
+        best_label = max(weighted_avgs.items(), key=lambda x: x[1])
 
         # Get all labels with the best
-        all_best_predictions = [p for p in self.predictions if p.label == best[0]]
+        all_best_predictions = [p for p in self.predictions if p.label == best_label[0]]
         # Get the maximum score for the best label
-        best_score = max([p.confidence for p in all_best_predictions])
-        # Get the timestamp of the best prediction
-        best_timestamp = max([p.timestamp for p in all_best_predictions])
-        best_label = best[0]
+        best_score = max([p.score for p in all_best_predictions])
+        # Get the frame and box where the best score is achieved
+        best_frame_num = [p.frame_num for p in all_best_predictions if p.score == best_score][0] 
+        df_row_index = [p.df_row_index for p in all_best_predictions if p.frame_num == best_frame_num][0]
         # weighted_avg = best[1]
-        return best_label, best_score, best_timestamp
+        return best_label, best_score, best_frame_num, df_row_index
 
-    def best_individual(self) -> Optional[Tuple[str, float, float]]:
-        """
-        Returns (label, confidence, timestamp)
-        for the best single prediction.
-        """
-        if not self.best_prediction:
-            return None
-
-        p = self.best_prediction
-        return p.label, p.confidence, p.timestamp
 
 if __name__ == "__main__":
     import os
