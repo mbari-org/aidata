@@ -341,33 +341,8 @@ def load_tracks(token: str, disable_ssl_verify: bool, config: str, version: str,
                     elif next_first_frame > current_last_frame + frame_gap:
                         break
 
-            # Create tdwa_box specs for non-merged tracks
-            tdwa_box_specs = []
-            for tracker_id in track_info:
-                if tracker_id in merged_tracker_map:
-                    continue
-                info_data = track_info[tracker_id]
-                obj = df_boxes.iloc[info_data["df_row_index"]].to_dict()
-                attributes = format_attributes(obj, tdwa_box_attributes)
-                tdwa_box_specs.append(gen_localization_spec(
-                    box=[obj["x"], obj["y"], obj["xx"], obj["xy"]],
-                    version_id=version_id,
-                    label=info_data["best_label"][0],
-                    width=video_width,
-                    height=video_height,
-                    attributes=attributes,
-                    frame_number=info_data["best_frame"],
-                    type_id=tdwa_box_type.id,
-                    media_id=media_id,
-                    project_id=tator_project.id,
-                    normalize=False,
-                ))
-
-            # Load tdwa_box
-            tdwa_box_ids = load_bulk_boxes(tator_project.id, api, tdwa_box_specs)
-            info(f"Loaded {len(tdwa_box_ids)} tdwa_boxes into Tator")
-
-            # Compute embeddings and similarity ranking for TDWA boxes if requested
+            # Compute embeddings and similarity ranking for TDWA boxes if requested (before creating boxes)
+            rankings = {}
             if compute_embeddings:
                 info("Computing embeddings and similarity ranking for TDWA boxes")
 
@@ -405,14 +380,52 @@ def load_tracks(token: str, disable_ssl_verify: bool, config: str, version: str,
 
                 if rankings:
                     info(f"Computed similarity rankings for {len(rankings)} TDWA boxes")
-                    # Here you could save the rankings to a file or store them in Tator
-                    # For now, we'll just log a summary
+                    # Log a summary of top similarities
                     for box_id, ranking in rankings.items():
                         if ranking:
                             top_similar = ranking[0]
                             info(f"Box {box_id}: most similar to {top_similar[0]} (similarity: {top_similar[1]:.3f})")
                 else:
                     warn("No similarity rankings were computed")
+
+            # Create tdwa_box specs for non-merged tracks
+            tdwa_box_specs = []
+            for tracker_id in track_info:
+                if tracker_id in merged_tracker_map:
+                    continue
+                info_data = track_info[tracker_id]
+                obj = df_boxes.iloc[info_data["df_row_index"]].to_dict()
+                attributes = format_attributes(obj, tdwa_box_attributes)
+                
+                # Add similarity_score if rankings were computed
+                if rankings and tracker_id in rankings:
+                    ranking_list = rankings[tracker_id]
+                    if ranking_list:
+                        # Use the highest similarity score (to the most similar box)
+                        attributes['similarity_score'] = float(ranking_list[0][1])
+                    else:
+                        attributes['similarity_score'] = 0.0
+                else:
+                    # No ranking available, set to 0 or None
+                    attributes['similarity_score'] = 0.0
+                
+                tdwa_box_specs.append(gen_localization_spec(
+                    box=[obj["x"], obj["y"], obj["xx"], obj["xy"]],
+                    version_id=version_id,
+                    label=info_data["best_label"][0],
+                    width=video_width,
+                    height=video_height,
+                    attributes=attributes,
+                    frame_number=info_data["best_frame"],
+                    type_id=tdwa_box_type.id,
+                    media_id=media_id,
+                    project_id=tator_project.id,
+                    normalize=False,
+                ))
+
+            # Load tdwa_box
+            tdwa_box_ids = load_bulk_boxes(tator_project.id, api, tdwa_box_specs)
+            info(f"Loaded {len(tdwa_box_ids)} tdwa_boxes into Tator")
 
             # Create states for non-merged tracks
             states = []
