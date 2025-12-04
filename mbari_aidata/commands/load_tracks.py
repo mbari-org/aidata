@@ -387,7 +387,7 @@ def load_tracks(token: str, disable_ssl_verify: bool, config: str, version: str,
 
                 # Compute rankings
                 rankings = rank_tdwa_boxes_by_similarity(
-                    tdwa_box_data=tdwa_box_data,
+                    tdwa_boxes=tdwa_box_data,
                     video_path=str(track_dir / video_name),
                     fps=metadata.get('video_fps', 30.0),  # Default to 30 fps if not specified
                     video_width=video_width,
