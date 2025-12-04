@@ -372,6 +372,19 @@ def load_tracks(token: str, disable_ssl_verify: bool, config: str, version: str,
             if compute_embeddings:
                 info("Computing embeddings and similarity ranking for TDWA boxes")
 
+                # Test Redis connection before proceeding
+                try:
+                    import redis
+                    redis_host = config_dict["redis"]["host"]
+                    redis_port = config_dict["redis"]["port"]
+                    r = redis.Redis(host=redis_host, port=redis_port, password=redis_password)
+                    r.ping()
+                    info(f"Successfully connected to Redis at {redis_host}:{redis_port}")
+                except Exception as e:
+                    err(f"Failed to connect to Redis: {e}")
+                    err("Cannot proceed with embedding computation")
+                    return num_loaded_tracks
+
                 # Prepare TDWA box data for embedding computation
                 tdwa_box_data = []
                 for tracker_id in track_info:
