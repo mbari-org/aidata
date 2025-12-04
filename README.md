@@ -116,7 +116,16 @@ tator:
         type: int
       exemplar:
         type: bool
-
+  tdwa_box:
+    attributes:
+      Label:
+        type: string
+      score:
+        type: float
+      verified:
+        type: bool
+      similarity_score:
+        type: float
   track_state:
     attributes:
       Label:
