@@ -92,6 +92,23 @@ def load_tracks(token: str, disable_ssl_verify: bool, config: str, version: str,
 
         info(f"Processing track data from {input}")
 
+        # Compute embeddings and similarity ranking for TDWA boxes if requested
+        if compute_embeddings:
+            info("Computing embeddings and similarity ranking for TDWA boxes")
+
+            # Test Redis connection before proceeding
+            try:
+                import redis
+                redis_host = config_dict["redis"]["host"]
+                redis_port = config_dict["redis"]["port"]
+                r = redis.Redis(host=redis_host, port=redis_port, password=redis_password)
+                r.ping()
+                info(f"Successfully connected to Redis at {redis_host}:{redis_port}")
+            except Exception as e:
+                err(f"Failed to connect to Redis: {e}")
+                err("Cannot proceed with embedding computation")
+                return 0
+
         # Extract the tar.gz file to a temporary directory
         with tempfile.TemporaryDirectory() as tmpdir:
             info(f"Extracting {input} to temporary directory {tmpdir}")
@@ -371,19 +388,6 @@ def load_tracks(token: str, disable_ssl_verify: bool, config: str, version: str,
             # Compute embeddings and similarity ranking for TDWA boxes if requested
             if compute_embeddings:
                 info("Computing embeddings and similarity ranking for TDWA boxes")
-
-                # Test Redis connection before proceeding
-                try:
-                    import redis
-                    redis_host = config_dict["redis"]["host"]
-                    redis_port = config_dict["redis"]["port"]
-                    r = redis.Redis(host=redis_host, port=redis_port, password=redis_password)
-                    r.ping()
-                    info(f"Successfully connected to Redis at {redis_host}:{redis_port}")
-                except Exception as e:
-                    err(f"Failed to connect to Redis: {e}")
-                    err("Cannot proceed with embedding computation")
-                    return num_loaded_tracks
 
                 # Prepare TDWA box data for embedding computation
                 tdwa_box_data = []
