@@ -11,8 +11,7 @@ from PIL import Image
 import torch
 
 from mbari_aidata.logger import info, err, debug
-from mbari_aidata.predictors.process_vits import ViTWrapper
-import redis
+from transformers import AutoModel, AutoImageProcessor  # type: ignore
 
 
 def crop_boxes_from_video(
@@ -116,32 +115,37 @@ def crop_boxes_from_video(
 
 def compute_embeddings_for_boxes(
     cropped_images: List[Image.Image],
-    vit_wrapper: ViTWrapper
+    model_info: Dict[str, Any]
 ) -> np.ndarray:
     """
     Compute embeddings for a list of cropped images using ViT.
 
     Args:
         cropped_images: List of PIL Images
-        vit_wrapper: ViTWrapper instance for embedding computation
+        model_info: Dictionary with 'processor', 'model', and 'device'
 
     Returns:
         Numpy array of embeddings
     """
     # Filter out None images (failed crops)
-    import pdb;pdb.set_trace()
     valid_images = [img for img in cropped_images if img is not None]
 
     if not valid_images:
         return np.array([])
 
     # Preprocess images
-    inputs = vit_wrapper.preprocess_pil_images(valid_images)
+    processor = model_info["processor"]
+    model = model_info["model"]
+    device = model_info["device"]
+    
+    inputs = processor(images=valid_images, return_tensors="pt").to(device)
 
     # Get embeddings
-    embeddings = vit_wrapper.get_image_embeddings(inputs)
-
-    return embeddings
+    with torch.no_grad():
+        embeddings = model(**inputs)
+    batch_embeddings = embeddings.last_hidden_state[:, 0, :].cpu().numpy()
+    
+    return np.array(batch_embeddings)
 
 
 def compute_similarity_ranking(
@@ -183,7 +187,6 @@ def rank_tdwa_boxes_by_similarity(
     video_width: int,
     video_height: int,
     config_dict: Dict[str, Any],
-    redis_password: str,
     device: str = "cpu",
     resize: int = None
 ) -> Dict[str, List[Tuple[Any, float]]]:
@@ -196,8 +199,7 @@ def rank_tdwa_boxes_by_similarity(
         fps: Frames per second
         video_width: Video width in pixels
         video_height: Video height in pixels
-        config_dict: Configuration dictionary containing vss.model and redis settings
-        redis_password: Password for Redis connection
+        config_dict: Configuration dictionary containing vss.model
         device: Device for model inference ('cpu' or 'cuda:X')
         resize: Optional resize dimension for cropped images
 
@@ -232,26 +234,35 @@ def rank_tdwa_boxes_by_similarity(
         err("No boxes were successfully cropped")
         return {}
 
-    # Initialize ViT wrapper
+    # Initialize ViT model
     try:
-        redis_host = config_dict["redis"]["host"]
-        redis_port = config_dict["redis"]["port"]
         model_name = config_dict["vss"]["model"]
-
-        info(f"Connecting to Redis at {redis_host}:{redis_port}")
-        r = redis.Redis(host=redis_host, port=redis_port, password=redis_password)
-        vit_wrapper = ViTWrapper(r, model_name=model_name, device=device, reset=False)
+        
+        info(f"Loading model {model_name}")
+        processor = AutoImageProcessor.from_pretrained(model_name)
+        model = AutoModel.from_pretrained(model_name)
+        
+        # Move model to device
+        if 'cuda' in device and torch.cuda.is_available():
+            device_num = int(device.split(":")[-1])
+            info(f"Using GPU device {device_num}")
+            torch.cuda.set_device(device_num)
+            model.to("cuda")
+            device_str = "cuda"
+        else:
+            device_str = "cpu"
+        
+        model_info = {"processor": processor, "model": model, "device": device_str}
     except KeyError as e:
         err(f"Missing required configuration key: {e}")
         return {}
     except Exception as e:
-        err(f"Failed to initialize ViT wrapper: {e}")
+        err(f"Failed to initialize model: {e}")
         return {}
 
     # Compute embeddings for all cropped boxes
     info("Computing embeddings for cropped boxes")
-    import pdb;pdb.set_trace()
-    embeddings = compute_embeddings_for_boxes(cropped_images, vit_wrapper)
+    embeddings = compute_embeddings_for_boxes(cropped_images, model_info)
 
     if len(embeddings) == 0:
         err("No embeddings were computed")

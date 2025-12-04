@@ -31,10 +31,9 @@ from typing import Optional, Tuple, List
 @click.option("--iou-threshold", type=float, default=0.3, help="Soft IOU threshold for merging adjacent tracks (default: 0.3)")
 @click.option("--frame-gap", type=int, default=5, help="Maximum frame gap to consider for merging tracks (default: 5)")
 @click.option("--compute-embeddings", is_flag=True, help="Compute embeddings and similarity ranking for TDWA boxes")
-@click.option("--redis-password", type=str, help="Redis password for embedding computation")
 @click.option("--device", type=str, default="cpu", help="Device for embedding computation (cpu or cuda:X)")
 @click.option("--video-dir", type=Path, help="Directory containing video files for embedding computation (videos should have .mov extension)")
-def load_tracks(token: str, disable_ssl_verify: bool, config: str, version: str, input: Path, dry_run: bool, max_num: int, iou_threshold: float, frame_gap: int, compute_embeddings: bool, redis_password: str, device: str, video_dir: Path) -> int:
+def load_tracks(token: str, disable_ssl_verify: bool, config: str, version: str, input: Path, dry_run: bool, max_num: int, iou_threshold: float, frame_gap: int, compute_embeddings: bool, device: str, video_dir: Path) -> int:
     """Load tracks from a .tar.gz file with track data. Returns the number of tracks loaded."""
 
     try:
@@ -68,14 +67,10 @@ def load_tracks(token: str, disable_ssl_verify: bool, config: str, version: str,
         assert "track_state" in config_dict["tator"], "Missing required 'track_state' key in configuration file"
         assert "tdwa_box" in config_dict["tator"], "Missing required 'tdwa_box' key in configuration file"
 
-        # Validate VSS and Redis configuration if embeddings are to be computed
+        # Validate VSS configuration if embeddings are to be computed
         if compute_embeddings:
             assert "vss" in config_dict, "Missing required 'vss' key in configuration file for embedding computation"
             assert "model" in config_dict["vss"], "Missing required 'vss.model' key in configuration file"
-            assert "redis" in config_dict, "Missing required 'redis' key in configuration file for embedding computation"
-            assert "host" in config_dict["redis"], "Missing required 'redis.host' key in configuration file"
-            assert "port" in config_dict["redis"], "Missing required 'redis.port' key in configuration file"
-            assert redis_password is not None, "Redis password is required when computing embeddings"
             assert video_dir is not None, "Video directory is required when computing embeddings"
             assert video_dir.exists(), f"Video directory {video_dir} does not exist"
 
@@ -95,19 +90,6 @@ def load_tracks(token: str, disable_ssl_verify: bool, config: str, version: str,
         # Compute embeddings and similarity ranking for TDWA boxes if requested
         if compute_embeddings:
             info("Computing embeddings and similarity ranking for TDWA boxes")
-
-            # Test Redis connection before proceeding
-            try:
-                import redis
-                redis_host = config_dict["redis"]["host"]
-                redis_port = config_dict["redis"]["port"]
-                r = redis.Redis(host=redis_host, port=redis_port, password=redis_password)
-                r.ping()
-                info(f"Successfully connected to Redis at {redis_host}:{redis_port}")
-            except Exception as e:
-                err(f"Failed to connect to Redis: {e}")
-                err("Cannot proceed with embedding computation")
-                return 0
 
         # Extract the tar.gz file to a temporary directory
         with tempfile.TemporaryDirectory() as tmpdir:
@@ -418,7 +400,6 @@ def load_tracks(token: str, disable_ssl_verify: bool, config: str, version: str,
                     video_width=video_width,
                     video_height=video_height,
                     config_dict=config_dict,
-                    redis_password=redis_password,
                     device=device
                 )
 
