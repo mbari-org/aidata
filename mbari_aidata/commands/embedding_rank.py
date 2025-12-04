@@ -129,6 +129,7 @@ def compute_embeddings_for_boxes(
         Numpy array of embeddings
     """
     # Filter out None images (failed crops)
+    import pdb;pdb.set_trace()
     valid_images = [img for img in cropped_images if img is not None]
 
     if not valid_images:
@@ -249,6 +250,7 @@ def rank_tdwa_boxes_by_similarity(
 
     # Compute embeddings for all cropped boxes
     info("Computing embeddings for cropped boxes")
+    import pdb;pdb.set_trace()
     embeddings = compute_embeddings_for_boxes(cropped_images, vit_wrapper)
 
     if len(embeddings) == 0:
