@@ -46,6 +46,11 @@ class ViTWrapper:
     def vector_dimensions(self) -> int:
         return self.model.config.hidden_size
 
+    def preprocess_pil_images(self, images: List[Image.Image]) -> torch.Tensor:
+        """Preprocess a list of PIL images"""
+        inputs = self.processor(images=images, return_tensors="pt").to(self.device)
+        return inputs
+
     def preprocess_images(self, image_paths: List[str]):
         info(f"Preprocessing {len(image_paths)} images")
         images = [Image.open(image_path).convert("RGB") for image_path in image_paths]

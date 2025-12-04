@@ -136,7 +136,7 @@ def compute_embeddings_for_boxes(
         return np.array([])
 
     # Preprocess images
-    inputs = vit_wrapper.preprocess_images(valid_images)
+    inputs = vit_wrapper.preprocess_pil_images(valid_images)
 
     # Get embeddings
     embeddings = vit_wrapper.get_image_embeddings(inputs)
