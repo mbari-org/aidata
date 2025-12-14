@@ -257,6 +257,11 @@ def download(
                     if l.media not in localizations_by_media_id.keys():
                         continue
 
+                    # Override the score if more than one version is being used for verified labels.
+                    # This helps propagate the human verified label via NMS
+                    if len(version_ids) > 1 and l.attributes.get("verified", False) == verified:
+                        l.attributes["score"] = 1
+
                     # Only keep needed fields to reduce memory usage
                     loc = tator.models.Localization(
                         x=l.x,
@@ -590,7 +595,7 @@ def download(
             # optionally create VOC files
             if voc:
                 # Paths to the VOC file and the image
-                voc_xml_path = voc_path / f"{m.name}.xml"
+                voc_xml_path = voc_path / f"{Path(m.name).stem}.xml"
                 image_path = (media_path / m.name).as_posix()
 
                 writer = Writer(image_path, image_width, image_height)
