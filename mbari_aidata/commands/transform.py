@@ -124,8 +124,8 @@ def transform(base_path: str, resize: int, crop_size: int, crop_overlap: float, 
             return transformed_data
 
         # A utility function for saving the transformed data
-        def save_transformed(transformed_xml_path: Path, width: int, height: int, transformed_data: dict, line_width=2):
-            writer = Writer(transformed_xml_path.as_posix(), width, height)
+        def save_transformed(transformed_xml_path:Path, transformed_image_path: Path, width: int, height: int, transformed_data: dict, line_width=2):
+            writer = Writer(transformed_image_path.as_posix(), width, height)
 
             # Store the cropped image and adjusted bounding boxes
             for l, b, i in zip(transformed_data["labels"], transformed_data["bboxes"], transformed_data["ids"]):
@@ -213,7 +213,7 @@ def transform(base_path: str, resize: int, crop_size: int, crop_overlap: float, 
                     warn(f'No bounding boxes left for {voc_xml_path}')
                     continue
 
-                save_transformed(voc_xml_path, resize, resize, transformed, line_width=10)
+                save_transformed(voc_xml_path, image_path_final, resize, resize, transformed, line_width=10)
                 cv2.imwrite(image_path_final.as_posix(), transformed["image"])
 
             if not crop_size:
@@ -247,7 +247,7 @@ def transform(base_path: str, resize: int, crop_size: int, crop_overlap: float, 
                     # Only keep the data if the cropped image contains at least one bounding box
                     if len(transformed["bboxes"]) > 0:
                         num_transformed_labels += len(transformed["bboxes"])
-                        save_transformed(voc_xml_path, crop_size, crop_size, transformed, line_width=2)
+                        save_transformed(voc_xml_path, image_path_final, crop_size, crop_size, transformed, line_width=2)
                         cv2.imwrite(image_path_final.as_posix(), transformed["image"])
                         i += 1
 
