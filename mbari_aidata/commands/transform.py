@@ -171,7 +171,7 @@ def transform(base_path: str, resize: int, crop_size: int, crop_overlap: float, 
                 continue
             num_images += 1
 
-            xml_path = base_path / "voc" / (image_path.name + ".xml")
+            xml_path = base_path / "voc" / (image_path.stem + ".xml")
             if not xml_path.exists():
                 exception(f"Could not find annotation file {xml_path}")
                 continue
