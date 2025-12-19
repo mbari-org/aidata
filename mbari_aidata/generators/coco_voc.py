@@ -530,13 +530,14 @@ def download(
         # Create a simple csv file with the media name, cluster, label, score, and label_s and score_s and
         # normalized box coordinates
         with (output_path / "localizations.csv").open("w") as f:
-            f.write("media,uuid,verified,cluster,saliency,area,label,score,label_s,score_s,x,y,width,height\n")
+            f.write("media,uuid,verified,cluster,saliency,area,predicted_label,label,score,label_s,score_s,x,y,width,height\n")
             for m in all_media:
                 media_localizations = localizations_by_media_id[m.id]
 
                 for loc in media_localizations:
                     uuid = loc.elemental_id
                     verified = loc.attributes.get("verified", False)
+                    predicted_label = loc.attributes.get("predicted_label", "Unknown")
                     label = loc.attributes.get("Label", "Unknown")
                     score = loc.attributes.get("score", 0)
                     score_s = loc.attributes.get("score_s", 0)
@@ -554,6 +555,7 @@ def download(
                             f"{cluster},"
                             f"{saliency},"
                             f"{area},"
+                            f"{predicted_label},"
                             f"{label},{score},"
                             f"{label_s},{score_s},"
                             f"{x},{y},{width},{height}\n")
