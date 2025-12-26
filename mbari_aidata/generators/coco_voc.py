@@ -527,15 +527,15 @@ def download(
 
         info(f"Finished cropping {num_localizations} ROIs")
 
-        # Create a simple csv file with the media name, cluster, label, score, and label_s and score_s and
-        # normalized box coordinates
+        # Create a simple csv file with the media name, cluster, etc. and normalized box coordinates
         with (output_path / "localizations.csv").open("w") as f:
-            f.write("media,uuid,verified,cluster,saliency,area,predicted_label,label,score,label_s,score_s,x,y,width,height\n")
+            f.write("media,frame,uuid,verified,cluster,saliency,area,predicted_label,label,score,label_s,score_s,x,y,width,height\n")
             for m in all_media:
                 media_localizations = localizations_by_media_id[m.id]
 
                 for loc in media_localizations:
                     uuid = loc.elemental_id
+                    frame = loc.frame
                     verified = loc.attributes.get("verified", False)
                     predicted_label = loc.attributes.get("predicted_label", "Unknown")
                     label = loc.attributes.get("Label", "Unknown")
@@ -550,6 +550,7 @@ def download(
                     width = loc.width
                     height = loc.height
                     f.write(f"{m.name},"
+                            f"{frame},"
                             f"{uuid},"
                             f"{verified},"
                             f"{cluster},"
@@ -690,13 +691,11 @@ def download(
         exception(str(e))
         return False
 
+
 def frame_to_timestamp(media: tator.models.Media, frame: int) -> str:
-    # Convert timestamp to hour:minute:second format
     total_seconds = frame / media.fps
-    hours = math.floor(total_seconds / 3600)
-    minutes = math.floor((total_seconds % 3600) / 60)
-    seconds = total_seconds % 60
-    return f"{hours:02}:{minutes:02}:{seconds:02}"
+    total_microseconds = int(total_seconds * 1_000_000)
+    return f"{total_microseconds}us"
 
 
 def get_media(api: tator.api, project_id: int, media_ids: List[int]) -> List[tator.models.Media]:
