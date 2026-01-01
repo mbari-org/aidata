@@ -131,7 +131,7 @@ if __name__ == "__main__":
         # Import err here too in case it wasn't imported above
         try:
             from mbari_aidata.logger import err
-        except:
+        except ImportError:
             import sys
             print(f"Exiting. Error: {e}", file=sys.stderr)
         else:
