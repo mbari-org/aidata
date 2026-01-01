@@ -1,31 +1,14 @@
 # mbari_aidata, Apache-2.0 license
 # Filename: __main__.py
 # Description: Main entry point for the mbari_aidata command line interface
-from datetime import datetime
 from pathlib import Path
-
-import pytz
-import click
 import sys
 
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
-from pathlib import Path
-
-from mbari_aidata.commands.load_clusters import load_clusters
-from mbari_aidata.commands.download import download
-from mbari_aidata.commands.load_images import load_images
-from mbari_aidata.commands.load_video import load_video
-from mbari_aidata.commands.load_exemplars import load_exemplars
-from mbari_aidata.commands.db_utils import reset_redis
-from mbari_aidata.commands.transform import transform, voc_to_yolo
-from mbari_aidata.commands.split import split_command
-from mbari_aidata.logger import err, info
+import click
 
 from mbari_aidata import __version__
-from mbari_aidata.commands.load_queue import load_queue
-from mbari_aidata.commands.load_boxes import load_boxes
-from mbari_aidata.commands.load_tracks import load_tracks
 
 if "LOG_PATH" not in locals():
     LOG_PATH = Path.home().as_posix()
@@ -40,7 +23,49 @@ def cli():
     pass
 
 
-@click.group(name="load")
+class LazyGroup(click.Group):
+    """A click Group that imports commands lazily on first access"""
+    
+    def __init__(self, *args, lazy_subcommands=None, **kwargs):
+        super().__init__(*args, **kwargs)
+        # lazy_subcommands is a dict of {command_name: module_path.function_name}
+        self.lazy_subcommands = lazy_subcommands or {}
+        
+    def get_command(self, ctx, cmd_name):
+        # First check if already loaded
+        if cmd_name in self.commands:
+            return self.commands[cmd_name]
+            
+        # Check if it's a lazy command we need to import
+        if cmd_name in self.lazy_subcommands:
+            import_path = self.lazy_subcommands[cmd_name]
+            module_name, func_name = import_path.rsplit('.', 1)
+            
+            # Import the module and get the command
+            import importlib
+            module = importlib.import_module(module_name)
+            cmd = getattr(module, func_name)
+            
+            # Add it to the group
+            self.add_command(cmd, cmd_name)
+            return cmd
+            
+        return None
+    
+    def list_commands(self, ctx):
+        # Return all commands including lazy ones
+        return sorted(list(self.commands.keys()) + list(self.lazy_subcommands.keys()))
+
+
+@click.group(name="load", cls=LazyGroup, lazy_subcommands={
+    'images': 'mbari_aidata.commands.load_images.load_images',
+    'video': 'mbari_aidata.commands.load_video.load_video',
+    'boxes': 'mbari_aidata.commands.load_boxes.load_boxes',
+    'tracks': 'mbari_aidata.commands.load_tracks.load_tracks',
+    'queue': 'mbari_aidata.commands.load_queue.load_queue',
+    'exemplars': 'mbari_aidata.commands.load_exemplars.load_exemplars',
+    'clusters': 'mbari_aidata.commands.load_clusters.load_clusters',
+})
 def cli_load():
     """
     Load data, such as images, boxes, and exemplars into either a Postgres or REDIS database
@@ -49,16 +74,11 @@ def cli_load():
 
 
 cli.add_command(cli_load)
-cli_load.add_command(load_images)
-cli_load.add_command(load_video)
-cli_load.add_command(load_boxes)
-cli_load.add_command(load_tracks)
-cli_load.add_command(load_queue)
-cli_load.add_command(load_exemplars)
-cli_load.add_command(load_clusters)
 
 
-@click.group(name="download")
+@click.group(name="download", cls=LazyGroup, lazy_subcommands={
+    'dataset': 'mbari_aidata.commands.download.download',
+})
 def cli_download():
     """
     Download data, such as images, boxes, into various formats for machine learning e,g, COCO, CIFAR, or PASCAL VOC format
@@ -67,10 +87,11 @@ def cli_download():
 
 
 cli.add_command(cli_download)
-cli_download.add_command(download)
 
 
-@click.group(name="db")
+@click.group(name="db", cls=LazyGroup, lazy_subcommands={
+    'reset-redis': 'mbari_aidata.commands.db_utils.reset_redis',
+})
 def cli_db():
     """
     Commands related to database management
@@ -79,10 +100,13 @@ def cli_db():
 
 
 cli.add_command(cli_db)
-cli_db.add_command(reset_redis)
 
 
-@click.group(name="transform")
+@click.group(name="transform", cls=LazyGroup, lazy_subcommands={
+    'voc': 'mbari_aidata.commands.transform.transform',
+    'voc-to-yolo': 'mbari_aidata.commands.transform.voc_to_yolo',
+    'split': 'mbari_aidata.commands.split.split_command',
+})
 def cli_transform():
     """
     Commands related to transforming downloaded data
@@ -91,16 +115,25 @@ def cli_transform():
 
 
 cli.add_command(cli_transform)
-cli_transform.add_command(transform)
-cli_transform.add_command(voc_to_yolo)
-cli_transform.add_command(split_command)
 
 if __name__ == "__main__":
     try:
+        # Import these only when actually running the CLI, not when importing for testing
+        from datetime import datetime
+        import pytz
+        from mbari_aidata.logger import err, info
+        
         start = datetime.now(pytz.utc)
         cli()
         end = datetime.now(pytz.utc)
         info(f"Done. Elapsed time: {end - start} seconds")
     except Exception as e:
-        err(f"Exiting. Error: {e}")
+        # Import err here too in case it wasn't imported above
+        try:
+            from mbari_aidata.logger import err
+        except:
+            import sys
+            print(f"Exiting. Error: {e}", file=sys.stderr)
+        else:
+            err(f"Exiting. Error: {e}")
         exit(-1)
