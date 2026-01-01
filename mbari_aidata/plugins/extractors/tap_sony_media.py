@@ -2,6 +2,8 @@
 # Filename: plugins/extractor/tap_sony_media.py
 # Description: Extracts data from SONY image meta data
 from datetime import datetime
+import io
+from urllib.request import urlopen
 
 import pandas as pd
 from pathlib import Path
@@ -56,13 +58,25 @@ def extract_media(media_path: Path, max_images: int = -1) -> pd.DataFrame:
     failed_indexes = []
     sorted_df = images_df.sort_values(by="media_path")
     for i, row in sorted_df.iterrows():
-        if str(row.media_path).startswith("http"):
-            # Skip EXIF for URLs for now, as piexif expects a local file
-            failed_indexes.append(i)
-            continue
         info(f"Reading EXIF data in {row.media_path}")
         try:
-            exif = piexif.load(row.media_path)
+            # Handle HTTP URLs by reading first 200KB (sufficient for EXIF data in most cases)
+            if str(row.media_path).startswith("http"):
+                try:
+                    response = urlopen(row.media_path)
+                    partial_data = response.read(200_000)
+                    # piexif.load() can work with bytes directly
+                    exif = piexif.load(partial_data)
+                except Exception as partial_error:
+                    # If partial read fails, try reading the full image
+                    info(f"Partial read failed ({str(partial_error)}), reading full image...")
+                    response = urlopen(row.media_path)
+                    full_data = response.read()
+                    exif = piexif.load(full_data)
+            else:
+                # Handle local files
+                exif = piexif.load(row.media_path)
+
             # Get the date and time the image was taken
             date_time_str = exif["Exif"][piexif.ExifIFD.DateTimeOriginal].decode("utf-8")
             dt = datetime.strptime(date_time_str, "%Y:%m:%d %H:%M:%S")
@@ -89,7 +103,7 @@ def extract_media(media_path: Path, max_images: int = -1) -> pd.DataFrame:
             model.append(exif["0th"][piexif.ImageIFD.Model].decode("utf-8"))
 
         except Exception as e:
-            err(str(e))
+            err(f"Failed to read EXIF from {row.media_path}: {str(e)}")
             failed_indexes.append(i)
 
     # Remove any failed indexes
