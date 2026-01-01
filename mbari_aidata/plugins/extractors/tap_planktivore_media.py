@@ -31,7 +31,9 @@ def extract_media(media_path: Path, max_images: Optional[int] = None) -> pd.Data
     if media_path.is_file() and media_path.suffix.lower() == '.txt':
         with open(media_path, 'r') as f:
             paths = [line.strip() for line in f if line.strip()]
-        images_df["media_path"] = [p for p in paths if Path(p).suffix.lower() in [ext.lower() for ext in allowed_extensions]]
+        images_df["media_path"] = [p for p in paths if
+                                   p.startswith("http") or
+                                   Path(p).suffix.lower() in [ext.lower() for ext in allowed_extensions]]
     elif media_path.is_dir():
         images_df["media_path"] = [str(file) for file in media_path.rglob("*") if file.suffix.lower() in allowed_extensions]
     elif media_path.is_file():
@@ -52,6 +54,10 @@ def extract_media(media_path: Path, max_images: Optional[int] = None) -> pd.Data
     info(f"Found {len(images_df)} unique images")
     for index, row in images_df.iterrows():
         image_name = row["media_path"]
+        if image_name.startswith("http"):
+            # Try to get timestamp from URL if possible, otherwise we need to handle it
+            # For now, let's just use the filename part of the URL
+            image_name = image_name.split("/")[-1]
         matches = re.findall(pattern1, image_name)
         if matches:
             datetime_str = matches[0]

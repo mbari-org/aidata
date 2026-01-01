@@ -84,8 +84,11 @@ def load_images(token: str, disable_ssl_verify: bool, config: str, dry_run: bool
         specs = []
         num_checked = 0
         for index, row in tqdm(df_media.iterrows(), total=len(df_media), desc="Creating images specs"):
-            file_loc_sans_root = row["media_path"].split(media.mount_path.as_posix())[-1]
-            image_url = f"{media.base_url}{file_loc_sans_root}"
+            if str(row["media_path"]).startswith("http"):
+                image_url = row["media_path"]
+            else:
+                file_loc_sans_root = row["media_path"].split(media.mount_path.as_posix())[-1]
+                image_url = f"{media.base_url}{file_loc_sans_root}"
 
             if num_checked < 100:
                 # Check if the URL is valid, but only for the first 100 images
@@ -102,9 +105,10 @@ def load_images(token: str, disable_ssl_verify: bool, config: str, dry_run: bool
                     return -1
 
             # Check if the image is valid
-            if not Path(row["media_path"]).exists():
-                err(f"Image {row.media_path} does not exist")
-                return -1
+            if not str(row["media_path"]).startswith("http"):
+                if not Path(row["media_path"]).exists():
+                    err(f"Image {row.media_path} does not exist")
+                    return -1
 
             info("Formatting attributes")
             attributes = format_attributes(row.to_dict(), media.attributes)

@@ -53,11 +53,13 @@ def check_mounts(config_dict: Dict, input:str, media_type: str) -> (MediaHelper,
     mount_path = Path(media_mount["path"])
     mount_path = mount_path.resolve()
     input_path = Path(input)
-    input_path = input_path.resolve()
-
-    if not input_path.exists():
-        err(f"Media input {input_path} does not exist")
-        return None, -1
+    if not input.startswith("http"):
+        input_path = input_path.resolve()
+        if not input_path.exists():
+            err(f"Media input {input_path} does not exist")
+            return None, -1
+    else:
+        info(f"Media input {input} is a URL")
 
     media = MediaHelper()
     media.input_path = input_path
@@ -70,14 +72,15 @@ def check_mounts(config_dict: Dict, input:str, media_type: str) -> (MediaHelper,
         return None, -1
 
     # If the input path is a directory, check if it is a subdirectory of the media mount path
-    if input_path.is_dir():
-        dir_or_file = input_path
-    else:
-        dir_or_file = input_path.parent
+    if not str(input_path).startswith("http"):
+        if input_path.is_dir():
+            dir_or_file = input_path
+        else:
+            dir_or_file = input_path.parent
 
-    if not dir_or_file.is_relative_to(mount_path):
-        err(f"{dir_or_file} is not a subdirectory of the mount path {mount_path}. "
-            f"This is required to load the media correctly.")
-        return None, -1
+        if not dir_or_file.is_relative_to(mount_path):
+            err(f"{dir_or_file} is not a subdirectory of the mount path {mount_path}. "
+                f"This is required to load the media correctly.")
+            return None, -1
 
     return media, 0

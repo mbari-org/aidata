@@ -152,13 +152,20 @@ def gen_spec(file_loc: str, type_id: int, section: str, **kwargs) -> dict:
 
     if file_url:
         debug(f"spec URL: {file_url}")
+        if file_load_path.exists():
+            md5 = local_md5_partial(file_load_path)
+            size = file_load_path.stat().st_size
+        else:
+            md5 = "unknown"
+            size = 0
+
         spec = {
             "type": type_id,
             "url": file_url,
             "name": file_load_path.name,
             "section": section,
-            "md5": local_md5_partial(file_load_path),
-            "size": file_load_path.stat().st_size,
+            "md5": md5,
+            "size": size,
             "attributes": attributes,
             "gid": str(uuid1()),
             "uid": str(uuid1()),

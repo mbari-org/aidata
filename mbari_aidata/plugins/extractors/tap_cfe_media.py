@@ -39,10 +39,13 @@ def extract_videos(media_path: Path, max_videos: Optional[int] = None) -> pd.Dat
     df = pd.DataFrame()
     acceptable_extensions = ["mp4"]
 
+    # Check if media_path is a txt file containing list of paths
     if media_path.is_file() and media_path.suffix.lower() == '.txt':
         with open(media_path, 'r') as f:
             paths = [line.strip() for line in f if line.strip()]
-        df["media_path"] = [p for p in paths if Path(p).suffix.lower().lstrip('.') in [ext.lower() for ext in acceptable_extensions]]
+        df["media_path"] = [p for p in paths if
+                            p.startswith("http") or
+                            Path(p).suffix.lower().lstrip('.') in [ext.lower() for ext in acceptable_extensions]]
     elif media_path.is_dir():
         df["media_path"] = [f.as_posix() for f in media_path.rglob("*.mp4")]
     elif media_path.is_file():
@@ -103,6 +106,7 @@ def extract_images(media_path: Path, max_images: Optional[int] = None) -> pd.Dat
         with open(media_path, 'r') as f:
             paths = [line.strip() for line in f if line.strip()]
         df["media_path"] = [p for p in paths if
+                            p.startswith("http") or
                             Path(p).suffix.lower().lstrip('.') in [ext.lower() for ext in acceptable_extensions]]
     elif media_path.is_dir():
         df["media_path"] = [f.as_posix() for f in media_path.rglob("*")]

@@ -24,6 +24,7 @@ def extract_media(media_path: Path, max_images: int = -1) -> pd.DataFrame:
         with open(media_path, 'r') as f:
             paths = [line.strip() for line in f if line.strip()]
         images_df["media_path"] = [p for p in paths if
+                                   p.startswith("http") or
                                    Path(p).suffix.lower() in [ext.lower() for ext in allowed_extensions]]
     elif media_path.is_dir():
         images_df["media_path"] = [str(file) for file in media_path.rglob("*") if
@@ -55,6 +56,10 @@ def extract_media(media_path: Path, max_images: int = -1) -> pd.DataFrame:
     failed_indexes = []
     sorted_df = images_df.sort_values(by="media_path")
     for i, row in sorted_df.iterrows():
+        if str(row.media_path).startswith("http"):
+            # Skip EXIF for URLs for now, as piexif expects a local file
+            failed_indexes.append(i)
+            continue
         info(f"Reading EXIF data in {row.media_path}")
         try:
             exif = piexif.load(row.media_path)
