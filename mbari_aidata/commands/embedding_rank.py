@@ -5,13 +5,13 @@ import tempfile
 import subprocess
 import os
 from pathlib import Path
-from typing import List, Tuple, Dict, Any
-import numpy as np
-from PIL import Image
-import torch
+from typing import List, Tuple, Dict, Any, TYPE_CHECKING
 
 from mbari_aidata.logger import info, err, debug
-from transformers import AutoModel, AutoImageProcessor  # type: ignore
+
+if TYPE_CHECKING:
+    from PIL import Image
+    import numpy as np
 
 
 def crop_boxes_from_video(
@@ -22,7 +22,7 @@ def crop_boxes_from_video(
     video_width: int,
     video_height: int,
     resize: int = None
-) -> List[Image.Image]:
+) -> "List[Image.Image]":
     """
     Crop boxes from video frames using ffmpeg, similar to coco_voc.py implementation.
 
@@ -38,6 +38,8 @@ def crop_boxes_from_video(
     Returns:
         List of PIL Images cropped from the video
     """
+    from PIL import Image
+    
     cropped_images = []
 
     with tempfile.TemporaryDirectory() as tmpdir:
@@ -114,9 +116,9 @@ def crop_boxes_from_video(
 
 
 def compute_embeddings_for_boxes(
-    cropped_images: List[Image.Image],
+    cropped_images: "List[Image.Image]",
     model_info: Dict[str, Any]
-) -> np.ndarray:
+) -> "np.ndarray":
     """
     Compute embeddings for a list of cropped images using ViT.
 
@@ -127,6 +129,9 @@ def compute_embeddings_for_boxes(
     Returns:
         Numpy array of embeddings
     """
+    import numpy as np
+    import torch
+    
     # Filter out None images (failed crops)
     valid_images = [img for img in cropped_images if img is not None]
 
@@ -149,8 +154,8 @@ def compute_embeddings_for_boxes(
 
 
 def compute_similarity_ranking(
-    query_embedding: np.ndarray,
-    candidate_embeddings: np.ndarray,
+    query_embedding: "np.ndarray",
+    candidate_embeddings: "np.ndarray",
     candidate_ids: List[Any]
 ) -> List[Tuple[Any, float]]:
     """
@@ -164,6 +169,8 @@ def compute_similarity_ranking(
     Returns:
         List of (id, similarity_score) tuples sorted by similarity (descending)
     """
+    import numpy as np
+    
     if len(candidate_embeddings) == 0:
         return []
 
@@ -206,6 +213,10 @@ def rank_tdwa_boxes_by_similarity(
     Returns:
         Dictionary mapping box IDs to similarity rankings
     """
+    import numpy as np
+    import torch
+    from transformers import AutoModel, AutoImageProcessor  # type: ignore
+    
     info(f"Starting embedding ranking for {len(tdwa_boxes)} TDWA boxes")
 
     if not tdwa_boxes:

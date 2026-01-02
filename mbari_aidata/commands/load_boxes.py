@@ -4,14 +4,6 @@
 import click
 from mbari_aidata import common_args
 from pathlib import Path
-from mbari_aidata.logger import create_logger_file, info, err
-from mbari_aidata.plugins.extractors.tap_sdcat_csv import extract_sdcat_csv
-from mbari_aidata.plugins.extractors.tap_voc import extract_voc
-from mbari_aidata.plugins.loaders.tator.localization import gen_spec as gen_localization_spec
-from mbari_aidata.plugins.loaders.tator.localization import load_bulk_boxes
-from mbari_aidata.plugins.loaders.tator.attribute_utils import format_attributes
-from mbari_aidata.plugins.loaders.tator.common import init_yaml_config, find_box_type, find_media_type, init_api_project, get_version_id
-from mbari_aidata.plugins.loaders.tator.media import get_media_ids
 
 @click.command("boxes", help="Load boxes from a directory with VOC or SDCAT formatted CSV files")
 @common_args.token
@@ -25,6 +17,16 @@ from mbari_aidata.plugins.loaders.tator.media import get_media_ids
 @click.option("--min-score", type=float, help="Minimum score to load between 0 and 1")
 def load_boxes(token: str, disable_ssl_verify: bool, config: str, version: str, input: Path, dry_run: bool, max_num: int, min_score:float, exclude: str) -> int:
     """Load boxes from a directory with VOC or SDCAT formatted CSV files. Returns the number of boxes loaded."""
+
+    from mbari_aidata.logger import create_logger_file, info, err
+    from mbari_aidata.plugins.extractors.tap_sdcat_csv import extract_sdcat_csv
+    from mbari_aidata.plugins.extractors.tap_voc import extract_voc
+    from mbari_aidata.plugins.loaders.tator.localization import gen_spec as gen_localization_spec
+    from mbari_aidata.plugins.loaders.tator.localization import load_bulk_boxes
+    from mbari_aidata.plugins.loaders.tator.attribute_utils import format_attributes
+    from mbari_aidata.plugins.loaders.tator.common import init_yaml_config, find_box_type, find_media_type, \
+        init_api_project, get_version_id
+    from mbari_aidata.plugins.loaders.tator.media import get_media_ids
 
     try:
         create_logger_file("load_boxes")

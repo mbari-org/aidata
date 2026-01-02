@@ -2,18 +2,13 @@
 # Filename: commands/load_exemplars.py
 # Description: Load image embedding vectors from a SDCAT formatted CSV exemplar file
 import click
-import redis
-import re
+from pathlib import Path
 
 from mbari_aidata import common_args
-from mbari_aidata.logger import create_logger_file, info, err
-from mbari_aidata.plugins.extractors.tap_sdcat_csv import extract_sdcat_csv
-from mbari_aidata.plugins.loaders.tator.common import init_yaml_config, init_api_project, find_box_type
-from mbari_aidata.predictors.process_vits import ViTWrapper
-from pathlib import Path
 
 
 def parse_id(input_str):
+    import re
     """Parse the database id from the image name, e.g. 12467345 from 12467345.1.jpg or 12467345.jpg, etc.
     If no id is found, return the input string"""
     match = re.match(r"^\d+", input_str)
@@ -44,6 +39,13 @@ def parse_id(input_str):
 def load_exemplars(config: str, input: Path, dry_run: bool, label: str, device: str, batch_size, password: str) -> int:
     """Load embeddings from a directory with SDCAT formatted exemplar CSV files. Returns the number of exemplar image
     embeddings loaded."""
+    import redis
+
+    from mbari_aidata.logger import create_logger_file, info, err
+    from mbari_aidata.plugins.extractors.tap_sdcat_csv import extract_sdcat_csv
+    from mbari_aidata.plugins.loaders.tator.common import init_yaml_config, init_api_project, find_box_type
+    from mbari_aidata.predictors.process_vits import ViTWrapper
+
     create_logger_file("load_exemplars")
     try:
         # Load the configuration file
@@ -88,6 +90,7 @@ def load_exemplars(config: str, input: Path, dry_run: bool, label: str, device: 
 
         # If image paths are relative, prepend the base path to the image paths
         if not Path(image_paths[0]).is_absolute():
+            import os
             base_path = Path(input).parent
             image_paths = [os.path.join(base_path, p) for p in image_paths]
 

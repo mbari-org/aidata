@@ -11,10 +11,6 @@ import click
 import os
 import redis
 from mbari_aidata import common_args
-from mbari_aidata.logger import info, create_logger_file
-from mbari_aidata.plugins.loaders.tator_redis.consume_localization import ConsumeLocalization
-from mbari_aidata.plugins.loaders.tator_redis.consume_media import ConsumeVideo
-from mbari_aidata.plugins.loaders.tator.common import init_yaml_config, init_api_project, find_media_type, find_box_type
 
 
 @click.command("queue", help="Load data from a Redis message queue")
@@ -23,6 +19,12 @@ from mbari_aidata.plugins.loaders.tator.common import init_yaml_config, init_api
 @common_args.yaml_config
 @click.option("--reset", is_flag=True, help="Reset the Redis queue. CAUTION: This will delete all data in the queue.")
 def load_queue(token: str, disable_ssl_verify: bool, config: str, reset: bool) -> None:
+    from mbari_aidata.logger import info, create_logger_file
+    from mbari_aidata.plugins.loaders.tator_redis.consume_localization import ConsumeLocalization
+    from mbari_aidata.plugins.loaders.tator_redis.consume_media import ConsumeVideo
+    from mbari_aidata.plugins.loaders.tator.common import init_yaml_config, init_api_project, find_media_type, \
+        find_box_type
+
     """Load data from a Redis message queue."""
     create_logger_file("load_queue")
 

@@ -2,17 +2,8 @@
 # Filename: commands/split.py
 # Description: Split data into train/val/test sets
 
-import os
-import random
-import shutil
-import tarfile
-import tempfile
 from pathlib import Path
-
 import click
-from tqdm import tqdm
-
-from mbari_aidata.logger import create_logger_file, debug, err, info
 
 
 def split(input_path: Path, output_path: Path):
@@ -23,6 +14,15 @@ def split(input_path: Path, output_path: Path):
         input_path: Path to the root folder with images and labels organized into labels/ and images/ folders
         output_path: Path to the root folder to save the split, compressed files
     """
+    from tqdm import tqdm
+    import os
+    import random
+    import shutil
+    import tarfile
+    import tempfile
+
+    from mbari_aidata.logger import create_logger_file, debug, err, info
+    
     #########################################
     # Credit to http://github.com/ultralytics/yolov5 code for this snippet
     #########################################
@@ -98,6 +98,8 @@ def split_command(input: str, output: str):
     """
     Split data into train/val/test sets randomly per the following percentages 85%/10%/5%
     """
+    from mbari_aidata.logger import create_logger_file, err
+
     create_logger_file("split")
     
     input_path = Path(input)

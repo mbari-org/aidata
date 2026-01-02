@@ -116,7 +116,7 @@ tator:
         type: int
       exemplar:
         type: bool
-  tdwa_box:
+  tdwa_box: #<-------Optional for videos track loads
     attributes:
       Label:
         type: string
@@ -126,7 +126,7 @@ tator:
         type: bool
       similarity_score:
         type: float
-  track_state:
+  track_state:  #<-------Optional for videos track loads
     attributes:
       Label:
         type: string

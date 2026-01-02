@@ -1,19 +1,10 @@
 # mbari_aidata, Apache-2.0 license
 # Filename: commands/load_video.py
 # Description: Load video into the database
-import shutil
 from pathlib import Path
-
 import click
 
 from mbari_aidata import common_args
-from mbari_aidata.commands.load_common import check_mounts, check_duplicate_media, get_media_attributes
-from mbari_aidata.logger import info, err, create_logger_file
-from mbari_aidata.plugins.loaders.tator.attribute_utils import format_attributes
-from mbari_aidata.plugins.loaders.tator.media import load_media, upload_media
-from mbari_aidata.plugins.module_utils import load_module
-from mbari_aidata.plugins.extractors.media_types import MediaType
-from mbari_aidata.plugins.loaders.tator.common import init_api_project, find_media_type, init_yaml_config
 
 
 @click.command("videos", help="Load videos from a directory or a single video")
@@ -28,6 +19,17 @@ from mbari_aidata.plugins.loaders.tator.common import init_api_project, find_med
 @click.option("--upload", is_flag=True, help="Upload video files directly instead of loading by reference")
 def load_video(token: str, disable_ssl_verify: bool, config: str, dry_run: bool, input: str, section: str, max_videos: int, check_duplicates: bool, upload: bool) -> int:
     """Load video(s) from a directory. Returns the number of video loaded."""
+
+    import shutil
+
+    from mbari_aidata.commands.load_common import check_mounts, check_duplicate_media, get_media_attributes
+    from mbari_aidata.logger import info, err, create_logger_file
+    from mbari_aidata.plugins.loaders.tator.attribute_utils import format_attributes
+    from mbari_aidata.plugins.loaders.tator.media import load_media, upload_media
+    from mbari_aidata.plugins.module_utils import load_module
+    from mbari_aidata.plugins.extractors.media_types import MediaType
+    from mbari_aidata.plugins.loaders.tator.common import init_api_project, find_media_type, init_yaml_config
+
     create_logger_file("load_videos")
     # Load the configuration file
     config_dict = init_yaml_config(config)
