@@ -13,7 +13,7 @@ norecursedirs = ["tator", ".*", "dist", "build", "*.egg", "data", "logs", "docke
 
 [tool.poetry]
 name = "mbari-aidata"
-version = "1.68.0"
+version = "1.69.0"
 description = "Command line tool to do extract, transform, load and download operations on AI data for a number of projects at MBARI that require detection, clustering or classification workflows."
 authors = [
     "Danelle Cline <dcline@mbari.org>"
