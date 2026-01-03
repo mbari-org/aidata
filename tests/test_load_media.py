@@ -293,6 +293,8 @@ def test_load_tracks_i2map_dryrun():
         "load",
         "tracks",
         "--dry-run",
+        "--version",
+        "Baseline",
         "--input",
         tracks_tar.as_posix(),
         "--config",

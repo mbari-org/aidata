@@ -4,15 +4,7 @@
 
 from pathlib import Path
 
-import albumentations as albu
 import click
-import cv2
-from tqdm import tqdm
-import shutil
-
-from mbari_aidata.generators.utils import parse_voc_xml
-from mbari_aidata.logger import create_logger_file, info, exception, warn
-from pascal_voc_writer import Writer  # type: ignore
 
 # Default values
 # The base directory is the same directory as this file
@@ -53,6 +45,15 @@ DEFAULT_BASE_DIR = Path.home() / "mbari_aidata" / "datasets"
 def transform(base_path: str, resize: int, crop_size: int, crop_overlap: float, min_area: int, min_dim: int,
               min_visibility: float, max_images: int):
     """Transform a downloaded dataset for training detection models"""
+    import albumentations as albu
+    import cv2
+    from tqdm import tqdm
+    import shutil
+
+    from mbari_aidata.generators.utils import parse_voc_xml
+    from mbari_aidata.logger import create_logger_file, info, exception, warn
+    from pascal_voc_writer import Writer  # type: ignore
+
     try:
         create_logger_file("transform")
         info(
@@ -270,6 +271,12 @@ def transform(base_path: str, resize: int, crop_size: int, crop_overlap: float, 
 )
 def voc_to_yolo(base_path: str):
     """Transform a downloaded dataset for training detection models from VOC to YOLO format"""
+    import cv2
+
+    from mbari_aidata.generators.utils import parse_voc_xml
+    from mbari_aidata.logger import create_logger_file, info, exception, warn
+    from pascal_voc_writer import Writer  # type: ignore
+
     try:
         create_logger_file("transform")
         info(f"Transforming dataset at {base_path} from VOC to YOLO format")

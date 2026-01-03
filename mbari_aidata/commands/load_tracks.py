@@ -2,22 +2,10 @@
 # Filename: commands/load_tracks.py
 # Description: Load tracks from a .tar.gz file with track data
 import click
-import tarfile
-import tempfile
-import json
-import pandas as pd
 from mbari_aidata import common_args
 from pathlib import Path
-from mbari_aidata.logger import create_logger_file, info, err, warn
-from mbari_aidata.plugins.loaders.tator.common import init_yaml_config, init_api_project, get_version_id, find_box_type, find_media_type, find_state_type
-from mbari_aidata.plugins.loaders.tator.localization import gen_spec as gen_localization_spec, load_bulk_boxes
-from mbari_aidata.plugins.loaders.tator.attribute_utils import format_attributes
-from mbari_aidata.commands.embedding_rank import rank_tdwa_boxes_by_similarity
-import tator  # type: ignore
-
 from dataclasses import dataclass
 import math
-import numpy as np
 from typing import Optional, Tuple, List
 
 @click.command("tracks", help="Load tracks from a .tar.gz file with track data")
@@ -35,6 +23,19 @@ from typing import Optional, Tuple, List
 @click.option("--video-dir", type=Path, help="Directory containing video files for embedding computation (videos should have .mov extension)")
 def load_tracks(token: str, disable_ssl_verify: bool, config: str, version: str, input: Path, dry_run: bool, max_num: int, iou_threshold: float, frame_gap: int, compute_embeddings: bool, device: str, video_dir: Path) -> int:
     """Load tracks from a .tar.gz file with track data. Returns the number of tracks loaded."""
+    import pandas as pd
+    import numpy as np
+    import tator  # type: ignore
+    import tarfile
+    import tempfile
+    import json
+
+    from mbari_aidata.logger import create_logger_file, info, err, warn
+    from mbari_aidata.plugins.loaders.tator.common import init_yaml_config, init_api_project, get_version_id, \
+        find_box_type, find_media_type, find_state_type
+    from mbari_aidata.plugins.loaders.tator.localization import gen_spec as gen_localization_spec, load_bulk_boxes
+    from mbari_aidata.plugins.loaders.tator.attribute_utils import format_attributes
+    from mbari_aidata.commands.embedding_rank import rank_tdwa_boxes_by_similarity
 
     try:
         create_logger_file("load_tracks")
@@ -64,25 +65,37 @@ def load_tracks(token: str, disable_ssl_verify: bool, config: str, version: str,
         video_type = find_media_type(api, tator_project.id, "Video")
 
         assert "box" in config_dict["tator"], "Missing required 'box' key in configuration file"
-        assert "track_state" in config_dict["tator"], "Missing required 'track_state' key in configuration file"
-        assert "tdwa_box" in config_dict["tator"], "Missing required 'tdwa_box' key in configuration file"
+
+        # track_state and tdwa_box are optional
+        has_track_state = "track_state" in config_dict["tator"]
+        has_tdwa_box = "tdwa_box" in config_dict["tator"]
+
+        if not has_track_state:
+            warn("No 'track_state' configuration found - tracks will not be created")
+        if not has_tdwa_box:
+            warn("No 'tdwa_box' configuration found - TDWA boxes will not be created")
 
         # Validate VSS configuration if embeddings are to be computed
         if compute_embeddings:
-            assert "vss" in config_dict, "Missing required 'vss' key in configuration file for embedding computation"
-            assert "model" in config_dict["vss"], "Missing required 'vss.model' key in configuration file"
-            assert video_dir is not None, "Video directory is required when computing embeddings"
-            assert video_dir.exists(), f"Video directory {video_dir} does not exist"
+            if not has_tdwa_box:
+                warn("Cannot compute embeddings without tdwa_box configuration - skipping embedding computation")
+                compute_embeddings = False
+            else:
+                assert "vss" in config_dict, "Missing required 'vss' key in configuration file for embedding computation"
+                assert "model" in config_dict["vss"], "Missing required 'vss.model' key in configuration file"
+                assert video_dir is not None, "Video directory is required when computing embeddings"
+                assert video_dir.exists(), f"Video directory {video_dir} does not exist"
 
         box_attributes = config_dict["tator"]["box"]["attributes"]
-        track_attributes = config_dict["tator"]["track_state"]["attributes"]
-        tdwa_box_attributes = config_dict["tator"]["tdwa_box"]["attributes"]
-        assert tdwa_box_attributes is not None, f"No TDWABox attributes found in configuration file"
+        track_attributes = config_dict["tator"]["track_state"]["attributes"] if has_track_state else None
+        tdwa_box_attributes = config_dict["tator"]["tdwa_box"]["attributes"] if has_tdwa_box else None
 
         assert version_id is not None, f"No version found in project {project}"
         assert box_type is not None, f"No box type found in project {project} for type Box"
-        assert tdwa_box_type is not None, f"No TDWABox type found in project {project} for type TDWABox"
-        assert track_type is not None, f"No state type found in project {project} for type Track"
+        if has_tdwa_box:
+            assert tdwa_box_type is not None, f"No TDWABox type found in project {project} for type TDWABox"
+        if has_track_state:
+            assert track_type is not None, f"No state type found in project {project} for type Track"
         assert video_type is not None, f"No track type found in project {project} for type Video"
 
         info(f"Processing track data from {input}")
@@ -388,80 +401,87 @@ def load_tracks(token: str, disable_ssl_verify: bool, config: str, version: str,
                 else:
                     warn("No similarity rankings were computed")
 
-            # Create tdwa_box specs for non-merged tracks
-            tdwa_box_specs = []
-            for tracker_id in track_info:
-                if tracker_id in merged_tracker_map:
-                    continue
-                info_data = track_info[tracker_id]
-                obj = df_boxes.iloc[info_data["df_row_index"]].to_dict()
-                attributes = format_attributes(obj, tdwa_box_attributes)
-                
-                # Add similarity_score if rankings were computed
-                if rankings and tracker_id in rankings:
-                    ranking_list = rankings[tracker_id]
-                    if ranking_list:
-                        # Use the highest similarity score (to the most similar box)
-                        attributes['similarity_score'] = float(ranking_list[0][1])
+            # Create tdwa_box specs for non-merged tracks (only if configured)
+            tdwa_box_ids = []
+            if has_tdwa_box and tdwa_box_type is not None:
+                tdwa_box_specs = []
+                for tracker_id in track_info:
+                    if tracker_id in merged_tracker_map:
+                        continue
+                    info_data = track_info[tracker_id]
+                    obj = df_boxes.iloc[info_data["df_row_index"]].to_dict()
+                    attributes = format_attributes(obj, tdwa_box_attributes)
+
+                    # Add similarity_score if rankings were computed
+                    if rankings and tracker_id in rankings:
+                        ranking_list = rankings[tracker_id]
+                        if ranking_list:
+                            # Use the highest similarity score (to the most similar box)
+                            attributes['similarity_score'] = float(ranking_list[0][1])
+                        else:
+                            attributes['similarity_score'] = 0.0
                     else:
+                        # No ranking available, set to 0 or None
                         attributes['similarity_score'] = 0.0
-                else:
-                    # No ranking available, set to 0 or None
-                    attributes['similarity_score'] = 0.0
-                
-                tdwa_box_specs.append(gen_localization_spec(
-                    box=[obj["x"], obj["y"], obj["xx"], obj["xy"]],
-                    version_id=version_id,
-                    label=info_data["best_label"][0],
-                    width=video_width,
-                    height=video_height,
-                    attributes=attributes,
-                    frame_number=info_data["best_frame"],
-                    type_id=tdwa_box_type.id,
-                    media_id=media_id,
-                    project_id=tator_project.id,
-                    normalize=False,
-                ))
 
-            # Load tdwa_box
-            tdwa_box_ids = load_bulk_boxes(tator_project.id, api, tdwa_box_specs)
-            info(f"Loaded {len(tdwa_box_ids)} tdwa_boxes into Tator")
+                    tdwa_box_specs.append(gen_localization_spec(
+                        box=[obj["x"], obj["y"], obj["xx"], obj["xy"]],
+                        version_id=version_id,
+                        label=info_data["best_label"][0],
+                        width=video_width,
+                        height=video_height,
+                        attributes=attributes,
+                        frame_number=info_data["best_frame"],
+                        type_id=tdwa_box_type.id,
+                        media_id=media_id,
+                        project_id=tator_project.id,
+                        normalize=False,
+                    ))
 
-            # Create states for non-merged tracks
-            states = []
-            for tracker_id in track_info:
-                # Skip if this track was merged into another
-                if tracker_id in merged_tracker_map:
-                    continue
-                
-                info_data = track_info[tracker_id]
-                attributes_best = {
-                    "label": info_data["best_label"],
-                    "max_score": info_data["score"],
-                    "verified": True,
-                    "num_frames": info_data["last_frame"] - info_data["first_frame"] + 1
-                }
-                attributes = format_attributes(attributes_best, track_attributes)
-                if 'label' in attributes:
-                    attributes["Label"] = attributes.pop("label")
-                state = {
-                    "type": track_type.id,
-                    "media_ids": [media_id],
-                    "localization_ids": localization_ids[tracker_id],
-                    "attributes": attributes,
-                    "version": version_id,
-                    "frame": info_data["best_frame"],
-                }
-                states.append(state)
+                # Load tdwa_box
+                tdwa_box_ids = load_bulk_boxes(tator_project.id, api, tdwa_box_specs)
+                info(f"Loaded {len(tdwa_box_ids)} tdwa_boxes into Tator")
+            else:
+                info("Skipping TDWA box creation (not configured)")
 
-            # Load tracks
+            # Create states for non-merged tracks (only if configured)
             state_ids = []
-            for response in tator.util.chunked_create(
-                    api.create_state_list, video_type.project, body=states
-            ):
-                state_ids += response.id
-                num_loaded_tracks += len(response.id)
-            info(f"Created {len(state_ids)} tracks!")
+            if has_track_state and track_type is not None:
+                states = []
+                for tracker_id in track_info:
+                    # Skip if this track was merged into another
+                    if tracker_id in merged_tracker_map:
+                        continue
+
+                    info_data = track_info[tracker_id]
+                    attributes_best = {
+                        "label": info_data["best_label"],
+                        "max_score": info_data["score"],
+                        "verified": True,
+                        "num_frames": info_data["last_frame"] - info_data["first_frame"] + 1
+                    }
+                    attributes = format_attributes(attributes_best, track_attributes)
+                    if 'label' in attributes:
+                        attributes["Label"] = attributes.pop("label")
+                    state = {
+                        "type": track_type.id,
+                        "media_ids": [media_id],
+                        "localization_ids": localization_ids[tracker_id],
+                        "attributes": attributes,
+                        "version": version_id,
+                        "frame": info_data["best_frame"],
+                    }
+                    states.append(state)
+
+                # Load tracks
+                for response in tator.util.chunked_create(
+                        api.create_state_list, video_type.project, body=states
+                ):
+                    state_ids += response.id
+                    num_loaded_tracks += len(response.id)
+                info(f"Created {len(state_ids)} tracks!")
+            else:
+                info("Skipping track state creation (not configured)")
 
             info(f"Successfully loaded {num_loaded_boxes} localizations and {num_loaded_tracks} tracks into Tator")
             return num_loaded_tracks
@@ -485,6 +505,8 @@ def soft_iou(box1: Tuple[float, float, float, float],
     Returns:
         Soft IoU value between 0 and 1
     """
+    import numpy as np
+    
     x1_1, y1_1, x2_1, y2_1 = box1
     x1_2, y1_2, x2_2, y2_2 = box2
     

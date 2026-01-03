@@ -4,18 +4,20 @@
 
 
 import click
-import redis
 
 from mbari_aidata import common_args
-from mbari_aidata.logger import info
-from mbari_aidata.plugins.loaders.tator.common import init_yaml_config
-from mbari_aidata.predictors.process_vits import ViTWrapper
 
 
 @click.command("reset", help="Reset the REDIS server")
 @common_args.yaml_config
 @click.option("--redis-password", type=str, required=True, help="Password for the REDIS server")
 def reset_redis(redis_password: str, config: str) -> bool:
+    import redis
+
+    from mbari_aidata.logger import info
+    from mbari_aidata.plugins.loaders.tator.common import init_yaml_config
+    from mbari_aidata.predictors.process_vits import ViTWrapper
+
     """Reset the REDIS database."""
     try:
         # Load the configuration file

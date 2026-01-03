@@ -3,20 +3,9 @@
 # Description: Load images from a directory. Assumes the images are available via a web server.
 
 from pathlib import Path
-
 import click
-import requests
-from tqdm import tqdm
 
 from mbari_aidata import common_args
-from mbari_aidata.commands.load_common import check_mounts, check_duplicate_media
-from mbari_aidata.logger import create_logger_file, info, err
-from mbari_aidata.plugins.extractors.media_types import MediaType
-from mbari_aidata.plugins.loaders.tator.media import gen_spec as gen_media_spec, load_bulk_images
-from mbari_aidata.plugins.module_utils import load_module
-from mbari_aidata.plugins.loaders.tator.attribute_utils import format_attributes
-from mbari_aidata.plugins.loaders.tator.common import init_api_project, find_media_type, init_yaml_config
-
 
 @click.command("images", help="Load images from a directory, a single image file, or a text file with a list of images")
 @common_args.token
@@ -29,6 +18,17 @@ from mbari_aidata.plugins.loaders.tator.common import init_api_project, find_med
 @click.option("--max-images", type=int, default=-1, help="Only load up to max-images. Useful for testing. Default is to load all images")
 def load_images(token: str, disable_ssl_verify: bool, config: str, dry_run: bool, input: str, section: str, max_images: int, check_duplicates) -> int:
     """Load images from a directory. Assumes the images are available via a web server. Returns the number of images loaded."""
+    import requests
+    from tqdm import tqdm
+
+    from mbari_aidata.commands.load_common import check_mounts, check_duplicate_media
+    from mbari_aidata.logger import create_logger_file, info, err
+    from mbari_aidata.plugins.extractors.media_types import MediaType
+    from mbari_aidata.plugins.loaders.tator.media import gen_spec as gen_media_spec, load_bulk_images
+    from mbari_aidata.plugins.module_utils import load_module
+    from mbari_aidata.plugins.loaders.tator.attribute_utils import format_attributes
+    from mbari_aidata.plugins.loaders.tator.common import init_api_project, find_media_type, init_yaml_config
+
     create_logger_file("load_images")
     try:
         # Load the configuration file

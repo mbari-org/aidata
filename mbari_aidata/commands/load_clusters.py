@@ -2,14 +2,9 @@
 # Filename: commands/load_clusters.py
 # Description: Load clusters from a directory with SDCAT formatted CSV files
 import click
-import pandas as pd
-import tator
 
 from mbari_aidata import common_args
 from pathlib import Path
-from mbari_aidata.logger import create_logger_file, info, err, debug
-from mbari_aidata.plugins.extractors.tap_sdcat_csv import extract_sdcat_csv
-from mbari_aidata.plugins.loaders.tator.common import init_yaml_config, find_box_type, find_media_type, init_api_project, get_version_id
 
 @click.command("clusters", help="Load cluster from a SDCAT formatted CSV files")
 @common_args.token
@@ -23,6 +18,13 @@ from mbari_aidata.plugins.loaders.tator.common import init_yaml_config, find_box
 def load_clusters(token: str, disable_ssl_verify: bool, config: str, version: str, input: Path, dry_run: bool, max_num: int, update: bool) -> int:
     """Load clusters from a directory SDCAT formatted CSV files. Returns the number of clusters loaded.
     Assumes that the data is already loaded into Tator and rows reference the database ids."""
+    import pandas as pd
+    import tator
+
+    from mbari_aidata.logger import create_logger_file, info, err, debug
+    from mbari_aidata.plugins.extractors.tap_sdcat_csv import extract_sdcat_csv
+    from mbari_aidata.plugins.loaders.tator.common import init_yaml_config, find_box_type, find_media_type, \
+        init_api_project, get_version_id
 
     try:
         create_logger_file("load_clusters")
