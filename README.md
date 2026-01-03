@@ -22,7 +22,7 @@ More documentation and examples are available at [https://docs.mbari.org/interna
 * Duplicate Detection & flexible media references: Supports duplicate media load checks with the --check-duplicates flag. 
 * Images or video can be loaded through a web server without needing to upload or move them from your internal NFS project mounts (e.g. Thalassa)
 * Video can be uploaded without needing to figure out how to do the video transcoding required for web viewing.
-* Video tracks can be uploaded into Tator for training and evaluation.
+* Video tracks can be uploaded into Tator for training and evaluation, including time-decay weighted tracks.
 * Multiple data versions can be downloaded into a single dataset for training or evaluation using the --version flag with comma separated values. Data is combined through Non-Maximum Suppression (NMS) to remove duplicate boxes.
 * Augmentation Support: Augment VOC datasets with [Albumentations](https://albumentations.ai/) to boost your object detection model performance.
 
