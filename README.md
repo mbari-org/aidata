@@ -16,14 +16,14 @@ More documentation and examples are available at [https://docs.mbari.org/interna
 ## 🚀 Features
 * 🧠 Object Detection/Clustering Integration: Loads detection/classification/clustering output from SDCAT formatted results.
 * Flexible Data Export: Downloads from Tator into machine learning formats like COCO, CIFAR, or PASCAL VOC.
-* Crop localizaions into optimized datasets for training classification models.
+* Crop localization into optimized datasets for training classification models.
 * Real-Time Uploads: Pushes localizations to [Tator](https://www.tator.io/) via [Redis](https://redis.io/glossary/redis-queue/) queues for real-time workflows.
 * Metadata Extraction: Parses images metadata such as GPS/time/date through a plugin-based system (extractors).
 * Duplicate Detection & flexible media references: Supports duplicate media load checks with the --check-duplicates flag. 
 * Images or video can be loaded through a web server without needing to upload or move them from your internal NFS project mounts (e.g. Thalassa)
-* Video can be uploaded without needing to figure out how to do the video transcoding required for web viewing.
+* Or, video can be uploaded without needing to figure out how to do the video transcoding required for web viewing.
 * Video tracks can be uploaded into Tator for training and evaluation, including time-decay weighted tracks.
-* Multiple data versions can be downloaded into a single dataset for training or evaluation using the --version flag with comma separated values. Data is combined through Non-Maximum Suppression (NMS) to remove duplicate boxes.
+* Multiple data versions can be downloaded into a single dataset for training or evaluation using the --version flag with comma separated values, otherwise localization data is combined through Non-Maximum Suppression (NMS) to remove duplicate boxes.
 * Augmentation Support: Augment VOC datasets with [Albumentations](https://albumentations.ai/) to boost your object detection model performance.
 
 ## Requirements
@@ -139,7 +139,10 @@ tator:
     
 ```
 
-## Tracks Format
+## Track Format
+
+Tracks are video frames with a label and score for each detected object in the frame, along with a tracker_id to link
+detections across frames into tracks.
 
 Track data is stored in a compressed .tar.gz file with the -tracks.tar.gz, e.g.
 
@@ -209,4 +212,4 @@ Source code is available at [github.com/mbari-org/aidata](https://github.com/mba
 ## Development
 See the [Development Guide](https://github.com/mbari-org/aidata/blob/main/DEVELOPMENT.md) for more information on how to set up the development environment or the [justfile](justfile)  
  
-🗓️ Last updated: 2025-11-17
+🗓️ Last updated: 2026-01-03
