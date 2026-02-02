@@ -67,43 +67,43 @@ jobs:
 #          poetry config pypi-token.test-pypi $TEST_PYPI_TOKEN
 #          poetry publish -r test-pypi -u __token__
 
-      - if: steps.release-status.outputs.released == 'true'
-        name: Release to PyPI
-        id: pypi-release
-        env:
-          PYPI_TOKEN: ${{ secrets.PYPI_TOKEN }}
-        run: |
-          poetry config pypi-token.pypi $PYPI_TOKEN
-          poetry publish
-
-      - name: Clean up build artifacts
-        run: rm -rf dist/
-
-      - name: Clear Poetry cache
-        run: poetry cache clear pypi --all
-
-      - if: steps.release-status.outputs.released == 'true'
-        name: Docker Build and Push
-        run: |
-          export RELEASE_VERSION=${{steps.release-status.outputs.tag}}
-          docker login -u ${{ secrets.DOCKERHUB_USERNAME }} -p ${{ secrets.DOCKERHUB_TOKEN }}
+#      - if: steps.release-status.outputs.released == 'true'
+#        name: Release to PyPI
+#        id: pypi-release
+#        env:
+#          PYPI_TOKEN: ${{ secrets.PYPI_TOKEN }}
+#        run: |
+#          poetry config pypi-token.pypi $PYPI_TOKEN
+#          poetry publish
+#
+#      - name: Clean up build artifacts
+#        run: rm -rf dist/
+#
+#      - name: Clear Poetry cache
+#        run: poetry cache clear pypi --all
+#
+#      - if: steps.release-status.outputs.released == 'true'
+#        name: Docker Build and Push
+#        run: |
+#          export RELEASE_VERSION=${{steps.release-status.outputs.tag}}
+#          docker login -u ${{ secrets.DOCKERHUB_USERNAME }} -p ${{ secrets.DOCKERHUB_TOKEN }}
 #          docker buildx create --name mybuilder --platform linux/amd64,linux/arm64 --use
 #          docker buildx build --no-cache --sbom=true --provenance=true --push --platform linux/amd64,linux/arm64 -t mbari/aidata:$RELEASE_VERSION -t mbari/aidata:latest --build-arg IMAGE_URI=mbari/aidata:$RELEASE_VERSION -f docker/Dockerfile ..
 #          docker buildx build --no-cache --sbom=true --provenance=true --push --platform linux/amd64 -t mbari/aidata:$RELEASE_VERSION-cuda124 --build-arg IMAGE_URI=mbari/aidata:$RELEASE_VERSION-cuda124 -f docker/Dockerfile ..
 
-  push_readme_to_dockerhub:
-    runs-on: ubuntu-latest
-    name: Push README to Docker Hub
-    steps:
-      - name: git checkout
-        uses: actions/checkout@v2
-      - name: push README to Dockerhub
-        uses: christian-korneck/update-container-description-action@v1
-        env:
-          DOCKER_USER: ${{ secrets.DOCKERHUB_USERNAME }}
-          DOCKER_PASS: ${{ secrets.DOCKERHUB_TOKEN }}
-        with:
-          destination_container_repo: mbari/aidata:latest
-          provider: dockerhub
-          short_description: 'ETL and load/download tools for MBARI aidata.'
-          readme_file: 'README.md'
+#  push_readme_to_dockerhub:
+#    runs-on: ubuntu-latest
+#    name: Push README to Docker Hub
+#    steps:
+#      - name: git checkout
+#        uses: actions/checkout@v2
+#      - name: push README to Dockerhub
+#        uses: christian-korneck/update-container-description-action@v1
+#        env:
+#          DOCKER_USER: ${{ secrets.DOCKERHUB_USERNAME }}
+#          DOCKER_PASS: ${{ secrets.DOCKERHUB_TOKEN }}
+#        with:
+#          destination_container_repo: mbari/aidata:latest
+#          provider: dockerhub
+#          short_description: 'ETL and load/download tools for MBARI aidata.'
+#          readme_file: 'README.md'
