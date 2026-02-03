@@ -77,7 +77,6 @@ def parse_voc(xml_file):
             'saliency': -1,
             'cluster': -1,
             'concept': obj_info['name'],
-            'verified': True,
             'x': x,
             'y': y,
             'xx': x + w,
@@ -88,4 +87,4 @@ def parse_voc(xml_file):
         objs.append(obj)
 
     return pd.DataFrame(objs, columns=['image_path', 'label', 'score', 'saliency', 'concept', 'cluster',
-                                       'verified', 'x', 'y', 'xx', 'xy', 'image_width', 'image_height'])
+                                       'x', 'y', 'xx', 'xy', 'image_width', 'image_height'])
