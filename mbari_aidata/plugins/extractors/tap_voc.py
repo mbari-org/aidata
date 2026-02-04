@@ -83,6 +83,7 @@ def parse_voc(xml_file):
             'xy': y + h,
             'image_width': image_width,
             'image_height': image_height,
+            'verified': True
         }
         objs.append(obj)
 
