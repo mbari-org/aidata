@@ -59,6 +59,8 @@ def extract_media(media_path: Path, max_images: int = -1) -> pd.DataFrame:
         # Check if it's a UUID image
         if pattern_uuid.match(image_name):
             missions[index] = "Unknown"
+            iso_datetimes[index] = None
+            elapsed_times[index] = 0
             continue
 
         # Try to match VARS pattern
@@ -83,7 +85,7 @@ def extract_media(media_path: Path, max_images: int = -1) -> pd.DataFrame:
     if missions:
         media_df["mission"] = pd.Series(missions)
     if iso_datetimes:
-        media_df["iso_datetime"] = pd.Series(iso_datetimes)
+        media_df["iso_datetime"] =  pd.Series(iso_datetimes).dropna()
     if elapsed_times:
         media_df["index_elapsed_time_millis"] = pd.Series(elapsed_times).astype(int)
 

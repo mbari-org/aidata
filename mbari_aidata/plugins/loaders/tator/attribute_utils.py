@@ -3,6 +3,7 @@
 # Description:  Database types
 from datetime import datetime
 
+import pandas as pd
 import pytz
 
 
@@ -22,7 +23,7 @@ def format_attributes(attributes: dict, attribute_mapping: dict) -> dict:
             if a_key == m_key:
                 if m_value["type"] == "datetime":
                     # Truncate datetime to milliseconds, convert to UTC, and format as ISO 8601
-                    if isinstance(attributes[a_key], datetime):
+                    if isinstance(attributes[a_key], datetime) and attributes[a_key] is not pd.NaT:
                         dt_utc = attributes[a_key].astimezone(pytz.utc)
                         try:
                             dt_str = dt_utc.strftime("%Y-%m-%dT%H:%M:%S.%fZ")
