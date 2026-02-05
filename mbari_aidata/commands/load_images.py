@@ -96,10 +96,12 @@ def load_images(token: str, disable_ssl_verify: bool, config: str, dry_run: bool
                 try:
                     timeout = 30
                     r = requests.head(image_url, timeout=timeout)
-                    if r.status_code != 200:
+                    if r.status_code == 301 or r.status_code == 200:
+                        info(f"URL {image_url} is valid code {r.status_code}")
+                        num_checked += 1
+                    else:
                         err(f"URL {image_url} is not valid status code {r.status_code}")
                         return -1
-                    num_checked += 1
                 except Exception as e:
                     err(f"Error checking URL {image_url}: {e}")
                     return -1
