@@ -385,7 +385,7 @@ def download(
                         err(f"Could not download {media.name}")
                         exit(-1)
                 else:
-                    info(f"Skipping download of {media.name}")
+                    debug(f"Skipping download of {media.name}")
 
         if crop_roi:
 
@@ -431,6 +431,10 @@ def download(
                                 else:
                                     output_file = crop_path / f"{crop_id}.jpg"
                                 if output_file.exists():
+                                    continue
+
+                                if media.width is None or media.height is None:
+                                    err(f"Media {media.name} has no width or height")
                                     continue
 
                                 # Generate crop filter and output map
