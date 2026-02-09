@@ -43,7 +43,7 @@ def extract_media(media_path: Path, max_images: int = -1) -> pd.DataFrame:
     # Pattern for VARS images: <mission>_<YYYYMMDD>_<HHMMSS>_<millis>.jpg
     pattern_vars = re.compile(r"^(.+?)_(\d{8})_(\d{6})_(\d+)\.jpg$")
     # Pattern for UUID images
-    pattern_uuid = re.compile(r"^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\.jpg$", re.IGNORECASE)
+    pattern_uuid = re.compile(r"^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\.png$", re.IGNORECASE)
 
     missions = {}
     iso_datetimes = {}
