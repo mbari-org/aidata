@@ -75,11 +75,14 @@ def load_images(token: str, disable_ssl_verify: bool, config: str, dry_run: bool
         if check_duplicates:
             duplicates = check_duplicate_media(api, tator_project.id, media_type.id, df_media)
             if len(duplicates) > 0:
-                err("Image(s) already loaded")
-                info("==== Duplicates ====")
+                duplicate_set = set(duplicates)
+                info(f"Skipping {len(duplicates)} image(s) already in project")
                 for d in duplicates:
-                    info(d)
-                return -1
+                    info(f"  Skipping duplicate: {d}")
+                df_media = df_media[~df_media["media_path"].apply(lambda p: Path(p).name in duplicate_set)]
+                if len(df_media) == 0:
+                    info("All images were duplicates; nothing to load")
+                    return 0
 
         specs = []
         num_checked = 0
