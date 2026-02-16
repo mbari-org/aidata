@@ -7,16 +7,6 @@ from pathlib import Path
 from mbari_aidata import common_args
 
 
-def parse_id(input_str):
-    import re
-    """Parse the database id from the image name, e.g. 12467345 from 12467345.1.jpg or 12467345.jpg, etc.
-    If no id is found, return the input string"""
-    match = re.match(r"^\d+", input_str)
-    if match:
-        return match.group(0)
-    return input_str
-
-
 @click.command("exemplars", help="Load exemplars from a SDCAT formatted CSV exemplar file into a REDIS server")
 @common_args.yaml_config
 @common_args.dry_run
@@ -94,7 +84,7 @@ def load_exemplars(config: str, input: Path, dry_run: bool, label: str, device: 
             base_path = Path(input).parent
             image_paths = [os.path.join(base_path, p) for p in image_paths]
 
-        df['id'] = df['image_path'].apply(lambda x: parse_id(Path(x).stem))
+        df['id'] = df['image_path'].apply(lambda x: Path(x).stem)
         ids = df['id'].tolist()
         class_names = [f"{label}:{i}" for i in ids]
         info(f"Loading {len(image_paths)} exemplar images with class names {class_names}")
