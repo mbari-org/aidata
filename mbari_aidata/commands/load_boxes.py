@@ -85,7 +85,7 @@ def load_boxes(token: str, disable_ssl_verify: bool, config: str, version: str, 
         max_load = -1 if max_num is None else max_num
         # If missing x,y,xx,xy columns default to the entire image, this means one box per image
         # in this case we need to load the media first and then the boxes as it is more efficient for bulk loading
-        if "x" not in df_boxes.columns and "y" not in df_boxes.columns and "xy" not in df_boxes.columns and "xy" not in df_boxes.columns:
+        if "x" not in df_boxes.columns and "y" not in df_boxes.columns and "xx" not in df_boxes.columns and "xy" not in df_boxes.columns:
             df_boxes["x"] = 0
             df_boxes["y"] = 0
             df_boxes["xx"] = 1.
