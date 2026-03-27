@@ -1,14 +1,15 @@
 # mbari_aidata, Apache-2.0 license
 # Filename: predictors/process_vits.py
 # Description: Process images with Vision Transformer (ViT) model and store/search in Redis
-import re
+import os
+from concurrent.futures import ThreadPoolExecutor, as_completed
+from typing import List, Tuple
 
 import numpy as np
 import redis
 import torch
 from PIL import Image
 from transformers import AutoModel, AutoImageProcessor  # type: ignore
-from typing import List
 
 from mbari_aidata.logger import info
 from mbari_aidata.predictors.vector_similarity import VectorSimilarity
@@ -51,10 +52,33 @@ class ViTWrapper:
         inputs = self.processor(images=images, return_tensors="pt").to(self.device)
         return inputs
 
-    def preprocess_images(self, image_paths: List[str]):
+    def preprocess_images(self, image_paths: List[str]) -> dict:
+        """Load and preprocess images in parallel with efficient batching"""
         info(f"Preprocessing {len(image_paths)} images")
-        images = [Image.open(image_path).convert("RGB") for image_path in image_paths]
-        inputs = self.processor(images=images, return_tensors="pt").to(self.device)
+
+        with ThreadPoolExecutor(max_workers=min(os.cpu_count(), len(image_paths))) as executor:
+            future_to_idx = {
+                executor.submit(self._load_image_resized, path): idx
+                for idx, path in enumerate(image_paths)
+            }
+
+            # Preserve order
+            results = [None] * len(image_paths)
+            for future in as_completed(future_to_idx):
+                idx = future_to_idx[future]
+                try:
+                    results[idx] = future.result()
+                except Exception as e:
+                    info(f"Failed to load {image_paths[idx]}: {e}")
+
+        images = [img for img in results if img is not None]
+
+        with torch.no_grad():
+            inputs = self.processor(images=images, return_tensors="pt").to(self.device)
+
+        # Release PIL images immediately
+        del images
+
         return inputs
 
     def get_image_embeddings(self, inputs: torch.Tensor):
@@ -72,15 +96,34 @@ class ViTWrapper:
 
         for i in range(0, len(image_paths), self.batch_size):
             batch = image_paths[i: i + self.batch_size]
-            images = self.preprocess_images(batch)
-            embeddings = self.get_image_embeddings(images)
+            inputs = self.preprocess_images(batch)
+            embeddings = self.get_image_embeddings(inputs)
+
+            # Explicitly free GPU memory after each batch
+            del inputs
+            if self.device == "cuda":
+                torch.cuda.empty_cache()
+
             for j, emb in enumerate(embeddings):
-                # make sure the array matches the vector dimensions and type float32 otherwise indexing will fail
                 emb = emb.astype(np.float32)
                 assert emb.shape[0] == self.model.config.hidden_size
                 self.vs.add_vector(doc_id=class_names[i + j], vector=emb.tobytes(), tag=self.model_name)
 
+            del embeddings
+
         info(f"Finished processing {len(image_paths)} images for {unique_class_names}")
+
+    def _load_image_resized(self, path: str, target_size: Tuple[int, int] = (224, 224)) -> Image.Image:
+        """Load and resize image in one step for better memory efficiency"""
+        try:
+            with Image.open(path) as img:
+                if img.mode != 'RGB':
+                    img = img.convert('RGB')
+                if img.size != target_size:
+                    img = img.resize(target_size, Image.Resampling.LANCZOS)
+                return img.copy()  # copy so the file handle can close
+        except Exception:
+            return None
 
     def predict(self, image_paths: List[str], top_n: int = 1) -> tuple[
         list[list[str]], list[list[float]], list[list[str]]]:
@@ -92,7 +135,7 @@ class ViTWrapper:
         info(f"Found {len(image_paths)} images to predict")
         for i in range(0, len(image_paths), self.batch_size):
             batch = image_paths[i: i + self.batch_size]
-            images = self.preprocess_images(batch)
+            images, _ = self.preprocess_images(batch)
             embeddings = self.get_image_embeddings(images)
             for j, emb in enumerate(embeddings):
                 r = self.vs.search_vector(emb.tobytes(), top_n=top_n)
