@@ -22,9 +22,19 @@ from tator.openapi.tator_openapi import Localization
 def resolve_external_video_file(root: Path, media_name: str) -> Optional[Path]:
     stem = Path(media_name).stem
     for ext in (".mov", ".mp4"):
-        candidate = root / f"{stem}{ext}"
-        if candidate.is_file():
-            return candidate
+        filename = f"{stem}{ext}"
+
+        # Fast path: direct child of root
+        direct = root / filename
+        if direct.is_file():
+            return direct
+
+        # Recursive search (user requested): prefer the first match in a stable order.
+        # Note: rglob order is filesystem-dependent; sorting makes it deterministic.
+        matches = sorted(root.rglob(filename))
+        for m in matches:
+            if m.is_file():
+                return m
     return None
 
 def download(
