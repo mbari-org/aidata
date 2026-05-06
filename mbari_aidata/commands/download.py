@@ -3,6 +3,7 @@
 # Description: Download a dataset for training detection or classification models
 
 from pathlib import Path
+from typing import Optional
 
 import click
 
@@ -38,6 +39,16 @@ DEFAULT_BASE_DIR = Path.home() / "mbari_aidata" / "datasets"
     help='Comma separated list of concepts to download, or "all" for all concepts. For legacy projects only',
 )
 @click.option("--crop-roi", is_flag=True, help="True to download the rois cropped from the original images/video.")
+@click.option(
+    "--external-video-root",
+    type=Path,
+    default=None,
+    help=(
+        "Directory containing source videos for ROI cropping (requires --crop-roi). "
+        "For each Tator media item, uses <stem>.mov if present, else <stem>.mp4, "
+        "where stem matches the Tator media filename stem."
+    ),
+)
 @click.option("--resize", type=int, help="Resize images to this size after cropping them.")
 @click.option("--voc", is_flag=True, help="True if export as VOC dataset, False if not.")
 @click.option("--coco", is_flag=True, help="True if export as COCO dataset, False if not.")
@@ -66,6 +77,7 @@ def download(
     labels: str,
     concepts: str,
     crop_roi: bool,
+    external_video_root: Optional[Path],
     resize: int,
     voc: bool,
     cifar: bool,
@@ -83,6 +95,14 @@ def download(
 
     create_logger_file("download")
     try:
+        if external_video_root is not None:
+            if not crop_roi:
+                raise click.UsageError("--external-video-root requires --crop-roi")
+            if not external_video_root.is_dir():
+                raise click.BadParameter(
+                    f"Not a directory: {external_video_root}",
+                    param_hint="--external-video-root",
+                )
         base_path.mkdir(exist_ok=True, parents=True)
         # Load the configuration file
         config_dict = init_yaml_config(config)
@@ -161,6 +181,7 @@ def download(
             coco=coco,
             cifar=cifar,
             crop_roi=crop_roi,
+            external_video_root=external_video_root,
             resize=resize
         )
         return success
