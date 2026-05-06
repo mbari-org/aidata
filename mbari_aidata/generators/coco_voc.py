@@ -7,7 +7,7 @@ import math
 import os
 from collections import defaultdict
 from pathlib import Path
-from typing import List
+from typing import List, Optional
 
 import tator  # type: ignore
 import pandas as pd
@@ -18,6 +18,14 @@ from mbari_aidata.logger import debug, info, err, exception
 from mbari_aidata.generators.cifar import create_cifar_dataset
 from mbari_aidata.generators.utils import combine_localizations, crop_frame
 from tator.openapi.tator_openapi import Localization  
+
+def resolve_external_video_file(root: Path, media_name: str) -> Optional[Path]:
+    stem = Path(media_name).stem
+    for ext in (".mov", ".mp4"):
+        candidate = root / f"{stem}{ext}"
+        if candidate.is_file():
+            return candidate
+    return None
 
 def download(
     api: tator.api,
@@ -43,6 +51,7 @@ def download(
     coco: bool = False,
     cifar: bool = False,
     crop_roi: bool = False,
+    external_video_root: Optional[Path] = None,
     resize: int = 0
 ) -> bool:
     """
@@ -71,6 +80,8 @@ def download(
     :param coco: (optional) True if the dataset should also be stored in COCO format
     :param cifar: (optional) True if the dataset should also be stored in CIFAR format
     :param crop_roi: (optional) True if the dataset should crop the ROI from the original images
+    :param external_video_root: (optional) Directory containing source videos for ROI cropping. For a given
+        Tator media item, the stem is matched and <stem>.mov is preferred, else <stem>.mp4.
     :param resize: (optional) Resize images to this size after cropping thems
     :return: True if the dataset was created successfully, False otherwise
     """
@@ -466,66 +477,52 @@ def download(
 
                                 output_maps[frame].append(f'"{output_file}"')
 
-                        if hasattr(media.media_files, "streaming") and media.media_files.streaming and len(
-                                media.media_files.streaming) == 1 and media.media_files.streaming[0].path.startswith(
-                                "http"):
-                            local_media = media.media_files.streaming[0].path
-                            in_media = localizations_by_media_id[media.id]
-
-                            # Normalize localizations for streaming case as well
-                            flat_locs = []
-                            for item in in_media:
-                                if isinstance(item, (list, tuple)):
-                                    for sub in item:
-                                        if isinstance(sub, tator.models.Localization):
-                                            flat_locs.append(sub)
-                                elif isinstance(item, tator.models.Localization):
-                                    flat_locs.append(item)
-
-                            if len(flat_locs) == 0:
-                                df_localizations = pd.DataFrame(columns=['x', 'y', 'width', 'height', 'media', 'attributes', 'id', 'frame'])
-                            else:
-                                df_localizations = pd.DataFrame([l.to_dict() for l in flat_locs])
-                            df_localizations = df_localizations.sort_values(by=['frame'], ascending=True)
-
-                            for frame, in_frame_loc in df_localizations.groupby('frame'):
-                                debug(f"Cropping ROIs in {local_media} frame {frame}")
-                                inputs = [
-                                    "-y",
-                                    "-loglevel", "panic",
-                                    "-nostats",
-                                    "-hide_banner",
-                                    "-ss", frame_to_timestamp(media, frame),
-                                    "-i", f'"{local_media}"',
-                                    "-vf"
-                                ]
-                                if len(crop_filter[frame]) == 0:
-                                    continue
-
-                                # Submit crop tasks for parallel execution
-                                crop_tasks.extend(
-                                    [(crop, out, inputs) for crop, out in zip(crop_filter[frame], output_maps[frame])]
+                        # Resolve the crop source for this media.
+                        # - If external_video_root is set, use it (stem match; .mov preferred, else .mp4)
+                        # - Else if Tator provides a streaming HTTP URL, use that
+                        # - Else use the locally-downloaded media under media_path
+                        if external_video_root is not None:
+                            resolved = resolve_external_video_file(external_video_root, media.name)
+                            if resolved is None:
+                                err(
+                                    f"External crop source not found for {media.name}. "
+                                    f"Expected {Path(media.name).stem}.mov or {Path(media.name).stem}.mp4 in {external_video_root}"
                                 )
+                                continue
+                            crop_source = resolved.as_posix()
+                            is_video_source = True
+                        elif (
+                            hasattr(media.media_files, "streaming")
+                            and media.media_files.streaming
+                            and len(media.media_files.streaming) == 1
+                            and media.media_files.streaming[0].path.startswith("http")
+                        ):
+                            crop_source = media.media_files.streaming[0].path
+                            is_video_source = True
                         else:
-                            local_media = (media_path / media.name).as_posix()
+                            crop_source = (media_path / media.name).as_posix()
+                            # Heuristic: treat common video extensions as video; otherwise image.
+                            is_video_source = Path(media.name).suffix.lower() in {".mp4", ".mov", ".mkv", ".avi"}
+
+                        for frame, in_frame_loc in df_localizations.groupby('frame'):
+                            if len(crop_filter[frame]) == 0:
+                                continue
+
                             inputs = [
                                 "-y",
                                 "-loglevel", "panic",
                                 "-nostats",
                                 "-hide_banner",
-                                "-i", f'"{local_media}"',
-                                "-vf"
                             ]
-                            debug(f"Cropping ROIs in {local_media} frame {frame}")
+                            if is_video_source:
+                                inputs.extend(["-ss", frame_to_timestamp(media, frame)])
+                            inputs.extend(["-i", f'"{crop_source}"', "-vf"])
 
-                            for frame, in_frame_loc in df_localizations.groupby('frame'):
-                                if len(crop_filter[frame]) == 0:
-                                    continue
+                            debug(f"Cropping ROIs in {crop_source} frame {frame}")
 
-                                # Submit crop tasks for parallel execution
-                                crop_tasks.extend(
-                                    [(crop, out, inputs) for crop, out in zip(crop_filter[frame], output_maps[frame])]
-                                )
+                            crop_tasks.extend(
+                                [(crop, out, inputs) for crop, out in zip(crop_filter[frame], output_maps[frame])]
+                            )
 
                     executor.map(crop_frame, crop_tasks)
 
@@ -697,7 +694,10 @@ def download(
 
 
 def frame_to_timestamp(media: tator.models.Media, frame: int) -> str:
-    total_seconds = frame / media.fps
+    fps = getattr(media, "fps", None) or 0
+    if not fps:
+        fps = 30.0
+    total_seconds = frame / fps
     total_microseconds = int(total_seconds * 1_000_000)
     return f"{total_microseconds}us"
 
