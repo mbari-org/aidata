@@ -28,6 +28,15 @@ def load_boxes(token: str, disable_ssl_verify: bool, config: str, version: str, 
         init_api_project, get_version_id
     from mbari_aidata.plugins.loaders.tator.media import get_media_ids
 
+    def get_frame_number(obj: dict) -> int:
+        frame = obj.get("frame", 0)
+        if frame is None:
+            return 0 
+        try:
+            return int(frame)
+        except (TypeError, ValueError):
+            return 0
+
     try:
         create_logger_file("load_boxes")
         # Load the configuration file
@@ -118,7 +127,7 @@ def load_boxes(token: str, disable_ssl_verify: bool, config: str, version: str, 
                             width=obj["image_width"],
                             height=obj["image_height"],
                             attributes=attributes,
-                            frame_number=0,
+                            frame_number=get_frame_number(obj),
                             type_id=box_type.id,
                             media_id=media_map[image_name],
                             project_id=tator_project.id,
@@ -165,7 +174,7 @@ def load_boxes(token: str, disable_ssl_verify: bool, config: str, version: str, 
                             width=obj["image_width"],
                             height=obj["image_height"],
                             attributes=attributes,
-                            frame_number=0,
+                            frame_number=get_frame_number(obj),
                             type_id=box_type.id,
                             media_id=media_id,
                             project_id=tator_project.id,
