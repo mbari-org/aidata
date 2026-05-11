@@ -48,6 +48,14 @@ def get_version_id(api: TatorApi, project: Project, version: str) -> int:
     versions = api.get_version_list(project=project.id)
     debug(versions)
 
+    # Check if the version is an integer, and if so verify it is a valid version ID and return it
+    if version.isdigit():
+        version_id = int(version)
+        version_ids = [v.id for v in versions]
+        if version_id not in version_ids:
+            raise ValueError(f"Version ID {version_id} not found in project {project.name}")
+        return version_id
+
     # Flag and error if the version is empty
     if version is None or len(version) == 0:
         raise Exception(f"A version must be specified, e.g. Baseline")
