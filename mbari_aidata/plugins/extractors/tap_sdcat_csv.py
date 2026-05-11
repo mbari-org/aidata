@@ -43,4 +43,15 @@ def extract_sdcat_csv(csv_path: Path) -> pd.DataFrame:
     # Replace /home/ubuntu with /Volumes/tatordata
     combined_df["image_path"] = combined_df["image_path"].str.replace("/home/ubuntu", "/Volumes/tatordata")
 
+    # If image paths look like <prefix><frame>.<ext>, add a frame column with the frame number
+    image_names = combined_df["image_path"].astype(str).str.replace("\\", "/", regex=False).str.rsplit("/", n=1).str[-1]
+    frame_match = image_names.str.extract(r"^(?P<prefix>.*?)(?P<frame>\d+)\.(?P<ext>[^.]+)$")
+    if frame_match["frame"].notna().any():
+        frame_series = pd.to_numeric(frame_match["frame"], errors="coerce")
+        if "frame" in combined_df.columns:
+            combined_df["frame"] = combined_df["frame"].fillna(frame_series)
+        else:
+            combined_df["frame"] = frame_series
+        combined_df["frame"] = combined_df["frame"].astype(int)
+
     return combined_df
