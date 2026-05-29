@@ -16,7 +16,7 @@ from tqdm import tqdm
 from pascal_voc_writer import Writer  # type: ignore
 from mbari_aidata.logger import debug, info, err, exception
 from mbari_aidata.generators.cifar import create_cifar_dataset
-from mbari_aidata.generators.utils import combine_localizations, crop_frame
+from mbari_aidata.generators.utils import build_roi_crop_filter, combine_localizations, crop_frame
 from tator.openapi.tator_openapi import Localization  
 
 def resolve_external_video_file(root: Path, media_name: str) -> Optional[Path]:
@@ -62,7 +62,8 @@ def download(
     cifar: bool = False,
     crop_roi: bool = False,
     external_video_root: Optional[Path] = None,
-    resize: int = 0
+    resize: int = 0,
+    fill: Optional[str] = None,
 ) -> bool:
     """
     Download a dataset based on a version tag for training
@@ -93,6 +94,7 @@ def download(
     :param external_video_root: (optional) Directory containing source videos for ROI cropping. For a given
         Tator media item, the stem is matched and <stem>.mov is preferred, else <stem>.mp4.
     :param resize: (optional) Resize images to this size after cropping thems
+    :param fill: (optional) Fill color (``black`` or ``white``) for squaring ROI crops near image edges
     :return: True if the dataset was created successfully, False otherwise
     """
     try:
@@ -412,11 +414,8 @@ def download(
 
             # Crop the ROI from the original images/video in batches of 500
             batch_size = 500
-            scale_filter = ""
             # Prepare for parallel processing  - use all available CPUs
             max_workers = os.cpu_count()
-            if resize:
-                scale_filter = f"scale={resize}:{resize}"
             for i in range(0, len(all_media), batch_size):
                 batch = all_media[i:i + batch_size]
                 with concurrent.futures.ThreadPoolExecutor(max_workers) as executor:
@@ -463,27 +462,19 @@ def download(
                                 y1 = int(media.height * c.y)
                                 x2 = int(media.width * (c.x + c.width))
                                 y2 = int(media.height * (c.y + c.height))
-                                width = x2 - x1
-                                height = y2 - y1
-                                shorter_side = min(height, width)
-                                longer_side = max(height, width)
-                                delta = abs(longer_side - shorter_side)
-
-                                padding = delta // 2
-                                if width == shorter_side:
-                                    x1 -= padding
-                                    x2 += padding
-                                else:
-                                    y1 -= padding
-                                    y2 += padding
-
-                                # Ensure coordinates don't go out of bounds
-                                x1, x2, y1, y2 = max(0, x1), min(media.width, x2), max(0, y1), min(media.height, y2)
-
-                                if resize:
-                                    crop_filter[frame].append(f"crop={x2 - x1}:{y2 - y1}:{x1}:{y1},{scale_filter}")
-                                else:
-                                    crop_filter[frame].append(f"crop={x2 - x1}:{y2 - y1}:{x1}:{y1}")
+                                filter_str = build_roi_crop_filter(
+                                    x1,
+                                    y1,
+                                    x2,
+                                    y2,
+                                    media.width,
+                                    media.height,
+                                    resize=resize or 0,
+                                    fill=fill,
+                                )
+                                if not filter_str:
+                                    continue
+                                crop_filter[frame].append(filter_str)
 
                                 output_maps[frame].append(f'"{output_file}"')
 
