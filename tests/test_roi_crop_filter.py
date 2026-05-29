@@ -23,3 +23,10 @@ def test_build_roi_crop_filter_pads_with_black_and_resize():
 def test_build_roi_crop_filter_pads_bottom_edge():
     result = build_roi_crop_filter(50, 170, 150, 210, 200, 200, fill="white")
     assert result == "crop=100:60:50:140,pad=100:100:0:0:white"
+
+
+def test_build_roi_crop_filter_fill_handles_odd_size_rounding():
+    # Height/width parity can differ by 1 after squaring + clipping near edges.
+    # The padded output must be >= cropped input in both dimensions.
+    result = build_roi_crop_filter(804, 606, 1361, 1164, 2048, 2048, fill="white")
+    assert result == "crop=557:558:804:606,pad=558:558:0:0:white"
