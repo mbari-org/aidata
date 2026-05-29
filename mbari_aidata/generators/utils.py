@@ -50,8 +50,8 @@ def build_roi_crop_filter(
         crop_y2 = min(media_height, sq_y2)
         crop_w = crop_x2 - crop_x1
         crop_h = crop_y2 - crop_y1
-        if crop_w <= 0 or crop_h <= 0:
-            return ""
+        # Ensure coordinates don't go out of bounds
+        crop_x1, crop_x2, crop_y1, crop_y2 = max(0, crop_x1), min(media_width, crop_x2), max(0, crop_y1), min(media_height, crop_y2)
         pad_x = crop_x1 - sq_x1
         pad_y = crop_y1 - sq_y1
         crop_filter = (
@@ -64,9 +64,9 @@ def build_roi_crop_filter(
         crop_x2 = min(media_width, sq_x2)
         crop_y2 = min(media_height, sq_y2)
         crop_w = crop_x2 - crop_x1
-        crop_h = crop_y2 - crop_y1
-        if crop_w <= 0 or crop_h <= 0:
-            return ""
+        crop_h = crop_y2 - crop_y1 
+        # Ensure coordinates don't go out of bounds
+        crop_x1, crop_x2, crop_y1, crop_y2 = max(0, crop_x1), min(media_width, crop_x2), max(0, crop_y1), min(media_height, crop_y2)
         crop_filter = f"crop={crop_w}:{crop_h}:{crop_x1}:{crop_y1}"
 
     if resize:
