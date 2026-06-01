@@ -1,7 +1,7 @@
 # mbari_aidata, Apache-2.0 license
 # Filename: generators/utils.py
 # Description: Algorithms to run on lists of localizations to combine them and crop frames
-from typing import List
+from typing import List, Optional
 from tator.openapi.tator_openapi import Localization  # type: ignore
 import torch
 from torchvision.ops import nms
@@ -10,6 +10,74 @@ import subprocess
 import os
 
 from mbari_aidata.logger import err, debug
+
+
+def build_roi_crop_filter(
+    x1: int,
+    y1: int,
+    x2: int,
+    y2: int,
+    media_width: int,
+    media_height: int,
+    resize: int = 0,
+    fill: Optional[str] = None,
+) -> str:
+    """
+    Build an ffmpeg video filter to crop a localization ROI to a square.
+
+    When ``fill`` is ``black`` or ``white``, out-of-bounds padding needed to
+    square the crop is filled with that color instead of clipping the ROI.
+    """
+    width = x2 - x1
+    height = y2 - y1
+    if width <= 0 or height <= 0:
+        return ""
+    shorter_side = min(height, width)
+    longer_side = max(height, width)
+    padding = abs(longer_side - shorter_side) // 2
+
+    sq_x1, sq_y1, sq_x2, sq_y2 = x1, y1, x2, y2
+    if width == shorter_side:
+        sq_x1 -= padding
+        sq_x2 += padding
+    else:
+        sq_y1 -= padding
+        sq_y2 += padding
+
+    crop_x1 = max(0, sq_x1)
+    crop_y1 = max(0, sq_y1)
+    crop_x2 = min(media_width, sq_x2)
+    crop_y2 = min(media_height, sq_y2)
+    crop_w = crop_x2 - crop_x1
+    crop_h = crop_y2 - crop_y1
+    if crop_w <= 0 or crop_h <= 0:
+        return ""
+
+    if fill:
+        ideal_w = sq_x2 - sq_x1
+        ideal_h = sq_y2 - sq_y1
+        ideal_size = max(ideal_w, ideal_h, crop_w, crop_h)
+        if ideal_size <= 0:
+            return ""
+
+        pad_x = crop_x1 - sq_x1
+        pad_y = crop_y1 - sq_y1
+        if pad_x < 0 or pad_y < 0:
+            return ""
+
+        required_w = crop_w + pad_x
+        required_h = crop_h + pad_y
+        ideal_size = max(ideal_size, required_w, required_h)
+        crop_filter = (
+            f"crop={crop_w}:{crop_h}:{crop_x1}:{crop_y1},"
+            f"pad={ideal_size}:{ideal_size}:{pad_x}:{pad_y}:{fill}"
+        )
+    else:
+        crop_filter = f"crop={crop_w}:{crop_h}:{crop_x1}:{crop_y1}"
+
+    if resize:
+        return f"{crop_filter},scale={resize}:{resize}"
+    return crop_filter
 
 
 def crop_frame(args):
@@ -23,10 +91,20 @@ def crop_frame(args):
     args.append(out)
     debug(' '.join(args))
     try:
-        subprocess.run(' '.join(args), check=False, shell=True)
+        subprocess.run(
+            ' '.join(args),
+            check=True,
+            shell=True,
+            capture_output=True,
+            text=True,
+        )
         return 1
     except subprocess.CalledProcessError as e:
         err(str(e))
+        if e.stderr:
+            err(f"ffmpeg stderr: {e.stderr.strip()}")
+        if e.stdout:
+            debug(f"ffmpeg stdout: {e.stdout.strip()}")
         return 0
 
 def combine_localizations(boxes: List[Localization], iou_threshold: float = 0.5) -> List[Localization]:

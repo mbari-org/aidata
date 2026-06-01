@@ -50,6 +50,12 @@ DEFAULT_BASE_DIR = Path.home() / "mbari_aidata" / "datasets"
     ),
 )
 @click.option("--resize", type=int, help="Resize images to this size after cropping them.")
+@click.option(
+    "--fill",
+    type=click.Choice(["black", "white"], case_sensitive=False),
+    default=None,
+    help="Fill color for padding when squaring ROI crops near image edges (requires --crop-roi).",
+)
 @click.option("--voc", is_flag=True, help="True if export as VOC dataset, False if not.")
 @click.option("--coco", is_flag=True, help="True if export as COCO dataset, False if not.")
 @click.option("--cifar", is_flag=True, help="True if export as CIFAR dataset, False if not.")
@@ -79,6 +85,7 @@ def download(
     crop_roi: bool,
     external_video_root: Optional[Path],
     resize: int,
+    fill: Optional[str],
     voc: bool,
     cifar: bool,
     coco: bool,
@@ -103,6 +110,8 @@ def download(
                     f"Not a directory: {external_video_root}",
                     param_hint="--external-video-root",
                 )
+        if fill is not None and not crop_roi:
+            raise click.UsageError("--fill requires --crop-roi")
         base_path.mkdir(exist_ok=True, parents=True)
         # Load the configuration file
         config_dict = init_yaml_config(config)
@@ -182,7 +191,8 @@ def download(
             cifar=cifar,
             crop_roi=crop_roi,
             external_video_root=external_video_root,
-            resize=resize
+            resize=resize,
+            fill=fill,
         )
         return success
     except Exception as e:
