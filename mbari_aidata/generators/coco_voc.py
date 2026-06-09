@@ -64,6 +64,7 @@ def download(
     external_video_root: Optional[Path] = None,
     resize: int = 0,
     fill: Optional[str] = None,
+    dry_run: bool = False,
 ) -> bool:
     """
     Download a dataset based on a version tag for training
@@ -95,6 +96,7 @@ def download(
         Tator media item, the stem is matched and <stem>.mov is preferred, else <stem>.mp4.
     :param resize: (optional) Resize images to this size after cropping thems
     :param fill: (optional) Fill color (``black`` or ``white``) for squaring ROI crops near image edges
+    :param dry_run: (optional) True if this is a dry run; counts records and logs a summary without writing files
     :return: True if the dataset was created successfully, False otherwise
     """
     try:
@@ -182,6 +184,15 @@ def download(
                 f" verified {verified} and including {labels_list if labels_list else 'everything'}"
             )
             return False
+
+        if dry_run:
+            info(
+                f"Dry run - would download {num_records} records for version {version_list}, "
+                f"generator {generator}, group {group}, min_saliency {min_saliency}, "
+                f"min_score {min_score}, verified {verified} and including "
+                f"{labels_list if labels_list else 'everything'} to {output_path}"
+            )
+            return True
 
         # Create the output directory in the expected format that deepsea-ai expects for training
         # See https://docs.mbari.org/deepsea-ai/data/ for more information
