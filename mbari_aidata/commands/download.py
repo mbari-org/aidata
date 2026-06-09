@@ -19,6 +19,7 @@ DEFAULT_BASE_DIR = Path.home() / "mbari_aidata" / "datasets"
 @common_args.disable_ssl_verify
 @common_args.yaml_config
 @common_args.version
+@common_args.dry_run
 @click.option(
     "--base-path",
     default=DEFAULT_BASE_DIR,
@@ -95,6 +96,7 @@ def download(
     skip_image_download: bool,
     verified: bool,
     unverified: bool,
+    dry_run: bool,
 ) -> bool:
     from mbari_aidata.logger import create_logger_file, info, exception
     from mbari_aidata.generators.coco_voc import download as download_full
@@ -132,8 +134,9 @@ def download(
             data_path = base_path / version_base_name
         else:
             data_path = base_path
-        data_path.mkdir(exist_ok=True)
-        info(f"Downloading data to {data_path}")
+        if not dry_run:
+            data_path.mkdir(exist_ok=True)
+        info(f"{'Would download' if dry_run else 'Downloading'} data to {data_path}")
 
         # Convert comma separated list of concepts to a list
         if labels == "all":
@@ -193,6 +196,7 @@ def download(
             external_video_root=external_video_root,
             resize=resize,
             fill=fill,
+            dry_run=dry_run,
         )
         return success
     except Exception as e:
