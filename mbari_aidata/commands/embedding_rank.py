@@ -14,6 +14,9 @@ if TYPE_CHECKING:
     import numpy as np
 
 
+FFMPEG_TIMEOUT_SECS = 5  # seconds before an ffmpeg crop is considered hung
+
+
 def crop_boxes_from_video(
     video_path: str,
     boxes: List[Tuple[float, float, float, float]],
@@ -21,7 +24,8 @@ def crop_boxes_from_video(
     fps: float,
     video_width: int,
     video_height: int,
-    resize: int = None
+    resize: int = None,
+    timeout: int = FFMPEG_TIMEOUT_SECS,
 ) -> "List[Image.Image]":
     """
     Crop boxes from video frames using ffmpeg, similar to coco_voc.py implementation.
@@ -34,6 +38,7 @@ def crop_boxes_from_video(
         video_width: Width of the video
         video_height: Height of the video
         resize: Optional resize dimension
+        timeout: Seconds before an ffmpeg call is considered hung (default: FFMPEG_TIMEOUT_SECS)
 
     Returns:
         List of PIL Images cropped from the video
@@ -100,7 +105,7 @@ def crop_boxes_from_video(
             ]
 
             try:
-                result = subprocess.run(cmd, check=True, capture_output=True)
+                subprocess.run(cmd, check=True, capture_output=True, timeout=timeout)
                 if output_path.exists():
                     # Load the cropped image
                     img = Image.open(output_path).convert("RGB")
@@ -108,6 +113,9 @@ def crop_boxes_from_video(
                 else:
                     err(f"Failed to create cropped image for frame {frame}")
                     cropped_images.append(None)
+            except subprocess.TimeoutExpired as e:
+                err(f"ffmpeg timed out after {timeout}s for frame {frame}: {e}")
+                cropped_images.append(None)
             except subprocess.CalledProcessError as e:
                 err(f"ffmpeg failed for frame {frame}: {e}")
                 cropped_images.append(None)

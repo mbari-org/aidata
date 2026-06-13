@@ -16,12 +16,12 @@ from tqdm import tqdm
 from pascal_voc_writer import Writer  # type: ignore
 from mbari_aidata.logger import debug, info, err, exception
 from mbari_aidata.generators.cifar import create_cifar_dataset
-from mbari_aidata.generators.utils import build_roi_crop_filter, combine_localizations, crop_frame
+from mbari_aidata.generators.utils import build_roi_crop_filter, combine_localizations, crop_frame, crop_frame_multi
 from tator.openapi.tator_openapi import Localization  
 
 def resolve_external_video_file(root: Path, media_name: str) -> Optional[Path]:
     stem = Path(media_name).stem
-    for ext in (".mov", ".mp4"):
+    for ext in (".avi", ".mov", ".mp4"):
         filename = f"{stem}{ext}"
 
         # Fast path: direct child of root
@@ -390,7 +390,6 @@ def download(
             for media in tqdm(all_media, desc="Downloading", unit="iteration"):
                 out_path = media_path / media.name
                 if '.mp4' in media.name:
-                    info(f"Video download not supported yet")
                     continue
                 if not out_path.exists() or out_path.stat().st_size == 0:
                     info(f"Downloading {media.name} to {out_path}")
@@ -411,121 +410,108 @@ def download(
                     debug(f"Skipping download of {media.name}")
 
         if crop_roi:
-
-            # Crop the ROI from the original images/video in batches of 500
-            batch_size = 500
-            # Prepare for parallel processing  - use all available CPUs
+            info(f"Cropping {num_localizations} ROIs...")
             max_workers = os.cpu_count()
-            for i in range(0, len(all_media), batch_size):
-                batch = all_media[i:i + batch_size]
-                with concurrent.futures.ThreadPoolExecutor(max_workers) as executor:
-                    crop_tasks = []
-                    for media in batch:
-                        crop_filter = defaultdict(list)
-                        output_maps = defaultdict(list)
-                        in_media = localizations_by_media_id[media.id]
 
-                        # Initialize the localizations DataFrame
-                        df_localizations = pd.DataFrame([l.to_dict() for l in in_media])
-                        df_localizations = df_localizations.sort_values(by=['frame'], ascending=True)
+            # Build all potential crop tasks across all media before filtering
+            all_crop_tasks = []  # (output_file, filter_str, output_str, inputs)
+            for media in all_media:
+                if media.id not in localizations_by_media_id:
+                    continue
+                in_media = localizations_by_media_id[media.id]
+                df_localizations = pd.DataFrame([l.to_dict() for l in in_media])
+                df_localizations = df_localizations.sort_values(by=['frame'], ascending=True)
 
-                        # Group by frame, prepare crop arguments
-                        for frame, in_frame_loc in df_localizations.groupby('frame'):
-                            debug(f"Processing frame {frame} in {media.name}")
-                            for _, row_loc in in_frame_loc.iterrows():
-                                c = Localization(
-                                    x=row_loc['x'],
-                                    y=row_loc['y'],
-                                    width=row_loc['width'],
-                                    height=row_loc['height'],
-                                    media=row_loc['media'],
-                                    attributes=row_loc.get('attributes', {}),
-                                    id=row_loc['id'],
-                                    frame=row_loc['frame'],
-                                    elemental_id=row_loc.get('elemental_id', None),
-                                )
-                                crop_id = c.elemental_id if c.elemental_id else c.id
-                                label = c.attributes.get("Label", "Unknown")
-                                if label:
-                                    output_file = crop_path / label / f"{crop_id}.jpg"
-                                else:
-                                    output_file = crop_path / f"{crop_id}.jpg"
-                                if output_file.exists():
-                                    continue
+                crop_filter = defaultdict(list)
+                output_maps = defaultdict(list)
+                output_files_map = defaultdict(list)
 
-                                if media.width is None or media.height is None:
-                                    err(f"Media {media.name} has no width or height")
-                                    continue
+                if media.width is None or media.height is None:
+                    err(f"Media {media.name} has no width or height")
+                    continue
+                mw, mh = media.width, media.height
+                _resize = resize or 0
 
-                                # Generate crop filter and output map
-                                x1 = int(media.width * c.x)
-                                y1 = int(media.height * c.y)
-                                x2 = int(media.width * (c.x + c.width))
-                                y2 = int(media.height * (c.y + c.height))
-                                filter_str = build_roi_crop_filter(
-                                    x1,
-                                    y1,
-                                    x2,
-                                    y2,
-                                    media.width,
-                                    media.height,
-                                    resize=resize or 0,
-                                    fill=fill,
-                                )
-                                if not filter_str:
-                                    continue
-                                crop_filter[frame].append(filter_str)
+                for frame, in_frame_loc in df_localizations.groupby('frame'):
+                    debug(f"Processing frame {frame} in {media.name}")
+                    for row_loc in in_frame_loc.itertuples(index=False):
+                        crop_id = row_loc.elemental_id if row_loc.elemental_id else row_loc.id
+                        attrs = row_loc.attributes if isinstance(row_loc.attributes, dict) else {}
+                        label = attrs.get("Label", "Unknown")
+                        output_file = crop_path / label / f"{crop_id}.jpg" if label else crop_path / f"{crop_id}.jpg"
 
-                                output_maps[frame].append(f'"{output_file}"')
+                        x1 = int(mw * row_loc.x)
+                        y1 = int(mh * row_loc.y)
+                        x2 = int(mw * (row_loc.x + row_loc.width))
+                        y2 = int(mh * (row_loc.y + row_loc.height))
+                        filter_str = build_roi_crop_filter(x1, y1, x2, y2, mw, mh, resize=_resize, fill=fill)
+                        if not filter_str:
+                            continue
 
-                        # Resolve the crop source for this media.
-                        # - If external_video_root is set, use it (stem match; .mov preferred, else .mp4)
-                        # - Else if Tator provides a streaming HTTP URL, use that
-                        # - Else use the locally-downloaded media under media_path
-                        if external_video_root is not None:
-                            resolved = resolve_external_video_file(external_video_root, media.name)
-                            if resolved is None:
-                                err(
-                                    f"External crop source not found for {media.name}. "
-                                    f"Expected {Path(media.name).stem}.mov or {Path(media.name).stem}.mp4 in {external_video_root}"
-                                )
-                                continue
-                            crop_source = resolved.as_posix()
-                            is_video_source = True
-                        elif (
-                            hasattr(media.media_files, "streaming")
-                            and media.media_files.streaming
-                            and len(media.media_files.streaming) == 1
-                            and media.media_files.streaming[0].path.startswith("http")
-                        ):
-                            crop_source = media.media_files.streaming[0].path
-                            is_video_source = True
-                        else:
-                            crop_source = (media_path / media.name).as_posix()
-                            # Heuristic: treat common video extensions as video; otherwise image.
-                            is_video_source = Path(media.name).suffix.lower() in {".mp4", ".mov", ".mkv", ".avi"}
+                        crop_filter[frame].append(filter_str)
+                        output_maps[frame].append(str(output_file))
+                        output_files_map[frame].append(output_file)
 
-                        for frame, in_frame_loc in df_localizations.groupby('frame'):
-                            if len(crop_filter[frame]) == 0:
-                                continue
+                # Resolve the crop source for this media.
+                # - If external_video_root is set, use it (stem match; .mov preferred, else .mp4 or .avi)
+                # - Else if Tator provides a streaming HTTP URL, use that
+                # - Else use the locally-downloaded media under media_path
+                if external_video_root is not None:
+                    resolved = resolve_external_video_file(external_video_root, media.name)
+                    if resolved is None:
+                        err(
+                            f"External crop source not found for {media.name}. "
+                            f"Expected {Path(media.name).stem}.mov, {Path(media.name).stem}.mp4 or {Path(media.name).stem}.avi in {external_video_root}"
+                        )
+                        continue
+                    crop_source = resolved.as_posix()
+                    is_video_source = True
+                elif (
+                    hasattr(media.media_files, "streaming")
+                    and media.media_files.streaming
+                    and len(media.media_files.streaming) == 1
+                    and media.media_files.streaming[0].path.startswith("http")
+                ):
+                    crop_source = media.media_files.streaming[0].path
+                    is_video_source = True
+                else:
+                    crop_source = (media_path / media.name).as_posix()
+                    is_video_source = Path(media.name).suffix.lower() in {".mp4", ".mov", ".avi"}
 
-                            inputs = [
-                                "-y",
-                                "-loglevel", "panic",
-                                "-nostats",
-                                "-hide_banner",
-                            ]
-                            if is_video_source:
-                                inputs.extend(["-ss", frame_to_timestamp(media, frame)])
-                            inputs.extend(["-i", f'"{crop_source}"', "-vf"])
+                for frame in crop_filter:
+                    if len(crop_filter[frame]) == 0:
+                        continue
+                    # Build base inputs up to -i <source>; -vf/-filter_complex is added by crop_frame_multi
+                    base_inputs = ["-y", "-loglevel", "error", "-nostats", "-hide_banner"]
+                    if is_video_source:
+                        base_inputs.extend(["-ss", frame_to_timestamp(media, frame)])
+                    base_inputs.extend(["-i", crop_source])
+                    debug(f"Cropping ROIs in {crop_source} frame {frame}")
+                    inputs_key = tuple(base_inputs)
+                    for crop, out, output_file in zip(crop_filter[frame], output_maps[frame], output_files_map[frame]):
+                        all_crop_tasks.append((output_file, crop, out, inputs_key))
 
-                            debug(f"Cropping ROIs in {crop_source} frame {frame}")
+            # Skip tasks whose output already exists — single tqdm pass over all tasks
+            pending_tasks = [
+                (crop, out, inputs_key)
+                for output_file, crop, out, inputs_key in tqdm(all_crop_tasks, desc="Checking existing crops", unit="crop")
+                if not output_file.exists()
+            ]
+            skipped = len(all_crop_tasks) - len(pending_tasks)
+            info(f"Cropping {len(pending_tasks)} ROIs ({skipped} already exist)...")
 
-                            crop_tasks.extend(
-                                [(crop, out, inputs) for crop, out in zip(crop_filter[frame], output_maps[frame])]
-                            )
+            # Group by (source, frame) so each unique seek becomes one ffmpeg invocation
+            frame_groups: dict = {}
+            for crop, out, inputs_key in pending_tasks:
+                if inputs_key not in frame_groups:
+                    frame_groups[inputs_key] = []
+                frame_groups[inputs_key].append((crop, out))
 
-                    executor.map(crop_frame, crop_tasks)
+            frame_task_args = [(list(inputs_key), pairs) for inputs_key, pairs in frame_groups.items()]
+            info(f"Executing {len(frame_task_args)} ffmpeg frame groups ({len(pending_tasks)} crops) across {max_workers} workers...")
+
+            with concurrent.futures.ThreadPoolExecutor(max_workers) as executor:
+                list(tqdm(executor.map(crop_frame_multi, frame_task_args), total=len(frame_task_args), desc="Cropping frames", unit="frame"))
 
         info(f"Finished cropping {num_localizations} ROIs")
 
@@ -577,14 +563,21 @@ def download(
             yolo_path = label_path / f"{m.name}.txt"
             image_path = media_path / m.name
 
-            # Get the image size from the image using PIL
-            # Skip over any media that are not images
-            if not image_path.exists():
-                err(f"Could not find {image_path}. Video media not supported yet")
-                continue
+            # Get the image size — use PIL for images, Tator metadata for video
+            _VIDEO_EXTS = {".mp4", ".avi", ".mov", ".mkv", ".wmv"}
+            is_video = Path(m.name).suffix.lower() in _VIDEO_EXTS
 
-            image = Image.open(image_path)
-            image_width, image_height = image.size
+            if is_video:
+                if m.width is None or m.height is None:
+                    err(f"No dimensions on media {m.name}, skipping")
+                    continue
+                image_width, image_height = m.width, m.height
+            else:
+                if not image_path.exists():
+                    err(f"Could not find {image_path}")
+                    continue
+                image = Image.open(image_path)
+                image_width, image_height = image.size
 
             with yolo_path.open("w") as f:
                 for loc in media_localizations:
