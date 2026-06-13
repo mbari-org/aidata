@@ -8,6 +8,7 @@ from torchvision.ops import nms
 import xml.etree.ElementTree as ET
 import subprocess
 import os
+import shlex
 
 from mbari_aidata.logger import err, debug
 
@@ -80,31 +81,93 @@ def build_roi_crop_filter(
     return crop_filter
 
 
+FFMPEG_TIMEOUT_SECS = 10  # seconds before an ffmpeg crop is considered hung
+
+
 def crop_frame(args):
     """Helper function to run the ffmpeg command for a single crop"""
     crop, out, inputs = args
     if os.path.exists(out):
         return 1  # Skip if the output file already exists
-    args = ["ffmpeg"]
-    args.extend(inputs)
-    args.append(crop)
-    args.append(out)
-    debug(' '.join(args))
+    cmd = ["ffmpeg"] + inputs + ["-vf", crop, "-frames:v", "1", out]
+    debug(shlex.join(cmd))
     try:
         subprocess.run(
-            ' '.join(args),
+            cmd,
             check=True,
-            shell=True,
+            shell=False,
             capture_output=True,
-            text=True,
+            text=True
         )
         return 1
+    except subprocess.TimeoutExpired as e:
+        err(f"ffmpeg timed out after {FFMPEG_TIMEOUT_SECS}s for output {out}: {e}")
+        return 0
     except subprocess.CalledProcessError as e:
         err(str(e))
         if e.stderr:
             err(f"ffmpeg stderr: {e.stderr.strip()}")
         if e.stdout:
             debug(f"ffmpeg stdout: {e.stdout.strip()}")
+        return 0
+
+
+def crop_frame_multi(args):
+    """
+    Run a single ffmpeg invocation to extract all ROI crops from one (source, frame) pair.
+
+    Uses ``-filter_complex split`` with N outputs so the video is only decoded and
+    seeked once regardless of how many localizations share that frame.
+
+    args: (base_inputs, [(filter_str, out_path), ...])
+      base_inputs — ffmpeg args up to and including ``-i <source>`` (no ``-vf``)
+      pairs       — one (filter_str, out_path) per ROI in this frame
+    """
+    base_inputs, pairs = args
+    pairs = [(c, o) for c, o in pairs if not os.path.exists(o)]
+    if not pairs:
+        return 0
+
+    n = len(pairs)
+    if n == 1:
+        crop, out = pairs[0]
+        cmd = ["ffmpeg"] + list(base_inputs) + ["-vf", crop, "-frames:v", "1", out]
+        debug(shlex.join(cmd))
+        try:
+            subprocess.run(cmd, check=True, shell=False, capture_output=True, text=True)
+            return 1
+        except subprocess.TimeoutExpired as e:
+            err(f"ffmpeg timed out for {out}: {e}")
+            return 0
+        except subprocess.CalledProcessError as e:
+            err(str(e))
+            if e.stderr:
+                err(f"ffmpeg stderr: {e.stderr.strip()}")
+            return 0
+
+    # Build filter_complex: split the single decoded frame into N streams, one crop per stream
+    split_labels = [f"s{i}" for i in range(n)]
+    out_labels = [f"o{i}" for i in range(n)]
+    filter_parts = [f"[0:v]split={n}{''.join(f'[{s}]' for s in split_labels)}"]
+    for i, (crop_filter, _) in enumerate(pairs):
+        filter_parts.append(f"[{split_labels[i]}]{crop_filter}[{out_labels[i]}]")
+    filter_complex = ";".join(filter_parts)
+
+    cmd = ["ffmpeg"] + list(base_inputs) + ["-filter_complex", filter_complex]
+    for i, (_, out) in enumerate(pairs):
+        cmd += ["-map", f"[{out_labels[i]}]", "-frames:v", "1", out]
+
+    debug(shlex.join(cmd))
+    try:
+        subprocess.run(cmd, check=True, shell=False, capture_output=True, text=True)
+        return n
+    except subprocess.TimeoutExpired as e:
+        err(f"ffmpeg timed out for frame group ({n} crops): {e}")
+        return 0
+    except subprocess.CalledProcessError as e:
+        err(str(e))
+        if e.stderr:
+            err(f"ffmpeg stderr: {e.stderr.strip()}")
         return 0
 
 def combine_localizations(boxes: List[Localization], iou_threshold: float = 0.5) -> List[Localization]:
