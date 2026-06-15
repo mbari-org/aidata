@@ -6,6 +6,7 @@ LABEL license="Apache License 2.0"
 
 RUN apt-get update &&  \
     apt-get install --no-install-recommends -y \
+    build-essential \
     curl \
     unzip \
     ffmpeg && \
@@ -31,7 +32,7 @@ ENV HF_HOME=/tmp/transformers_cache
 ENV NO_ALBUMENTATIONS_UPDATE=1
 
 RUN pip install --upgrade pip
-RUN if GIT_VERSION=latest; then pip install mbari-aidata; else pip install mbari-aidata==${GIT_VERSION}; fi
+RUN if [ "$GIT_VERSION" = "latest" ]; then pip install mbari-aidata; else pip install mbari-aidata==${GIT_VERSION}; fi
 
 # Create non-root user
 RUN groupadd -r aidata && useradd -r -g aidata -d ${APP_HOME} -s /bin/bash aidata
