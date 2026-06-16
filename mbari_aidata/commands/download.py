@@ -20,6 +20,11 @@ DEFAULT_BASE_DIR = Path.home() / "mbari_aidata" / "datasets"
 @common_args.yaml_config
 @common_args.version
 @click.option(
+    "--exclude-versions",
+    type=str,
+    help="Comma separated list of versions to exclude. Can only be used when --version is not set.",
+)
+@click.option(
     "--base-path",
     default=DEFAULT_BASE_DIR,
     type=Path,
@@ -79,6 +84,7 @@ def download(
     max_saliency: int,
     min_score: float,
     version: str,
+    exclude_versions: str,
     generator: str,
     labels: str,
     concepts: str,
@@ -97,11 +103,14 @@ def download(
     unverified: bool,
 ) -> bool:
     from mbari_aidata.logger import create_logger_file, info, exception
-    from mbari_aidata.generators.coco_voc import download as download_full
-    from mbari_aidata.plugins.loaders.tator.common import init_yaml_config, init_api_project, find_project
 
     create_logger_file("download")
     try:
+        if version and exclude_versions:
+            raise click.UsageError("--version and --exclude-versions cannot be used together")
+        from mbari_aidata.generators.coco_voc import download as download_full
+        from mbari_aidata.plugins.loaders.tator.common import init_yaml_config, init_api_project, find_project
+
         if external_video_root is not None:
             if not crop_roi:
                 raise click.UsageError("--external-video-root requires --crop-roi")
@@ -140,17 +149,17 @@ def download(
             labels_list = []
         else:
             labels_list = labels.split(",")
-            labels_list = [l.strip() for l in labels_list]
+            labels_list = [label.strip() for label in labels_list]
             # Check if this is empty
             if len(labels_list) == 1 and labels_list[0] == "":
                 labels_list = []
             # Strip off any zero length strings
-            labels_list = [l for l in labels_list if len(l) > 0]
+            labels_list = [label for label in labels_list if len(label) > 0]
         if concepts == "all":
             concepts_list = []
         else:
             concepts_list = concepts.split(",")
-            concepts_list = [l.strip() for l in concepts_list]
+            concepts_list = [concept.strip() for concept in concepts_list]
             # Check if this is empty
             if len(concepts_list) == 1 and concepts_list[0] == "":
                 concepts_list = []
@@ -160,11 +169,14 @@ def download(
         # Convert comma separated list of versions to a list
         if version:
             version_list = version.split(",")
-            version_list = [l.strip() for l in version_list]
+            version_list = [version_name.strip() for version_name in version_list]
         else:
             # If no version is specified, download all versions
             versions = api.get_version_list(project.id)
             version_list = [v.name for v in versions]
+            if exclude_versions:
+                excluded_version_list = [v.strip() for v in exclude_versions.split(",") if v.strip()]
+                version_list = [v for v in version_list if v not in excluded_version_list]
 
         success = download_full(
             api,
@@ -195,6 +207,8 @@ def download(
             fill=fill,
         )
         return success
+    except click.ClickException:
+        raise
     except Exception as e:
         exception(f"Error: {e}")
         return False
