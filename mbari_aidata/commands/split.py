@@ -3,16 +3,35 @@
 # Description: Split data into train/val/test sets
 
 from pathlib import Path
+from typing import Tuple
 import click
 
 
-def split(input_path: Path, output_path: Path):
+def _parse_split(split: str) -> Tuple[float, float, float]:
+    """Parse and validate train/val/test split fractions."""
+    try:
+        values = tuple(float(v.strip()) for v in split.split(","))
+    except ValueError as exc:
+        raise click.BadParameter("Split values must be numeric (e.g. 0.85,0.10,0.05).") from exc
+
+    if len(values) != 3:
+        raise click.BadParameter("Split must contain exactly three comma-separated values for train,val,test.")
+    if any(v < 0 for v in values):
+        raise click.BadParameter("Split values must be greater than or equal to 0.")
+    if not abs(sum(values) - 1.0) <= 1e-8:
+        raise click.BadParameter("Split values must sum to 1.0.")
+
+    return values
+
+
+def split(input_path: Path, output_path: Path, split_weights: Tuple[float, float, float] = (0.85, 0.10, 0.05)):
     """
     Split data into train/val/test sets randomly per the following percentages 85%/10%/5%
     
     Args:
         input_path: Path to the root folder with images and labels organized into labels/ and images/ folders
         output_path: Path to the root folder to save the split, compressed files
+        split_weights: Train/val/test split fractions that sum to 1.0
     """
     from tqdm import tqdm
     import os
@@ -21,7 +40,7 @@ def split(input_path: Path, output_path: Path):
     import tarfile
     import tempfile
 
-    from mbari_aidata.logger import create_logger_file, debug, err, info
+    from mbari_aidata.logger import debug, info
     
     #########################################
     # Credit to http://github.com/ultralytics/yolov5 code for this snippet
@@ -55,7 +74,7 @@ def split(input_path: Path, output_path: Path):
     # do the work in a temporary directory
     with tempfile.TemporaryDirectory() as temp_dir:
         temp_path = Path(temp_dir)
-        autosplit(path=input_path / 'images', weights=(0.85, 0.10, 0.05), annotated_only=False)
+        autosplit(path=input_path / 'images', weights=split_weights, annotated_only=False)
 
         for v in ['train', 'val', 'test']:
             image_path = temp_path / 'images' / v
@@ -94,7 +113,9 @@ def split(input_path: Path, output_path: Path):
               help='Path to the root folder with images and labels, organized into labels/ and images/ folders files to split')
 @click.option('-o', '--output', type=str, required=True,
               help='Path to the root folder to save the split, compressed files. If it does not exist, it will be created.')
-def split_command(input: str, output: str):
+@click.option('--split', 'split_fraction', type=str, default='0.85,0.10,0.05', show_default=True,
+              help='Train/val/test split fractions as comma-separated values that sum to 1.0.')
+def split_command(input: str, output: str, split_fraction: str):
     """
     Split data into train/val/test sets randomly per the following percentages 85%/10%/5%
     """
@@ -115,4 +136,4 @@ def split_command(input: str, output: str):
         err(f'Error: one or more {paths} missing')
         return
 
-    split(Path(input), Path(output))
+    split(Path(input), Path(output), split_weights=_parse_split(split_fraction))

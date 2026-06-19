@@ -91,6 +91,35 @@ def test_split_command_cli(sample_dataset):
     assert images_tar.exists(), "images.tar.gz should be created"
 
 
+def test_split_command_cli_custom_split_without_test(sample_dataset):
+    """Test CLI split with no test fraction."""
+    test_input, test_output = sample_dataset
+
+    runner = CliRunner()
+    result = runner.invoke(split_command, ['-i', str(test_input), '-o', str(test_output), '--split', '0.9,0.1,0.0'])
+
+    assert result.exit_code == 0, f"Command should succeed, got: {result.output}"
+
+    train_split = test_input / "autosplit_train.txt"
+    val_split = test_input / "autosplit_val.txt"
+    test_split = test_input / "autosplit_test.txt"
+
+    assert train_split.exists(), "autosplit_train.txt should be created"
+    assert val_split.exists(), "autosplit_val.txt should be created"
+    assert not test_split.exists(), "autosplit_test.txt should not be created when test split is 0"
+
+
+def test_split_command_cli_invalid_split(sample_dataset):
+    """Test CLI split validation."""
+    test_input, test_output = sample_dataset
+
+    runner = CliRunner()
+    result = runner.invoke(split_command, ['-i', str(test_input), '-o', str(test_output), '--split', '0.9,0.2,0.0'])
+
+    assert result.exit_code != 0
+    assert "must sum to 1.0" in result.output
+
+
 def test_split_command_missing_input():
     """Test that the command fails gracefully when input is missing"""
     with tempfile.TemporaryDirectory() as tmpdir:
