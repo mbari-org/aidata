@@ -2,6 +2,7 @@
 # Filename: generators/coco_voc.py
 # Description: Generate a COCO formatted dataset from a list of media and localizations
 import concurrent
+import csv
 import json
 import math
 import os
@@ -16,6 +17,7 @@ from tqdm import tqdm
 from pascal_voc_writer import Writer  # type: ignore
 from mbari_aidata.logger import debug, info, err, exception
 from mbari_aidata.generators.cifar import create_cifar_dataset
+from mbari_aidata.generators.localization_csv import get_localization_csv_row, get_media_attribute_columns
 from mbari_aidata.generators.utils import build_roi_crop_filter, combine_localizations, crop_frame, crop_frame_multi
 from tator.openapi.tator_openapi import Localization  
 
@@ -36,6 +38,7 @@ def resolve_external_video_file(root: Path, media_name: str) -> Optional[Path]:
             if m.is_file():
                 return m
     return None
+
 
 def download(
     api: tator.api,
@@ -516,38 +519,20 @@ def download(
         info(f"Finished cropping {num_localizations} ROIs")
 
         # Create a simple csv file with the media name, cluster, etc. and normalized box coordinates
-        with (output_path / "localizations.csv").open("w") as f:
-            f.write("media,frame,uuid,verified,cluster,saliency,area,predicted_label,label,score,label_s,score_s,x,y,width,height\n")
+        media_attribute_columns = get_media_attribute_columns(all_media)
+        localization_columns = [
+            "media", "frame", "uuid", "verified", "cluster", "saliency", "area",
+            "predicted_label", "label", "score", "label_s", "score_s",
+            "x", "y", "width", "height",
+        ]
+        with (output_path / "localizations.csv").open("w", newline="") as f:
+            writer = csv.writer(f)
+            writer.writerow(localization_columns + media_attribute_columns)
             for m in all_media:
                 media_localizations = localizations_by_media_id[m.id]
 
                 for loc in media_localizations:
-                    uuid = loc.elemental_id
-                    frame = loc.frame
-                    verified = loc.attributes.get("verified", False)
-                    predicted_label = loc.attributes.get("predicted_label", "Unknown")
-                    label = loc.attributes.get("Label", "Unknown")
-                    score = loc.attributes.get("score", 0)
-                    score_s = loc.attributes.get("score_s", 0)
-                    label_s = loc.attributes.get("label_s", "Unknown")
-                    cluster = loc.attributes.get("cluster", "Unknown")
-                    area = loc.attributes.get("area", -1)
-                    saliency = loc.attributes.get("saliency", -1)
-                    x = loc.x
-                    y = loc.y
-                    width = loc.width
-                    height = loc.height
-                    f.write(f"{m.name},"
-                            f"{frame},"
-                            f"{uuid},"
-                            f"{verified},"
-                            f"{cluster},"
-                            f"{saliency},"
-                            f"{area},"
-                            f"{predicted_label},"
-                            f"{label},{score},"
-                            f"{label_s},{score_s},"
-                            f"{x},{y},{width},{height}\n")
+                    writer.writerow(get_localization_csv_row(m, loc, media_attribute_columns))
 
         info(f'Finished creating {output_path / "localizations.csv"}')
 
