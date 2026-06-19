@@ -15,9 +15,15 @@ import pandas as pd
 from PIL import Image
 from tqdm import tqdm
 from pascal_voc_writer import Writer  # type: ignore
+import csv
+
 from mbari_aidata.logger import debug, info, err, exception
 from mbari_aidata.generators.cifar import create_cifar_dataset
-from mbari_aidata.generators.localization_csv import get_localization_csv_row, get_media_attribute_columns
+from mbari_aidata.generators.localization_csv import (
+    get_localization_attribute_columns,
+    get_media_attribute_columns,
+    get_localization_csv_row,
+)
 from mbari_aidata.generators.utils import build_roi_crop_filter, combine_localizations, crop_frame, crop_frame_multi
 from tator.openapi.tator_openapi import Localization  
 
@@ -518,21 +524,20 @@ def download(
 
         info(f"Finished cropping {num_localizations} ROIs")
 
-        # Create a simple csv file with the media name, cluster, etc. and normalized box coordinates
+        # Create a simple csv file with the media name and normalized box coordinates.
+        # Attribute columns are discovered dynamically so project-specific fields are included.
+        all_localizations = [loc for locs in localizations_by_media_id.values() for loc in locs]
+        localization_attribute_columns = get_localization_attribute_columns(all_localizations)
         media_attribute_columns = get_media_attribute_columns(all_media)
-        localization_columns = [
-            "media", "frame", "uuid", "verified", "cluster", "saliency", "area",
-            "predicted_label", "label", "score", "label_s", "score_s",
-            "x", "y", "width", "height",
-        ]
+        header = ["media", "frame", "uuid"] + localization_attribute_columns + ["x", "y", "width", "height"] + media_attribute_columns
+
         with (output_path / "localizations.csv").open("w", newline="") as f:
             writer = csv.writer(f)
-            writer.writerow(localization_columns + media_attribute_columns)
+            writer.writerow(header)
             for m in all_media:
                 media_localizations = localizations_by_media_id[m.id]
-
                 for loc in media_localizations:
-                    writer.writerow(get_localization_csv_row(m, loc, media_attribute_columns))
+                    writer.writerow(get_localization_csv_row(m, loc, localization_attribute_columns, media_attribute_columns))
 
         info(f'Finished creating {output_path / "localizations.csv"}')
 
