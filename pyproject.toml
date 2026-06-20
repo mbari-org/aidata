@@ -86,7 +86,6 @@ patch_tags = ["fix", "perf"]
 env = "GITHUB_TOKEN"
 
 [tool.semantic_release.changelog]
-changelog_file = "CHANGELOG.md"
 exclude_commit_patterns = [
   '''chore(?:\([^)]*?\))?: .+''',
   '''ci(?:\([^)]*?\))?: .+''',
@@ -99,3 +98,6 @@ exclude_commit_patterns = [
   # Old semantic-release version commits
   '''^\d+\.\d+\.\d+''',
 ]
+
+[tool.semantic_release.changelog.default_templates]
+changelog_file = "CHANGELOG.md"

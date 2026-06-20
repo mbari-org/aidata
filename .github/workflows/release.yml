@@ -51,7 +51,7 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          semantic-release version
+          semantic-release version --changelog
           git fetch --tags
           for file in ./dist/**
             do gh release upload "${{steps.release-status.outputs.tag}}" $file
