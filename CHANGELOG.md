@@ -2,6 +2,14 @@
 
 <!-- version list -->
 
+## v1.76.1 (2026-06-20)
+
+### Bug Fixes
+
+- **ci**: Add --changelog flag to semantic-release and migrate deprecated changelog_file config
+  ([`a7bbb0f`](https://github.com/mbari-org/aidata/commit/a7bbb0ff07138bca2a0278a0c862903549c6f57a))
+
+
 ## v1.76.0 (2026-06-20)
 
 ### Features
