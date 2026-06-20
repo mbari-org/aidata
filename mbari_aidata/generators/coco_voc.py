@@ -14,9 +14,6 @@ import tator  # type: ignore
 import pandas as pd
 from PIL import Image
 from tqdm import tqdm
-from pascal_voc_writer import Writer  # type: ignore
-import csv
-
 from mbari_aidata.logger import debug, info, err, exception
 from mbari_aidata.generators.cifar import create_cifar_dataset
 from mbari_aidata.generators.localization_csv import (

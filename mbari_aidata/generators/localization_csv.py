@@ -12,7 +12,7 @@ def get_localization_attribute_columns(all_localizations: Iterable[Any]) -> List
     columns: set = set()
     for loc in all_localizations:
         attributes = getattr(loc, "attributes", None)
-        if isinstance(attributes, dict):
+        if attributes and hasattr(attributes, "keys"):
             columns.update(attributes.keys())
     return sorted(columns)
 
@@ -24,7 +24,7 @@ def get_media_attribute_columns(all_media: Iterable[Any]) -> List[str]:
     columns: set = set()
     for media in all_media:
         attributes = getattr(media, "attributes", None)
-        if isinstance(attributes, dict):
+        if attributes and hasattr(attributes, "keys"):
             columns.update(attributes.keys())
     return sorted(columns)
 
@@ -41,13 +41,8 @@ def get_localization_csv_row(
     Column order: media, frame, uuid, <localization attributes...>, x, y, width, height,
     <media attributes...>
     """
-    loc_attrs = getattr(localization, "attributes", None)
-    if not isinstance(loc_attrs, dict):
-        loc_attrs = {}
-
-    media_attrs = getattr(media, "attributes", None)
-    if not isinstance(media_attrs, dict):
-        media_attrs = {}
+    loc_attrs = getattr(localization, "attributes", None) or {}
+    media_attrs = getattr(media, "attributes", None) or {}
 
     row: List[Any] = [media.name, localization.frame, localization.elemental_id]
 
