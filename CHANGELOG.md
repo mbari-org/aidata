@@ -2,6 +2,14 @@
 
 <!-- version list -->
 
+## v1.76.2 (2026-06-23)
+
+### Bug Fixes
+
+- Load box frame when present (#68) ([#68](https://github.com/mbari-org/aidata/pull/68),
+  [`e5addce`](https://github.com/mbari-org/aidata/commit/e5addcef427d57f7cebd4ff77c5d5e1742647a5e))
+
+
 ## v1.76.1 (2026-06-20)
 
 ### Bug Fixes
