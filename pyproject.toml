@@ -49,6 +49,7 @@ numpy = ">=1.24,<2"
 torch = "2.2.0"
 torchvision = "0.17.0"
 transformers = ">=4.42.4,<6.0.0"
+pytest = "^9.1.1"
 
 [tool.semantic_release]
 branch = "main"
