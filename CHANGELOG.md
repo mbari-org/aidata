@@ -2,6 +2,14 @@
 
 <!-- version list -->
 
+## v1.76.3 (2026-06-24)
+
+### Bug Fixes
+
+- **commands**: Default frame number when frame key is absent in load-boxes
+  ([`b4e03a9`](https://github.com/mbari-org/aidata/commit/b4e03a998063f207018423898fd1ed56a33f345e))
+
+
 ## v1.76.2 (2026-06-23)
 
 ### Bug Fixes
