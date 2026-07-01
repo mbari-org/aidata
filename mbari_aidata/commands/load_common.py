@@ -2,12 +2,13 @@
 # Filename: commands/load_common.py
 # Description: Common functions for loading different media, e.g. images or video from a directory mapped to a web server
 from pathlib import Path
-from typing import Dict, List
+from typing import Dict, List, Optional
 
 import pandas as pd
 from tator.openapi.tator_openapi import TatorApi
 
 from mbari_aidata.logger import info, err
+from mbari_aidata.plugins.loaders.tator.attribute_utils import fetch_attribute_dict
 
 class MediaHelper:
     input_path: Path
@@ -25,9 +26,35 @@ def check_duplicate_media(api: TatorApi, project_id:int, media_type:int, df_medi
             media_names.append(name)
     return media_names
 
-def get_media_attributes(config_dict: Dict, media_type: str) -> dict:
-    attributes = config_dict["tator"][media_type.lower()]["attributes"]
-    return attributes
+def get_media_attributes(
+    config_dict: Dict,
+    media_type: str,
+    api: Optional[TatorApi] = None,
+    project_id: Optional[int] = None,
+) -> dict:
+    """Return the attribute mapping for *media_type*.
+
+    When *api* and *project_id* are supplied the mapping is fetched live from
+    the Tator project schema via :func:`fetch_attribute_dict`, which avoids
+    the need for a ``tator.<media_type>.attributes`` block in ``config.yml``.
+    The config file is used as a fallback (or when the API is not provided).
+
+    :param config_dict: Parsed YAML config dictionary.
+    :param media_type: Type key, e.g. ``"image"``, ``"video"``, ``"box"``.
+    :param api: Optional live :class:`TatorApi` instance.
+    :param project_id: Tator project ID (required when *api* is given).
+    :return: Attribute mapping ``{attr_name: {"type": dtype}, ...}``.
+    """
+    key = media_type.lower()
+
+    if api is not None and project_id is not None:
+        info(f"Fetching attribute dict for '{key}' from Tator project {project_id}")
+        attr_dict = fetch_attribute_dict(api, project_id)
+        if key in attr_dict:
+            return attr_dict[key]["attributes"]
+        info(f"Type '{key}' not found in project schema; falling back to config")
+
+    return config_dict["tator"][key]["attributes"]
 
 def check_mounts(config_dict: Dict, input:str, media_type: str) -> (MediaHelper, int):
     mounts = config_dict["mounts"]

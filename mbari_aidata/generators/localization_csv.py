@@ -3,30 +3,38 @@
 # Description: Helper functions for generating a localizations CSV from Tator data
 from typing import Any, Iterable, List
 
+# Attribute keys that are always excluded from CSV output.
+# _tator_import_workflow is an internal Tator bookkeeping field with no
+# analytical value; Label is already a first-class localization column.
+_EXCLUDE_ATTRIBUTES = {"_tator_import_workflow"}
+
 
 def get_localization_attribute_columns(all_localizations: Iterable[Any]) -> List[str]:
     """
-    Collect the sorted union of all attribute keys across every localization.
-    Analogous to get_media_attribute_columns for media objects.
+    Collect the sorted union of all attribute keys across every localization,
+    excluding internal Tator bookkeeping fields.
     """
     columns: set = set()
     for loc in all_localizations:
         attributes = getattr(loc, "attributes", None)
         if attributes and hasattr(attributes, "keys"):
             columns.update(attributes.keys())
-    return sorted(columns)
+    return sorted(columns - _EXCLUDE_ATTRIBUTES)
 
 
-def get_media_attribute_columns(all_media: Iterable[Any]) -> List[str]:
+def get_media_attribute_columns(all_media: Iterable[Any], exclude: Iterable[str] = ()) -> List[str]:
     """
-    Collect the sorted union of all attribute keys across every media item.
+    Collect the sorted union of all attribute keys across every media item,
+    excluding internal Tator bookkeeping fields and any keys passed in *exclude*
+    (used to avoid duplicating columns already present in localization attributes).
     """
+    skip = _EXCLUDE_ATTRIBUTES | set(exclude)
     columns: set = set()
     for media in all_media:
         attributes = getattr(media, "attributes", None)
         if attributes and hasattr(attributes, "keys"):
             columns.update(attributes.keys())
-    return sorted(columns)
+    return sorted(columns - skip)
 
 
 def get_localization_csv_row(
