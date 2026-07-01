@@ -122,7 +122,6 @@ def download(
         attribute_equals = []
         attribute_gt = []
         attribute_lt = []
-        related_attribute_equals = []
         if generator:
             attribute_equals.append(f"generator::{generator}")
         if group:
@@ -131,15 +130,90 @@ def download(
             attribute_equals.append("verified::true")
         if unverified:
             attribute_equals.append("verified::false")
-        if section:
-            related_attribute_equals.append(f"section::{section}")
-            attribute_equals.append(f"section::{section}")
         if min_saliency:
             attribute_gt.append(f"saliency::{min_saliency}")
         if max_saliency:
             attribute_lt.append(f"saliency::{max_saliency}")
         if min_score:
             attribute_gt.append(f"score::{min_score}")
+
+        # Helper function to get localization count with common arguments
+        def get_localization_count(concept_or_label=None):
+            # Query 1: localizations with matching localization attributes
+            kwargs = {}
+            if concept_or_label:
+                kwargs["attribute_contains"] = [concept_or_label]
+            if len(attribute_equals) > 0:
+                kwargs["attribute"] = attribute_equals
+            if len(attribute_gt) > 0:
+                kwargs["attribute_gt"] = attribute_gt
+            if len(attribute_lt) > 0:
+                kwargs["attribute_lt"] = attribute_lt
+            if depth:
+                kwargs["related_attribute"] = [f"depth::{depth}"]
+            if section:
+                kwargs["related_attribute_contains"] = [f"section::{section}"]
+            info(f"Getting localization count with {kwargs}")
+            count = api.get_localization_count(
+                project=project_id,
+                version=version_ids,
+                **kwargs
+            )
+
+            # Query 2: localizations on media that carry the attribute directly
+            media_kwargs = {}
+            if concept_or_label:
+                media_kwargs["related_attribute_contains"] = [concept_or_label]
+            if len(attribute_equals) > 0:
+                media_kwargs["related_attribute"] = attribute_equals
+            if len(attribute_gt) > 0:
+                media_kwargs["related_attribute_gt"] = attribute_gt
+            if len(attribute_lt) > 0:
+                media_kwargs["related_attribute_lt"] = attribute_lt
+            if depth:
+                if "related_attribute" in media_kwargs:
+                    media_kwargs["related_attribute"] = media_kwargs["related_attribute"] + [f"depth::{depth}"]
+                else:
+                    media_kwargs["related_attribute"] = [f"depth::{depth}"]
+            if section:
+                media_kwargs["related_attribute_contains"] = media_kwargs.get("related_attribute_contains", []) + [f"section::{section}"]
+            if media_kwargs:
+                info(f"Also getting localization count by media attributes with {media_kwargs}")
+                count += api.get_localization_count(
+                    project=project_id,
+                    version=version_ids,
+                    **media_kwargs
+                )
+
+            return count
+        # Process concepts list
+        for concept in concepts_list:
+            num_concept_records[concept] = get_localization_count(f"concept::{concept}")
+            num_records += num_concept_records[concept]
+
+        # Process labels list
+        for label in labels_list:
+            num_label_records[label] = get_localization_count(f"Label::{label}")
+            num_records += num_label_records[label]
+
+        # Handle case where both lists are empty
+        if not concepts_list and not labels_list:
+            num_records = get_localization_count()
+
+
+        info(
+            f"Found {num_records} records for version {version_list} and generator {generator}, "
+            f"group {group}, min_saliency {min_saliency}, min_score {min_score},"
+            f" verified {verified} and including {labels_list if labels_list else 'everything'} "
+        )
+
+        if num_records == 0:
+            info(
+                f"Could not find any records for version {version_list} and generator {generator}, "
+                f"group {group}, min_saliency {min_saliency}, min_score {min_score},"
+                f" verified {verified} and including {labels_list if labels_list else 'everything'}"
+            )
+            return False
 
         # Create the output directory in the expected format that deepsea-ai expects for training
         # See https://docs.mbari.org/deepsea-ai/data/ for more information
