@@ -2,6 +2,14 @@
 
 <!-- version list -->
 
+## v1.77.0 (2026-07-01)
+
+### Features
+
+- Attribute dict (#70) ([#70](https://github.com/mbari-org/aidata/pull/70),
+  [`bc62397`](https://github.com/mbari-org/aidata/commit/bc6239781c62f6fa87480e7154ce324b88f914b4))
+
+
 ## v1.76.3 (2026-06-24)
 
 ### Bug Fixes
