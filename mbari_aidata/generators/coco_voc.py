@@ -12,6 +12,7 @@ from typing import List, Optional
 
 import tator  # type: ignore
 import pandas as pd
+from pascal_voc_writer import Writer  # type: ignore
 from PIL import Image
 from tqdm import tqdm
 from mbari_aidata.logger import debug, info, err, exception
@@ -193,7 +194,7 @@ def download(
         # See https://docs.mbari.org/deepsea-ai/data/ for more information
         label_path = output_path / "labels"
         label_path.mkdir(exist_ok=True)
-        media_path = output_path / "images"
+        media_path = output_path / "media"
         media_path.mkdir(exist_ok=True)
         voc_path = output_path / "voc"
         voc_path.mkdir(exist_ok=True)
@@ -211,6 +212,10 @@ def download(
 
         # Get all the media objects that match the criteria
         localizations_by_media_id = {}
+        fetched_media_by_id = {}  # cache media objects from initial queries for later attribute inspection
+
+        _VIDEO_EXTS = {".mp4", ".avi", ".mov", ".mkv", ".wmv"}
+
         def get_medias(concept_or_label=None):
             kwargs = {}
             if concept_or_label:
@@ -236,14 +241,17 @@ def download(
             medias = get_medias(f"concept::{concept}")
             for media in medias:
                 localizations_by_media_id[media.id] = []
+                fetched_media_by_id[media.id] = media
         for label in labels_list:
             medias = get_medias(f"Label::{label}")
             for media in medias:
                 localizations_by_media_id[media.id] = []
+                fetched_media_by_id[media.id] = media
         if not concepts_list and not labels_list:
             medias = get_medias()
             for media in medias:
                 localizations_by_media_id[media.id] = []
+                fetched_media_by_id[media.id] = media
 
         def query_localizations(prefix: str, query_str: str, max_records: int):
             # set inc to 5000 or max_records-1 or 1, whichever is larger
@@ -317,6 +325,31 @@ def download(
                 query_localizations("Label", label, num_label_records[label])
         if not concepts_list and not labels_list:
             query_localizations("", "", num_records)
+
+        # For Image-type media that carry a Label/label attribute on the media itself
+        # (image-level classification with no per-object box), inject a synthetic
+        # full-frame localization (x=0, y=0, w=1.0, h=1.0) so the whole image is
+        # treated as a single crop and the entry appears in localizations.csv.
+        for media_id, media in fetched_media_by_id.items():
+            if Path(media.name).suffix.lower() in _VIDEO_EXTS:
+                continue
+            attrs = media.attributes or {}
+            label = attrs.get("Label") or attrs.get("label")
+            if not label:
+                continue
+            full_frame_loc = tator.models.Localization(
+                x=0.0,
+                y=0.0,
+                width=1.0,
+                height=1.0,
+                media=media_id,
+                attributes={"Label": str(label)},
+                id=media_id,
+                frame=0,
+                elemental_id=media.elemental_id,
+            )
+            localizations_by_media_id[media_id].append(full_frame_loc)
+            debug(f"Injected full-frame localization for image {media.name} with label '{label}'")
 
         # Remove any media objects that do not have localizations
         for media_id in list(localizations_by_media_id.keys()):
@@ -392,10 +425,12 @@ def download(
 
         if not skip_image_download:
             # Download all the media files - this needs to be done before we can create the
-            # VOC/CIFAR files which reference the media file size
+            # VOC/CIFAR files which reference the media file size.
+            # Videos (.mp4) are also downloaded when crop_roi is set and no external_video_root
+            # is provided, since ROI cropping requires a local source file.
             for media in tqdm(all_media, desc="Downloading", unit="iteration"):
                 out_path = media_path / media.name
-                if '.mp4' in media.name:
+                if '.mp4' in media.name and not (crop_roi and external_video_root is None):
                     continue
                 if not out_path.exists() or out_path.stat().st_size == 0:
                     info(f"Downloading {media.name} to {out_path}")
@@ -460,8 +495,7 @@ def download(
 
                 # Resolve the crop source for this media.
                 # - If external_video_root is set, use it (stem match; .mov preferred, else .mp4 or .avi)
-                # - Else if Tator provides a streaming HTTP URL, use that
-                # - Else use the locally-downloaded media under media_path
+                # - Otherwise use the locally-downloaded file under media_path
                 if external_video_root is not None:
                     resolved = resolve_external_video_file(external_video_root, media.name)
                     if resolved is None:
@@ -471,14 +505,6 @@ def download(
                         )
                         continue
                     crop_source = resolved.as_posix()
-                    is_video_source = True
-                elif (
-                    hasattr(media.media_files, "streaming")
-                    and media.media_files.streaming
-                    and len(media.media_files.streaming) == 1
-                    and media.media_files.streaming[0].path.startswith("http")
-                ):
-                    crop_source = media.media_files.streaming[0].path
                     is_video_source = True
                 else:
                     crop_source = (media_path / media.name).as_posix()
@@ -525,7 +551,7 @@ def download(
         # Attribute columns are discovered dynamically so project-specific fields are included.
         all_localizations = [loc for locs in localizations_by_media_id.values() for loc in locs]
         localization_attribute_columns = get_localization_attribute_columns(all_localizations)
-        media_attribute_columns = get_media_attribute_columns(all_media)
+        media_attribute_columns = get_media_attribute_columns(all_media, exclude=localization_attribute_columns)
         header = ["media", "frame", "uuid"] + localization_attribute_columns + ["x", "y", "width", "height"] + media_attribute_columns
 
         with (output_path / "localizations.csv").open("w", newline="") as f:
@@ -551,7 +577,6 @@ def download(
             image_path = media_path / m.name
 
             # Get the image size — use PIL for images, Tator metadata for video
-            _VIDEO_EXTS = {".mp4", ".avi", ".mov", ".mkv", ".wmv"}
             is_video = Path(m.name).suffix.lower() in _VIDEO_EXTS
 
             if is_video:
@@ -566,58 +591,73 @@ def download(
                 image = Image.open(image_path)
                 image_width, image_height = image.size
 
-            with yolo_path.open("w") as f:
-                for loc in media_localizations:
-                    # Get the label index
-                    label_idx = labels.index(loc.attributes["Label"])
+            # Skip the YOLO .txt label file for images when cropping — the crop
+            # directory structure (crops/<label>/<id>.jpg) is the ground truth.
+            if not (crop_roi and not is_video):
+                with yolo_path.open("w") as f:
+                    for loc in media_localizations:
+                        # Get the label index
+                        label_idx = labels.index(loc.attributes["Label"])
 
-                    # Get the bounding box which is normalized to a 0-1 range and centered
-                    x = loc.x + loc.width / 2
-                    y = loc.y + loc.height / 2
-                    w = loc.width
-                    h = loc.height
-                    if save_score:
-                        f.write(f"{label_idx} {x} {y} {w} {h} {loc.attributes['score']}\n")
-                    else:
-                        f.write(f"{label_idx} {x} {y} {w} {h}\n")
+                        # Bounding box in Tator-native format: top-left (x, y), width, height, all normalized 0-1
+                        x = loc.x
+                        y = loc.y
+                        w = loc.width
+                        h = loc.height
+                        if save_score:
+                            f.write(f"{label_idx} {x} {y} {w} {h} {loc.attributes['score']}\n")
+                        else:
+                            f.write(f"{label_idx} {x} {y} {w} {h}\n")
 
             # optionally create VOC files
             if voc:
-                # Paths to the VOC file and the image
-                voc_xml_path = voc_path / f"{Path(m.name).stem}.xml"
-                image_path = (media_path / m.name).as_posix()
+                if crop_roi and not is_video:
+                    # For cropped image media: emit one XML per localization, with the
+                    # filename and path pointing to the crop file in crops/<label>/.
+                    # The bounding box spans the full crop (0, 0, crop_w, crop_h).
+                    for loc in media_localizations:
+                        crop_id = loc.elemental_id if loc.elemental_id else loc.id
+                        label = loc.attributes.get("Label", "Unknown")
+                        crop_file = crop_path / label / f"{crop_id}.jpg"
+                        voc_xml_path = voc_path / f"{crop_id}.xml"
 
-                writer = Writer(image_path, image_width, image_height)
+                        x1 = int(round(loc.x * image_width))
+                        y1 = int(round(loc.y * image_height))
+                        x2 = int(round((loc.x + loc.width) * image_width))
+                        y2 = int(round((loc.y + loc.height) * image_height))
+                        crop_w = max(1, x2 - x1)
+                        crop_h = max(1, y2 - y1)
 
-                # Add localizations
-                for loc in media_localizations:
-                    # Get the bounding box which is normalized to the image size and upper left corner
-                    x1 = loc.x
-                    y1 = loc.y
-                    x2 = loc.x + loc.width
-                    y2 = loc.y + loc.height
+                        crop_writer = Writer(crop_file.as_posix(), crop_w, crop_h)
+                        crop_writer.addObject(label, 0, 0, crop_w, crop_h, pose=str(loc.id))
+                        crop_writer.save(voc_xml_path.as_posix())
 
-                    x1 *= image_width
-                    y1 *= image_height
-                    x2 *= image_width
-                    y2 *= image_height
+                        with open(voc_xml_path, "r") as file:
+                            filedata = file.read()
+                        filedata = filedata.replace("pose", "id")
+                        with open(voc_xml_path, "w") as file:
+                            file.write(filedata)
+                else:
+                    # Original behavior: one XML per media with all localizations
+                    voc_xml_path = voc_path / f"{Path(m.name).stem}.xml"
+                    image_path = (media_path / m.name).as_posix()
 
-                    x1 = int(round(x1))
-                    y1 = int(round(y1))
-                    x2 = int(round(x2))
-                    y2 = int(round(y2))
+                    writer = Writer(image_path, image_width, image_height)
 
-                    writer.addObject(loc.attributes["Label"], x1, y1, x2, y2, pose=str(loc.id))
+                    for loc in media_localizations:
+                        x1 = int(round(loc.x * image_width))
+                        y1 = int(round(loc.y * image_height))
+                        x2 = int(round((loc.x + loc.width) * image_width))
+                        y2 = int(round((loc.y + loc.height) * image_height))
+                        writer.addObject(loc.attributes["Label"], x1, y1, x2, y2, pose=str(loc.id))
 
-                # Write the file
-                writer.save(voc_xml_path.as_posix())
+                    writer.save(voc_xml_path.as_posix())
 
-                # Replace the xml tag pose with uuid
-                with open(voc_xml_path, "r") as file:
-                    filedata = file.read()
-                filedata = filedata.replace("pose", "id")
-                with open(voc_xml_path, "w") as file:
-                    file.write(filedata)
+                    with open(voc_xml_path, "r") as file:
+                        filedata = file.read()
+                    filedata = filedata.replace("pose", "id")
+                    with open(voc_xml_path, "w") as file:
+                        file.write(filedata)
 
             if coco:
                 coco_localizations = []
@@ -651,6 +691,15 @@ def download(
                     )
 
                 json_content[yolo_path.as_posix()] = coco_localizations
+
+        # Remove downloaded image files that are redundant to crops
+        if crop_roi:
+            for m in all_media:
+                if Path(m.name).suffix.lower() not in _VIDEO_EXTS:
+                    local_file = media_path / m.name
+                    if local_file.exists():
+                        local_file.unlink()
+                        debug(f"Removed {local_file} (redundant to crops)")
 
         # optionally create a CIFAR formatted dataset
         if cifar:
