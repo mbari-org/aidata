@@ -133,60 +133,13 @@ def download(
             attribute_equals.append("verified::false")
         if section:
             related_attribute_equals.append(f"section::{section}")
+            attribute_equals.append(f"section::{section}")
         if min_saliency:
             attribute_gt.append(f"saliency::{min_saliency}")
         if max_saliency:
             attribute_lt.append(f"saliency::{max_saliency}")
         if min_score:
             attribute_gt.append(f"score::{min_score}")
-
-        # Helper function to get localization count with common arguments
-        def get_localization_count(concept_or_label=None):
-            kwargs = {}
-            if concept_or_label:
-                kwargs["attribute_contains"] = [concept_or_label]
-            if len(attribute_equals) > 0:
-                kwargs["attribute"] = attribute_equals
-            if len(attribute_gt) > 0:
-                kwargs["attribute_gt"] = attribute_gt
-            if len(attribute_lt) > 0:
-                kwargs["attribute_lt"] = attribute_lt
-            if len(related_attribute_equals) > 0:
-                kwargs["related_attribute"] = related_attribute_equals
-            info(f"Getting localization count with {kwargs}")
-            return api.get_localization_count(
-                project=project_id,
-                version=version_ids,
-                **kwargs
-            )
-        # Process concepts list
-        for concept in concepts_list:
-            num_concept_records[concept] = get_localization_count(f"concept::{concept}")
-            num_records += num_concept_records[concept]
-
-        # Process labels list
-        for label in labels_list:
-            num_label_records[label] = get_localization_count(f"Label::{label}")
-            num_records += num_label_records[label]
-
-        # Handle case where both lists are empty
-        if not concepts_list and not labels_list:
-            num_records = get_localization_count()
-
-
-        info(
-            f"Found {num_records} records for version {version_list} and generator {generator}, "
-            f"group {group}, min_saliency {min_saliency}, min_score {min_score},"
-            f" verified {verified} and including {labels_list if labels_list else 'everything'} "
-        )
-
-        if num_records == 0:
-            info(
-                f"Could not find any records for version {version_list} and generator {generator}, "
-                f"group {group}, min_saliency {min_saliency}, min_score {min_score},"
-                f" verified {verified} and including {labels_list if labels_list else 'everything'}"
-            )
-            return False
 
         # Create the output directory in the expected format that deepsea-ai expects for training
         # See https://docs.mbari.org/deepsea-ai/data/ for more information
