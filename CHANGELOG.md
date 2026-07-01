@@ -2,6 +2,14 @@
 
 <!-- version list -->
 
+## v1.77.1 (2026-07-01)
+
+### Bug Fixes
+
+- Correct queries for getting and merging media attribute queries
+  ([`f61c925`](https://github.com/mbari-org/aidata/commit/f61c925c885239c215bd5e67b8b6c67d918959c6))
+
+
 ## v1.77.0 (2026-07-01)
 
 ### Features
