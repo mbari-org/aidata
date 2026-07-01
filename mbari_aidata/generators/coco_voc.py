@@ -131,8 +131,6 @@ def download(
             attribute_equals.append("verified::true")
         if unverified:
             attribute_equals.append("verified::false")
-        if depth:
-            related_attribute_equals.append(f"depth::{depth}")
         if section:
             related_attribute_equals.append(f"section::{section}")
         if min_saliency:
@@ -217,6 +215,7 @@ def download(
         _VIDEO_EXTS = {".mp4", ".avi", ".mov", ".mkv", ".wmv"}
 
         def get_medias(concept_or_label=None):
+            # Query 1: media that have matching localizations (related attributes)
             kwargs = {}
             if concept_or_label:
                 kwargs["related_attribute_contains"] = [concept_or_label]
@@ -229,12 +228,39 @@ def download(
             if depth:
                 kwargs["attribute"] = [f"depth::{depth}"]
             if section:
-                if "attribute_contains" in kwargs:
-                    kwargs["attribute_contains"].append(f"section::{section}")
                 kwargs["attribute_contains"] = [f"section::{section}"]
-            info(f"Getting media with {kwargs}")
+            info(f"Getting media by localization attributes with {kwargs}")
             medias = api.get_media_list(project=project_id, **kwargs)
-            info(f"Found {len(medias)} media objects that match the criteria {kwargs}")
+            info(f"Found {len(medias)} media objects that match localization criteria")
+
+            # Query 2: media that carry the attribute directly (e.g. Label, score on the media itself)
+            media_kwargs = {}
+            if concept_or_label:
+                media_kwargs["attribute_contains"] = [concept_or_label]
+            if len(attribute_equals) > 0:
+                media_kwargs["attribute"] = attribute_equals
+            if len(attribute_gt) > 0:
+                media_kwargs["attribute_gt"] = attribute_gt
+            if len(attribute_lt) > 0:
+                media_kwargs["attribute_lt"] = attribute_lt
+            if depth:
+                if "attribute" in kwargs:
+                    media_kwargs["attribute"] = kwargs["attribute"] + [f"depth::{depth}"]
+                else:
+                    media_kwargs["attribute"] = [f"depth::{depth}"]
+            if section:
+                media_kwargs["attribute_contains"] = media_kwargs.get("attribute_contains", []) + [f"section::{section}"]
+            if media_kwargs:
+                info(f"Also getting media by direct attributes with {media_kwargs}")
+                direct_medias = api.get_media_list(project=project_id, **media_kwargs)
+                info(f"Found {len(direct_medias)} media with matching direct attributes")
+                existing_ids = {m.id for m in medias}
+                for m in direct_medias:
+                    if m.id not in existing_ids:
+                        medias.append(m)
+                        existing_ids.add(m.id)
+
+            info(f"Total unique media after merging: {len(medias)}")
             return medias
 
         for concept in concepts_list:
