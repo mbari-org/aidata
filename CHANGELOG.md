@@ -2,6 +2,14 @@
 
 <!-- version list -->
 
+## v1.77.3 (2026-07-01)
+
+### Bug Fixes
+
+- Correct queries for getting total localizations across classification/detection media
+  ([`4539733`](https://github.com/mbari-org/aidata/commit/4539733cf5c085c825476fa5d91833be9e4be06e))
+
+
 ## v1.77.2 (2026-07-01)
 
 ### Bug Fixes
