@@ -115,6 +115,19 @@ def download(
             err(f"Could not find all versions {version_list}")
             return False
 
+        section_id = None
+        if section:
+            section_list = api.get_section_list(project=project_id)
+            debug(section_list)
+
+            # Find the section by name
+            section_ids = [s.id for s in section_list if s.name == section]
+            if len(section_ids) == 1:
+                section_id = section_ids[0]
+            if section_id is None:
+                err(f"Could not find all section in {section_list}")
+                return False
+
         num_concept_records = {}
         num_label_records = {}
         num_records = 0
@@ -151,39 +164,33 @@ def download(
                 kwargs["attribute_lt"] = attribute_lt
             if depth:
                 kwargs["related_attribute"] = [f"depth::{depth}"]
-            if section:
-                kwargs["related_attribute_contains"] = [f"section::{section}"]
+            if version_ids:
+                kwargs["version"] = version_ids
+            if section_id:
+                kwargs["section"] = section_id
             info(f"Getting localization count with {kwargs}")
-            count = api.get_localization_count(
-                project=project_id,
-                version=version_ids,
-                **kwargs
-            )
+            count = api.get_localization_count(project=project_id, **kwargs)
+            info(f"Found {count} localizations with {kwargs}")
 
             # Query 2: localizations on media that carry the attribute directly
             media_kwargs = {}
             if concept_or_label:
-                media_kwargs["related_attribute_contains"] = [concept_or_label]
+                media_kwargs["attribute_contains"] = [concept_or_label]
             if len(attribute_equals) > 0:
-                media_kwargs["related_attribute"] = attribute_equals
+                media_kwargs["attribute"] = attribute_equals
             if len(attribute_gt) > 0:
-                media_kwargs["related_attribute_gt"] = attribute_gt
+                media_kwargs["attribute_gt"] = attribute_gt
             if len(attribute_lt) > 0:
-                media_kwargs["related_attribute_lt"] = attribute_lt
+                media_kwargs["attribute_lt"] = attribute_lt
             if depth:
-                if "related_attribute" in media_kwargs:
-                    media_kwargs["related_attribute"] = media_kwargs["related_attribute"] + [f"depth::{depth}"]
-                else:
-                    media_kwargs["related_attribute"] = [f"depth::{depth}"]
-            if section:
-                media_kwargs["related_attribute_contains"] = media_kwargs.get("related_attribute_contains", []) + [f"section::{section}"]
+                media_kwargs["attribute"] = media_kwargs.get("attribute", []) + [f"depth::{depth}"]
+            if section_id:
+                media_kwargs["section"] = section_id
             if media_kwargs:
                 info(f"Also getting localization count by media attributes with {media_kwargs}")
-                count += api.get_localization_count(
-                    project=project_id,
-                    version=version_ids,
-                    **media_kwargs
-                )
+                medias = api.get_media_list(project=project_id, **media_kwargs)
+                info(f"Found {len(medias)} with {media_kwargs}")
+                count += len(medias)
 
             return count
         # Process concepts list
@@ -254,8 +261,8 @@ def download(
                 kwargs["related_attribute_lt"] = attribute_lt
             if depth:
                 kwargs["attribute"] = [f"depth::{depth}"]
-            if section:
-                kwargs["attribute_contains"] = [f"section::{section}"]
+            if section_id:
+                kwargs["section"] = section_id
             info(f"Getting media by localization attributes with {kwargs}")
             medias = api.get_media_list(project=project_id, **kwargs)
             info(f"Found {len(medias)} media objects that match localization criteria")
@@ -271,12 +278,9 @@ def download(
             if len(attribute_lt) > 0:
                 media_kwargs["attribute_lt"] = attribute_lt
             if depth:
-                if "attribute" in kwargs:
-                    media_kwargs["attribute"] = kwargs["attribute"] + [f"depth::{depth}"]
-                else:
-                    media_kwargs["attribute"] = [f"depth::{depth}"]
-            if section:
-                media_kwargs["attribute_contains"] = media_kwargs.get("attribute_contains", []) + [f"section::{section}"]
+                media_kwargs["attribute"] = media_kwargs.get("attribute", []) + [f"depth::{depth}"]
+            if section_id:
+                media_kwargs["section"] = section_id
             if media_kwargs:
                 info(f"Also getting media by direct attributes with {media_kwargs}")
                 direct_medias = api.get_media_list(project=project_id, **media_kwargs)
