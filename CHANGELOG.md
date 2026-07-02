@@ -2,6 +2,14 @@
 
 <!-- version list -->
 
+## v1.77.4 (2026-07-02)
+
+### Performance Improvements
+
+- Better handling of section id
+  ([`7247851`](https://github.com/mbari-org/aidata/commit/72478514696bcfd0b1137f4859ab6ba721493de1))
+
+
 ## v1.77.3 (2026-07-01)
 
 ### Bug Fixes
