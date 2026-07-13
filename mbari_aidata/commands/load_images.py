@@ -25,7 +25,7 @@ def load_images(token: str, disable_ssl_verify: bool, config: str, dry_run: bool
     from mbari_aidata.commands.load_common import check_mounts, check_duplicate_media
     from mbari_aidata.logger import create_logger_file, info, err
     from mbari_aidata.plugins.extractors.media_types import MediaType
-    from mbari_aidata.plugins.loaders.tator.media import gen_spec as gen_media_spec, load_bulk_images
+    from mbari_aidata.plugins.loaders.tator.media import gen_spec as gen_media_spec, load_bulk_images, upload_image
     from mbari_aidata.plugins.module_utils import load_module
     from mbari_aidata.plugins.loaders.tator.attribute_utils import format_attributes
     from mbari_aidata.plugins.loaders.tator.common import init_api_project, find_media_type, init_yaml_config
@@ -88,64 +88,71 @@ def load_images(token: str, disable_ssl_verify: bool, config: str, dry_run: bool
                     info("All images were duplicates; nothing to load")
                     return 0
 
+        if upload:
+            # Direct upload path: transfer bytes to Tator so transcoding is triggered
+            num_loaded = 0
+            for index, row in tqdm(df_media.iterrows(), total=len(df_media), desc="Uploading images"):
+                if not Path(row["media_path"]).exists():
+                    err(f"Image {row.media_path} does not exist")
+                    continue
+                attributes = format_attributes(row.to_dict(), {})
+                media_id = upload_image(
+                    image_path=row.media_path,
+                    attributes=attributes,
+                    api=api,
+                    tator_project=tator_project,
+                    media_type=media_type,
+                    section=section,
+                )
+                if media_id is not None:
+                    num_loaded += 1
+            info(f"Uploaded {num_loaded} images")
+            return num_loaded
+
+        # Reference-only path: build URL specs and bulk-create media records
         specs = []
         num_checked = 0
-        for index, row in tqdm(df_media.iterrows(), total=len(df_media), desc="Creating images specs"):
-            if upload:
-                # Direct upload: no URL needed
+        for index, row in tqdm(df_media.iterrows(), total=len(df_media), desc="Creating image specs"):
+            if str(row["media_path"]).startswith("http"):
+                image_url = row["media_path"]
+            else:
+                file_loc_sans_root = row["media_path"].split(media.mount_path.as_posix())[-1]
+                image_url = f"{media.base_url}{file_loc_sans_root}"
+
+            if num_checked < 100:
+                # Check if the URL is valid, but only for the first 100 images
+                info(f"Checking if the url {image_url} is valid")
+                try:
+                    timeout = 30
+                    r = requests.head(image_url, timeout=timeout)
+                    if r.status_code == 301 or r.status_code == 200:
+                        info(f"URL {image_url} is valid code {r.status_code}")
+                        num_checked += 1
+                    else:
+                        err(f"URL {image_url} is not valid status code {r.status_code}")
+                        return -1
+                except Exception as e:
+                    err(f"Error checking URL {image_url}: {e}")
+                    return -1
+
+            if not str(row["media_path"]).startswith("http"):
                 if not Path(row["media_path"]).exists():
                     err(f"Image {row.media_path} does not exist")
                     return -1
-                attributes = format_attributes(row.to_dict(), {})
-                specs.append(
-                    gen_media_spec(
-                        file_loc=row.media_path,
-                        type_id=media_type.id,
-                        section=section,
-                        attributes=attributes,
-                    )
+
+            info("Formatting attributes")
+            attributes = format_attributes(row.to_dict(), media.attributes)
+
+            specs.append(
+                gen_media_spec(
+                    file_loc=row.media_path,
+                    file_url=image_url,
+                    type_id=media_type.id,
+                    section=section,
+                    attributes=attributes,
+                    base_url=media.base_url,
                 )
-            else:
-                if str(row["media_path"]).startswith("http"):
-                    image_url = row["media_path"]
-                else:
-                    file_loc_sans_root = row["media_path"].split(media.mount_path.as_posix())[-1]
-                    image_url = f"{media.base_url}{file_loc_sans_root}"
-
-                if num_checked < 100:
-                    # Check if the URL is valid, but only for the first 100 images
-                    info(f"Checking if the url {image_url} is valid")
-                    try:
-                        timeout = 30
-                        r = requests.head(image_url, timeout=timeout)
-                        if r.status_code == 301 or r.status_code == 200:
-                            info(f"URL {image_url} is valid code {r.status_code}")
-                            num_checked += 1
-                        else:
-                            err(f"URL {image_url} is not valid status code {r.status_code}")
-                            return -1
-                    except Exception as e:
-                        err(f"Error checking URL {image_url}: {e}")
-                        return -1
-
-                if not str(row["media_path"]).startswith("http"):
-                    if not Path(row["media_path"]).exists():
-                        err(f"Image {row.media_path} does not exist")
-                        return -1
-
-                info("Formatting attributes")
-                attributes = format_attributes(row.to_dict(), media.attributes)
-
-                specs.append(
-                    gen_media_spec(
-                        file_loc=row.media_path,
-                        file_url=image_url,
-                        type_id=media_type.id,
-                        section=section,
-                        attributes=attributes,
-                        base_url=media.base_url,
-                    )
-                )
+            )
 
         info(f"Loading {len(specs)} images")
         ids = load_bulk_images(tator_project.id, api, specs)
