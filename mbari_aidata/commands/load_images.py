@@ -22,7 +22,7 @@ def load_images(token: str, disable_ssl_verify: bool, config: str, dry_run: bool
     import requests
     from tqdm import tqdm
 
-    from mbari_aidata.commands.load_common import check_mounts, check_duplicate_media
+    from mbari_aidata.commands.load_common import check_mounts, check_duplicate_media, get_media_attributes
     from mbari_aidata.logger import create_logger_file, info, err
     from mbari_aidata.plugins.extractors.media_types import MediaType
     from mbari_aidata.plugins.loaders.tator.media import gen_spec as gen_media_spec, load_bulk_images, upload_image
@@ -89,13 +89,16 @@ def load_images(token: str, disable_ssl_verify: bool, config: str, dry_run: bool
                     return 0
 
         if upload:
+            # Fetch attribute mapping from Tator so metadata (depth, iso_datetime, …) is forwarded
+            image_attributes = get_media_attributes(config_dict, "image", api=api, project_id=tator_project.id)
+
             # Direct upload path: transfer bytes to Tator so transcoding is triggered
             num_loaded = 0
             for index, row in tqdm(df_media.iterrows(), total=len(df_media), desc="Uploading images"):
                 if not Path(row["media_path"]).exists():
                     err(f"Image {row.media_path} does not exist")
                     continue
-                attributes = format_attributes(row.to_dict(), {})
+                attributes = format_attributes(row.to_dict(), image_attributes)
                 media_id = upload_image(
                     image_path=row.media_path,
                     attributes=attributes,
