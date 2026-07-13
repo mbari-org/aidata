@@ -118,11 +118,11 @@ def extract_media(media_path: Path, max_images: int = -1) -> pd.DataFrame:
 
     # Add the depth, day, and night columns to the dataframe if they exist
     if len(depth) > 0:
-        media_df["depth"] = depth
-        media_df["depth"] = media_df["depth"].astype(int)
+        media_df["depth"] = pd.Series(depth)
+        media_df["depth"] = media_df["depth"].fillna(0).astype(int)
     if len(day_flag) > 0:
-        media_df["is_day"] = day_flag
-        media_df["is_day"] = media_df["is_day"].astype(int)
+        media_df["is_day"] = pd.Series(day_flag)
+        media_df["is_day"] = media_df["is_day"].fillna(0).astype(int)
     if len(iso_datetime) > 0:
         if media_type == MediaType.VIDEO: 
             media_df["iso_start_datetime"] = iso_datetime
