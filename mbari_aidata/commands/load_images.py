@@ -16,8 +16,9 @@ from mbari_aidata import common_args
 @click.option("--input", type=str, required=True, help="Path to directory with input images, a single image, or a text file with a list of images")
 @click.option("--section", type=str, default="All Media", help="Section to load images into. Default is 'All Media'")
 @click.option("--max-images", type=int, default=-1, help="Only load up to max-images. Useful for testing. Default is to load all images")
-def load_images(token: str, disable_ssl_verify: bool, config: str, dry_run: bool, input: str, section: str, max_images: int, check_duplicates) -> int:
-    """Load images from a directory. Assumes the images are available via a web server. Returns the number of images loaded."""
+@click.option("--upload", is_flag=True, help="Upload image files directly instead of loading by reference")
+def load_images(token: str, disable_ssl_verify: bool, config: str, dry_run: bool, input: str, section: str, max_images: int, check_duplicates: bool, upload: bool) -> int:
+    """Load images from a directory. Returns the number of images loaded."""
     import requests
     from tqdm import tqdm
 
@@ -37,16 +38,19 @@ def load_images(token: str, disable_ssl_verify: bool, config: str, dry_run: bool
         host = config_dict["tator"]["host"]
         plugins = config_dict["plugins"]
 
-        # If the input is a text file, arbitrarily choose the first file to check mounts
-        if input.endswith(".txt"):
-            info(f"Input is a text file. Reading the first line of {input} to check mounts.")
-            with open(input, "r") as f:
-                first_line = f.readline().strip()
-                media, rc = check_mounts(config_dict, first_line, "image")
+        # Skip mount check when uploading directly
+        if upload:
+            media = None
         else:
-            media, rc = check_mounts(config_dict, input, "image")
-        if rc == -1:
-            return -1
+            if input.endswith(".txt"):
+                info(f"Input is a text file. Reading the first line of {input} to check mounts.")
+                with open(input, "r") as f:
+                    first_line = f.readline().strip()
+                    media, rc = check_mounts(config_dict, first_line, "image")
+            else:
+                media, rc = check_mounts(config_dict, input, "image")
+            if rc == -1:
+                return -1
 
         p = [p for p in plugins if "extractor" in p["name"]][0]  # ruff: noqa
         module = load_module(p["module"])
@@ -87,47 +91,62 @@ def load_images(token: str, disable_ssl_verify: bool, config: str, dry_run: bool
         specs = []
         num_checked = 0
         for index, row in tqdm(df_media.iterrows(), total=len(df_media), desc="Creating images specs"):
-            if str(row["media_path"]).startswith("http"):
-                image_url = row["media_path"]
-            else:
-                file_loc_sans_root = row["media_path"].split(media.mount_path.as_posix())[-1]
-                image_url = f"{media.base_url}{file_loc_sans_root}"
-
-            if num_checked < 100:
-                # Check if the URL is valid, but only for the first 100 images
-                info(f"Checking if the url {image_url} is valid")
-                try:
-                    timeout = 30
-                    r = requests.head(image_url, timeout=timeout)
-                    if r.status_code == 301 or r.status_code == 200:
-                        info(f"URL {image_url} is valid code {r.status_code}")
-                        num_checked += 1
-                    else:
-                        err(f"URL {image_url} is not valid status code {r.status_code}")
-                        return -1
-                except Exception as e:
-                    err(f"Error checking URL {image_url}: {e}")
-                    return -1
-
-            # Check if the image is valid
-            if not str(row["media_path"]).startswith("http"):
+            if upload:
+                # Direct upload: no URL needed
                 if not Path(row["media_path"]).exists():
                     err(f"Image {row.media_path} does not exist")
                     return -1
-
-            info("Formatting attributes")
-            attributes = format_attributes(row.to_dict(), media.attributes)
-
-            specs.append(
-                gen_media_spec(
-                    file_loc=row.media_path,
-                    file_url=image_url,
-                    type_id=media_type.id,
-                    section=section,
-                    attributes=attributes,
-                    base_url=media.base_url,
+                attributes = format_attributes(row.to_dict(), {})
+                specs.append(
+                    gen_media_spec(
+                        file_loc=row.media_path,
+                        type_id=media_type.id,
+                        section=section,
+                        attributes=attributes,
+                    )
                 )
-            )
+            else:
+                if str(row["media_path"]).startswith("http"):
+                    image_url = row["media_path"]
+                else:
+                    file_loc_sans_root = row["media_path"].split(media.mount_path.as_posix())[-1]
+                    image_url = f"{media.base_url}{file_loc_sans_root}"
+
+                if num_checked < 100:
+                    # Check if the URL is valid, but only for the first 100 images
+                    info(f"Checking if the url {image_url} is valid")
+                    try:
+                        timeout = 30
+                        r = requests.head(image_url, timeout=timeout)
+                        if r.status_code == 301 or r.status_code == 200:
+                            info(f"URL {image_url} is valid code {r.status_code}")
+                            num_checked += 1
+                        else:
+                            err(f"URL {image_url} is not valid status code {r.status_code}")
+                            return -1
+                    except Exception as e:
+                        err(f"Error checking URL {image_url}: {e}")
+                        return -1
+
+                if not str(row["media_path"]).startswith("http"):
+                    if not Path(row["media_path"]).exists():
+                        err(f"Image {row.media_path} does not exist")
+                        return -1
+
+                info("Formatting attributes")
+                attributes = format_attributes(row.to_dict(), media.attributes)
+
+                specs.append(
+                    gen_media_spec(
+                        file_loc=row.media_path,
+                        file_url=image_url,
+                        type_id=media_type.id,
+                        section=section,
+                        attributes=attributes,
+                        base_url=media.base_url,
+                    )
+                )
+
         info(f"Loading {len(specs)} images")
         ids = load_bulk_images(tator_project.id, api, specs)
         if ids is None:
