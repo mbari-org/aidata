@@ -7,13 +7,13 @@ import click
 
 from mbari_aidata import common_args
 
-@click.command("images", help="Load images from a directory, a single image file, or a text file with a list of images")
+@click.command("images", help="Load images from a directory, a single image file, a text listing of images, or the image_path column from a SDCAT formatted CSV")
 @common_args.token
 @common_args.disable_ssl_verify
 @common_args.yaml_config
 @common_args.dry_run
 @common_args.duplicates
-@click.option("--input", type=str, required=True, help="Path to directory with input images, a single image, or a text file with a list of images")
+@click.option("--input", type=str, required=True, help="Path to directory with input images, a single image, a text file with a list of images, or a SDCAT formatted CSV")
 @click.option("--section", type=str, default="All Media", help="Section to load images into. Default is 'All Media'")
 @click.option("--max-images", type=int, default=-1, help="Only load up to max-images. Useful for testing. Default is to load all images")
 @click.option("--upload", is_flag=True, help="Upload image files directly instead of loading by reference")
