@@ -26,6 +26,7 @@ from mbari_aidata import __version__
 from mbari_aidata.commands.load_queue import load_queue
 from mbari_aidata.commands.load_boxes import load_boxes
 from mbari_aidata.commands.load_tracks import load_tracks
+from mbari_aidata.commands.load_sdcat import load_sdcat
 
 if "LOG_PATH" not in locals():
     LOG_PATH = Path.home().as_posix()
@@ -56,6 +57,7 @@ cli_load.add_command(load_tracks)
 cli_load.add_command(load_queue)
 cli_load.add_command(load_exemplars)
 cli_load.add_command(load_clusters)
+cli_load.add_command(load_sdcat)
 
 
 @click.group(name="download")
