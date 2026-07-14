@@ -42,9 +42,20 @@ DEFAULT_BASE_DIR = Path.home() / "mbari_aidata" / "datasets"
 )
 @click.option("--max-images", type=int, default=-1, help="Only load up to max-images. Useful for testing. "
                                                          "Default is to load all images")
+@click.option(
+    "--negative-percent",
+    type=float,
+    default=0.0,
+    show_default=True,
+    help="Fraction (0-1) of negative examples - transformed crops/resizes with no bounding boxes - to keep "
+         "relative to the number of positive (annotated) transformed examples, e.g. 0.1-0.2 for 10-20%. "
+         "Negative examples are otherwise dropped. Default 0.0 disables negative examples.",
+)
 def transform(base_path: str, resize: int, crop_size: int, crop_overlap: float, min_area: int, min_dim: int,
-              min_visibility: float, max_images: int):
+              min_visibility: float, max_images: int, negative_percent: float):
     """Transform a downloaded dataset for training detection models"""
+    import random
+
     import albumentations as albu
     import cv2
     from tqdm import tqdm
@@ -58,7 +69,7 @@ def transform(base_path: str, resize: int, crop_size: int, crop_overlap: float, 
         create_logger_file("transform")
         info(
             f"Transforming dataset at {base_path} with crop size {crop_size} and overlap {crop_overlap} and min area {min_area}"
-            f" and min visibility {min_visibility} and max images {max_images}")
+            f" and min visibility {min_visibility} and max images {max_images} and negative percent {negative_percent}")
 
         if resize:
             info(f"Resizing images to {resize}")
@@ -70,6 +81,10 @@ def transform(base_path: str, resize: int, crop_size: int, crop_overlap: float, 
         # Need to specify either crop_size or resize or both
         if not crop_size and not resize:
             exception("Either crop-size or resize must be specified")
+            return
+
+        if negative_percent < 0 or negative_percent >= 1:
+            exception(f"negative-percent must be >= 0 and < 1, got {negative_percent}")
             return
 
         # Check if the base path exists and a voc dataset exists:
@@ -125,10 +140,11 @@ def transform(base_path: str, resize: int, crop_size: int, crop_overlap: float, 
             return transformed_data
 
         # A utility function for saving the transformed data
-        def save_transformed(transformed_xml_path:Path, transformed_image_path: Path, width: int, height: int, transformed_data: dict, line_width=2):
+        def save_transformed(transformed_xml_path: Path, transformed_image_path: Path, width: int, height: int, transformed_data: dict, line_width=2):
             writer = Writer(transformed_image_path.as_posix(), width, height)
 
-            # Store the cropped image and adjusted bounding boxes
+            # Store the cropped image and adjusted bounding boxes; an empty transformed_data (no boxes) writes
+            # a valid VOC XML with no objects, used for negative examples
             for l, b, i in zip(transformed_data["labels"], transformed_data["bboxes"], transformed_data["ids"]):
                 if l not in label_cnt_transformed:
                     label_cnt_transformed[l] = 0
@@ -139,13 +155,13 @@ def transform(base_path: str, resize: int, crop_size: int, crop_overlap: float, 
                 # cv2.rectangle(transformed['image'], (x1, y1), (x2, y2), (255, 0, 0), 2)
 
             # Write the file
-            writer.save(voc_xml_path.as_posix())
+            writer.save(transformed_xml_path.as_posix())
 
             # Replace the xml tag pose with the database id
-            with open(voc_xml_path, "r") as file:
+            with open(transformed_xml_path, "r") as file:
                 filedata = file.read()
             filedata = filedata.replace("pose", "id")
-            with open(voc_xml_path, "w") as file:
+            with open(transformed_xml_path, "w") as file:
                 file.write(filedata)
 
         # Create the output directories
@@ -164,6 +180,13 @@ def transform(base_path: str, resize: int, crop_size: int, crop_overlap: float, 
         label_cnt = {}
         label_cnt_transformed = {}
         num_images = 0
+        num_positive_images = 0
+
+        # Negative examples (transformed images with no bounding boxes) are collected as lightweight
+        # candidates - source image path plus the crop/resize parameters needed to regenerate them - and a
+        # bounded, randomly sampled subset is materialized after the main loop once the final positive count
+        # is known, so they never exceed negative_percent of the transformed dataset.
+        negative_candidates = []
 
         for image_path in tqdm(image_paths, desc="transforming", unit="iteration"):
             image = cv2.imread(str(image_path))
@@ -211,11 +234,24 @@ def transform(base_path: str, resize: int, crop_size: int, crop_overlap: float, 
                 transformed = remove_small_boxes(transformed, voc_xml_path)
 
                 if len(transformed['bboxes']) == 0:
-                    warn(f'No bounding boxes left for {voc_xml_path}')
+                    if negative_percent > 0:
+                        neg_image_path = output_base_path_images / f"{image_path.stem}_r_neg{image_path.suffix}"
+                        neg_xml_path = output_base_path_xml / f"{neg_image_path.stem}.xml"
+                        negative_candidates.append({
+                            "kind": "resize",
+                            "source_image_path": image_path,
+                            "image_path_final": neg_image_path,
+                            "xml_path": neg_xml_path,
+                            "width": resize,
+                            "height": resize,
+                        })
+                    else:
+                        warn(f'No bounding boxes left for {voc_xml_path}')
                     continue
 
                 save_transformed(voc_xml_path, image_path_final, resize, resize, transformed, line_width=10)
                 cv2.imwrite(image_path_final.as_posix(), transformed["image"])
+                num_positive_images += 1
 
             if not crop_size:
                 continue
@@ -245,16 +281,70 @@ def transform(base_path: str, resize: int, crop_size: int, crop_overlap: float, 
                     # If the boxes are smaller than min_dim pixels in height or width, remove them
                     transformed = remove_small_boxes(transformed, voc_xml_path)
 
-                    # Only keep the data if the cropped image contains at least one bounding box
+                    # Only keep the data if the cropped image contains at least one bounding box; otherwise
+                    # collect it as a negative example candidate
                     if len(transformed["bboxes"]) > 0:
                         num_transformed_labels += len(transformed["bboxes"])
                         save_transformed(voc_xml_path, image_path_final, crop_size, crop_size, transformed, line_width=2)
                         cv2.imwrite(image_path_final.as_posix(), transformed["image"])
+                        num_positive_images += 1
                         i += 1
+                    elif negative_percent > 0:
+                        neg_image_path = output_base_path_images / f"{image_path.stem}_c_{x}_{y}_neg{image_path.suffix}"
+                        neg_xml_path = output_base_path_xml / f"{neg_image_path.stem}.xml"
+                        negative_candidates.append({
+                            "kind": "crop",
+                            "source_image_path": image_path,
+                            "image_path_final": neg_image_path,
+                            "xml_path": neg_xml_path,
+                            "width": crop_size,
+                            "height": crop_size,
+                            "x": x,
+                            "y": y,
+                        })
+
+        # Materialize a randomly sampled, bounded subset of the negative candidates so that negatives never
+        # exceed negative_percent of the final transformed dataset: negatives / (positives + negatives) <= p
+        # implies negatives <= p * positives / (1 - p)
+        num_negative_images = 0
+        if negative_percent > 0 and negative_candidates:
+            if num_positive_images == 0:
+                warn("No positive (annotated) transformed examples were generated; skipping negative examples "
+                     "since negative-percent is relative to the positive example count")
+            else:
+                max_negatives = int((negative_percent * num_positive_images) / (1 - negative_percent))
+                random.seed(0)  # for reproducibility
+                selected = negative_candidates if len(negative_candidates) <= max_negatives \
+                    else random.sample(negative_candidates, max_negatives)
+                info(f"Adding {len(selected)} negative examples out of {len(negative_candidates)} candidates "
+                     f"(capped at {negative_percent:.0%} of the {num_positive_images} positive examples)")
+
+                for candidate in tqdm(selected, desc="adding negatives", unit="iteration"):
+                    src_image = cv2.imread(str(candidate["source_image_path"]))
+                    if src_image is None:
+                        exception(f"Could not read image {candidate['source_image_path']}")
+                        continue
+
+                    if candidate["kind"] == "resize":
+                        neg_transform = albu.Compose([albu.Resize(width=candidate["width"], height=candidate["height"])])
+                    else:
+                        x, y = candidate["x"], candidate["y"]
+                        neg_transform = albu.Compose([
+                            albu.Crop(x_min=x, y_min=y, x_max=x + candidate["width"], y_max=y + candidate["height"]),
+                            albu.LongestMaxSize(max_size=candidate["width"]),
+                        ])
+                    neg_image = neg_transform(image=src_image)["image"]
+
+                    empty_data = {"bboxes": [], "labels": [], "ids": []}
+                    save_transformed(candidate["xml_path"], candidate["image_path_final"], candidate["width"],
+                                      candidate["height"], empty_data)
+                    cv2.imwrite(candidate["image_path_final"].as_posix(), neg_image)
+                    num_negative_images += 1
 
         info(f"transformed dataset saved to {output_base_path}")
         num_transformed_images = len(list(output_base_path_images.glob("*")))
-        info(f"Input images: {num_images}; transformed images: {num_transformed_images}")
+        info(f"Input images: {num_images}; transformed images: {num_transformed_images} "
+             f"({num_positive_images} positive, {num_negative_images} negative)")
         info(f"Input labels: {label_cnt}; transformed labels: {label_cnt_transformed}")
 
     except Exception as e:
@@ -370,5 +460,5 @@ def voc_to_yolo(base_path: str):
 
 if __name__ == "__main__":
     base_path = Path(__file__).parent.parent.parent / "Baseline"
-    transform(base_path=base_path, crop_size=2000, crop_overlap=0.5, min_area=100, min_visibility=0.5, resize=None,
-              max_images=-1)
+    transform(base_path=base_path, crop_size=2000, crop_overlap=0.5, min_area=100, min_dim=20, min_visibility=0.5,
+              resize=None, max_images=-1, negative_percent=0.0)
