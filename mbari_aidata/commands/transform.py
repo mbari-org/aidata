@@ -61,6 +61,7 @@ def transform(base_path: str, resize: int, crop_size: int, crop_overlap: float, 
     from tqdm import tqdm
     import shutil
 
+    from mbari_aidata.commands.dataset_paths import resolve_image_dir
     from mbari_aidata.generators.utils import parse_voc_xml
     from mbari_aidata.logger import create_logger_file, info, exception, warn
     from pascal_voc_writer import Writer  # type: ignore
@@ -95,7 +96,7 @@ def transform(base_path: str, resize: int, crop_size: int, crop_overlap: float, 
         # Check if the base path has a VOC dataset - this should
         # be a directory with the following structure:
         # base_path
-        # ├── images
+        # ├── images (or media)
         # │   ├── image1.png
         # │   ├── image2.png
         # ├── voc
@@ -105,16 +106,17 @@ def transform(base_path: str, resize: int, crop_size: int, crop_overlap: float, 
             exception(f"VOC dataset not found in {base_path}")
             return
 
-        if not Path(base_path / "images").exists():
-            exception(f"Images directory not found in {base_path}")
+        images_dir = resolve_image_dir(base_path)
+        if images_dir is None:
+            exception(f"Images directory not found in {base_path} (checked 'images' and 'media')")
             return
 
         allowed_extensions = [".png", ".jpg", ".jpeg", ".JPEG", ".JPG", ".PNG"]
 
-        image_paths = [image_path for image_path in Path(base_path / "images").glob("*") if
+        image_paths = [image_path for image_path in images_dir.glob("*") if
                        image_path.suffix in allowed_extensions]
         if len(image_paths) == 0:
-            exception(f"No images found in {base_path / 'images'}")
+            exception(f"No images found in {images_dir}")
             return
 
         if max_images > 0:
@@ -363,6 +365,7 @@ def voc_to_yolo(base_path: str):
     """Transform a downloaded dataset for training detection models from VOC to YOLO format"""
     import cv2
 
+    from mbari_aidata.commands.dataset_paths import resolve_image_dir
     from mbari_aidata.generators.utils import parse_voc_xml
     from mbari_aidata.logger import create_logger_file, info, exception, warn
     from pascal_voc_writer import Writer  # type: ignore
@@ -379,7 +382,7 @@ def voc_to_yolo(base_path: str):
         # Check if the base path has a VOC dataset - this should
         # be a directory with the following structure:
         # base_path
-        # ├── images
+        # ├── images (or media)
         # │   ├── image1.png
         # │   ├── image2.png
         # ├── voc
@@ -390,8 +393,9 @@ def voc_to_yolo(base_path: str):
             exception(f"VOC dataset not found in {base_path}")
             return
 
-        if not Path(base_path / "images").exists():
-            exception(f"Images directory not found in {base_path}")
+        images_dir = resolve_image_dir(base_path)
+        if images_dir is None:
+            exception(f"Images directory not found in {base_path} (checked 'images' and 'media')")
             return
 
         # Create a mapping of label names to label indices, starting from 0 in sorted order from the labels.txt file
@@ -422,7 +426,7 @@ def voc_to_yolo(base_path: str):
             # Get image dimensions for normalization
             allowed_extensions = [".png", ".jpg", ".jpeg", ".JPEG", ".JPG", ".PNG"]
             for ext in allowed_extensions:
-                image_path = base_path / "images" / (xml_path.stem + ext)
+                image_path = images_dir / (xml_path.stem + ext)
                 if image_path.exists():
                     break
             image = cv2.imread(str(image_path))
