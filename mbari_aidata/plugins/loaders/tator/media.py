@@ -571,6 +571,63 @@ def upload_media(
         return None
 
 
+def upload_image(
+    image_path: str,
+    attributes: dict,
+    api: tatorapi,
+    tator_project: Project,
+    media_type: MediaType,
+    section: str = "All Media",
+    chunk_size: int = 10 * 1024 * 1024,
+) -> int or None:
+    """
+    Upload a single image file to Tator and return its media ID.
+    Uses tator.util.upload_media so the bytes are transferred and transcoding
+    is triggered automatically.
+
+    :param image_path: Absolute path to the image file
+    :param attributes: Attributes to assign to the media
+    :param api: Tator API
+    :param tator_project: Tator project
+    :param media_type: Image media type object
+    :param section: Section to store media in; defaults to "All Media"
+    :param chunk_size: Chunk size in bytes for the upload; defaults to 10 MB
+    :return: Media ID or None if failed
+    """
+    try:
+        path = Path(image_path)
+        info(f"Uploading image {path.name} to Tator section={section}")
+        combined_attributes = attributes.copy() if attributes else {}
+        response = None
+        for progress, response in tator.util.upload_media(
+            api=api,
+            type_id=media_type.id,
+            path=image_path,
+            section=section,
+            attributes=combined_attributes,
+            chunk_size=chunk_size,
+        ):
+            info(f"Upload progress {path.name}: {progress}%")
+
+        if response is None:
+            err(f"Upload failed for {image_path}")
+            return None
+
+        # tator.util.upload_media yields the raw media ID (int) for images
+        # and a CreateResponse with .id list for other types
+        if isinstance(response, int):
+            media_id = response
+        elif hasattr(response, "id"):
+            media_id = response.id[0] if isinstance(response.id, list) else response.id
+        else:
+            media_id = None
+        info(f"Uploaded {path.name} → media_id={media_id}")
+        return media_id
+    except Exception as e:
+        err(f"Error uploading image {image_path}: {e}")
+        return None
+
+
 if __name__ == "__main__":
     file_url = "http://localhost:8082/data/cfe/CFE_ISIIS-001-2023-07-12%2009-14-56.898.mp4"
     file_load_path = Path(__file__).parent.parent.parent.parent.parent / "tests" / "data" / "cfe" /"CFE_ISIIS-001-2023-07-12 09-14-56.898.mp4"

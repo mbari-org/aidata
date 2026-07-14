@@ -7,24 +7,25 @@ import click
 
 from mbari_aidata import common_args
 
-@click.command("images", help="Load images from a directory, a single image file, or a text file with a list of images")
+@click.command("images", help="Load images from a directory, a single image file, a text listing of images, or the image_path column from a SDCAT formatted CSV")
 @common_args.token
 @common_args.disable_ssl_verify
 @common_args.yaml_config
 @common_args.dry_run
 @common_args.duplicates
-@click.option("--input", type=str, required=True, help="Path to directory with input images, a single image, or a text file with a list of images")
+@click.option("--input", type=str, required=True, help="Path to directory with input images, a single image, a text file with a list of images, or a SDCAT formatted CSV")
 @click.option("--section", type=str, default="All Media", help="Section to load images into. Default is 'All Media'")
 @click.option("--max-images", type=int, default=-1, help="Only load up to max-images. Useful for testing. Default is to load all images")
-def load_images(token: str, disable_ssl_verify: bool, config: str, dry_run: bool, input: str, section: str, max_images: int, check_duplicates) -> int:
-    """Load images from a directory. Assumes the images are available via a web server. Returns the number of images loaded."""
+@click.option("--upload", is_flag=True, help="Upload image files directly instead of loading by reference")
+def load_images(token: str, disable_ssl_verify: bool, config: str, dry_run: bool, input: str, section: str, max_images: int, check_duplicates: bool, upload: bool) -> int:
+    """Load images from a directory. Returns the number of images loaded."""
     import requests
     from tqdm import tqdm
 
-    from mbari_aidata.commands.load_common import check_mounts, check_duplicate_media
+    from mbari_aidata.commands.load_common import check_mounts, check_duplicate_media, get_media_attributes
     from mbari_aidata.logger import create_logger_file, info, err
     from mbari_aidata.plugins.extractors.media_types import MediaType
-    from mbari_aidata.plugins.loaders.tator.media import gen_spec as gen_media_spec, load_bulk_images
+    from mbari_aidata.plugins.loaders.tator.media import gen_spec as gen_media_spec, load_bulk_images, upload_image
     from mbari_aidata.plugins.module_utils import load_module
     from mbari_aidata.plugins.loaders.tator.attribute_utils import format_attributes
     from mbari_aidata.plugins.loaders.tator.common import init_api_project, find_media_type, init_yaml_config
@@ -37,16 +38,19 @@ def load_images(token: str, disable_ssl_verify: bool, config: str, dry_run: bool
         host = config_dict["tator"]["host"]
         plugins = config_dict["plugins"]
 
-        # If the input is a text file, arbitrarily choose the first file to check mounts
-        if input.endswith(".txt"):
-            info(f"Input is a text file. Reading the first line of {input} to check mounts.")
-            with open(input, "r") as f:
-                first_line = f.readline().strip()
-                media, rc = check_mounts(config_dict, first_line, "image")
+        # Skip mount check when uploading directly
+        if upload:
+            media = None
         else:
-            media, rc = check_mounts(config_dict, input, "image")
-        if rc == -1:
-            return -1
+            if input.endswith(".txt"):
+                info(f"Input is a text file. Reading the first line of {input} to check mounts.")
+                with open(input, "r") as f:
+                    first_line = f.readline().strip()
+                    media, rc = check_mounts(config_dict, first_line, "image")
+            else:
+                media, rc = check_mounts(config_dict, input, "image")
+            if rc == -1:
+                return -1
 
         p = [p for p in plugins if "extractor" in p["name"]][0]  # ruff: noqa
         module = load_module(p["module"])
@@ -84,9 +88,34 @@ def load_images(token: str, disable_ssl_verify: bool, config: str, dry_run: bool
                     info("All images were duplicates; nothing to load")
                     return 0
 
+        if upload:
+            # Fetch attribute mapping from Tator so metadata (depth, iso_datetime, …) is forwarded
+            image_attributes = get_media_attributes(config_dict, "image", api=api, project_id=tator_project.id)
+
+            # Direct upload path: transfer bytes to Tator so transcoding is triggered
+            num_loaded = 0
+            for index, row in tqdm(df_media.iterrows(), total=len(df_media), desc="Uploading images"):
+                if not Path(row["media_path"]).exists():
+                    err(f"Image {row.media_path} does not exist")
+                    continue
+                attributes = format_attributes(row.to_dict(), image_attributes)
+                media_id = upload_image(
+                    image_path=row.media_path,
+                    attributes=attributes,
+                    api=api,
+                    tator_project=tator_project,
+                    media_type=media_type,
+                    section=section,
+                )
+                if media_id is not None:
+                    num_loaded += 1
+            info(f"Uploaded {num_loaded} images")
+            return num_loaded
+
+        # Reference-only path: build URL specs and bulk-create media records
         specs = []
         num_checked = 0
-        for index, row in tqdm(df_media.iterrows(), total=len(df_media), desc="Creating images specs"):
+        for index, row in tqdm(df_media.iterrows(), total=len(df_media), desc="Creating image specs"):
             if str(row["media_path"]).startswith("http"):
                 image_url = row["media_path"]
             else:
@@ -109,7 +138,6 @@ def load_images(token: str, disable_ssl_verify: bool, config: str, dry_run: bool
                     err(f"Error checking URL {image_url}: {e}")
                     return -1
 
-            # Check if the image is valid
             if not str(row["media_path"]).startswith("http"):
                 if not Path(row["media_path"]).exists():
                     err(f"Image {row.media_path} does not exist")
@@ -128,6 +156,7 @@ def load_images(token: str, disable_ssl_verify: bool, config: str, dry_run: bool
                     base_url=media.base_url,
                 )
             )
+
         info(f"Loading {len(specs)} images")
         ids = load_bulk_images(tator_project.id, api, specs)
         if ids is None:
