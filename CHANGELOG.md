@@ -2,6 +2,15 @@
 
 <!-- version list -->
 
+## v1.78.0 (2026-07-14)
+
+### Features
+
+- **commands**: Add --upload flag to load images and fix i2MAP extractor (#72)
+  ([#72](https://github.com/mbari-org/aidata/pull/72),
+  [`3bef54a`](https://github.com/mbari-org/aidata/commit/3bef54a1131fbf62a0c450467de56fe3f183cc94))
+
+
 ## v1.77.4 (2026-07-02)
 
 ### Performance Improvements
