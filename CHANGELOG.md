@@ -2,6 +2,19 @@
 
 <!-- version list -->
 
+## v1.79.0 (2026-07-14)
+
+### Bug Fixes
+
+- **commands**: Accept "images" or "media" as the dataset image directory
+  ([`1c8ca3b`](https://github.com/mbari-org/aidata/commit/1c8ca3b1fa9416e0cd803abd026c8aede8816ce1))
+
+### Features
+
+- **commands**: Add negative example support to transform voc
+  ([`56a12e3`](https://github.com/mbari-org/aidata/commit/56a12e3f75bf2c91b7a38b417401114f7f5186c1))
+
+
 ## v1.78.0 (2026-07-14)
 
 ### Features
