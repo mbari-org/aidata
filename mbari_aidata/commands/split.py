@@ -40,6 +40,7 @@ def split(input_path: Path, output_path: Path, split_weights: Tuple[float, float
     import tarfile
     import tempfile
 
+    from mbari_aidata.commands.dataset_paths import resolve_image_dir
     from mbari_aidata.logger import debug, info
     
     #########################################
@@ -60,8 +61,9 @@ def split(input_path: Path, output_path: Path, split_weights: Tuple[float, float
         info(f'Autosplitting images from {path}' + ', using *.txt labeled images only' * annotated_only)
 
         def img2label_paths(img_paths):
-            # Define label paths as a function of image paths
-            sa, sb = f'{os.sep}images{os.sep}', f'{os.sep}labels{os.sep}'  # /images/, /labels/ substrings
+            # Define label paths as a function of image paths; path.name is "images" or "media"
+            # depending on the dataset layout
+            sa, sb = f'{os.sep}{path.name}{os.sep}', f'{os.sep}labels{os.sep}'
             return [sb.join(x.rsplit(sa, 1)).rsplit('.', 1)[0] + '.txt' for x in img_paths]
 
         for i, img in tqdm(zip(indices, files), total=n, desc="Autosplitting"):
@@ -74,7 +76,10 @@ def split(input_path: Path, output_path: Path, split_weights: Tuple[float, float
     # do the work in a temporary directory
     with tempfile.TemporaryDirectory() as temp_dir:
         temp_path = Path(temp_dir)
-        autosplit(path=input_path / 'images', weights=split_weights, annotated_only=False)
+        images_dir = resolve_image_dir(input_path)
+        if images_dir is None:
+            raise FileNotFoundError(f"Images directory not found in {input_path} (checked 'images' and 'media')")
+        autosplit(path=images_dir, weights=split_weights, annotated_only=False)
 
         for v in ['train', 'val', 'test']:
             image_path = temp_path / 'images' / v
@@ -119,6 +124,7 @@ def split_command(input: str, output: str, split_fraction: str):
     """
     Split data into train/val/test sets randomly per the following percentages 85%/10%/5%
     """
+    from mbari_aidata.commands.dataset_paths import resolve_image_dir
     from mbari_aidata.logger import create_logger_file, err
 
     create_logger_file("split")
@@ -129,11 +135,8 @@ def split_command(input: str, output: str, split_fraction: str):
     if not output_path.exists():
         output_path.mkdir(parents=True)
 
-    paths = [input_path / 'labels', input_path / 'images']
-
-    exists = [not p.exists() for p in paths]
-    if any(exists):
-        err(f'Error: one or more {paths} missing')
+    if not (input_path / 'labels').exists() or resolve_image_dir(input_path) is None:
+        err(f"Error: labels directory or images/media directory missing in {input_path}")
         return
 
     split(Path(input), Path(output), split_weights=_parse_split(split_fraction))

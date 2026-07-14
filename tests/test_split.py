@@ -134,6 +134,37 @@ def test_split_command_missing_input():
         assert result.exit_code == 0 or "missing" in result.output.lower()
 
 
+def test_split_function_media_dir():
+    """Test that the split function accepts a "media" directory instead of "images"."""
+    with tempfile.TemporaryDirectory() as tmpdir:
+        test_input = Path(tmpdir) / "test_dataset"
+        test_output = Path(tmpdir) / "output"
+
+        media_dir = test_input / "media"
+        labels_dir = test_input / "labels"
+        media_dir.mkdir(parents=True)
+        labels_dir.mkdir(parents=True)
+        test_output.mkdir(parents=True)
+
+        for i in range(20):
+            img_path = media_dir / f"image_{i:03d}.jpg"
+            with open(img_path, 'w') as f:
+                f.write(f"Fake image {i}")
+
+            label_path = labels_dir / f"image_{i:03d}.txt"
+            with open(label_path, 'w') as f:
+                f.write("0 0.5 0.5 0.3 0.3\n")
+
+        split(test_input, test_output)
+
+        labels_tar = test_output / "labels.tar.gz"
+        images_tar = test_output / "images.tar.gz"
+
+        assert labels_tar.exists(), "labels.tar.gz should be created"
+        assert images_tar.exists(), "images.tar.gz should be created"
+        assert images_tar.stat().st_size > 0, "images.tar.gz should not be empty"
+
+
 def test_split_small_dataset():
     """Test split with a small dataset (may not have all splits)"""
     with tempfile.TemporaryDirectory() as tmpdir:

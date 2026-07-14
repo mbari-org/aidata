@@ -76,6 +76,42 @@ def voc_dataset():
         yield base_path, num_images
 
 
+@pytest.fixture
+def voc_dataset_media_dir():
+    """Same as voc_dataset, but using the current "media" directory name instead of "images"."""
+    with tempfile.TemporaryDirectory() as tmpdir:
+        base_path = Path(tmpdir) / "dataset"
+        media_dir = base_path / "media"
+        voc_dir = base_path / "voc"
+        media_dir.mkdir(parents=True)
+        voc_dir.mkdir(parents=True)
+
+        num_images = 3
+        for i in range(num_images):
+            image_name = f"image_{i:03d}.png"
+            image = np.zeros((IMAGE_SIZE, IMAGE_SIZE, 3), dtype=np.uint8)
+            cv2.imwrite(str(media_dir / image_name), image)
+            _write_voc_xml(voc_dir / f"image_{i:03d}.xml", image_name, box=(5, 5, 25, 25))
+
+        yield base_path, num_images
+
+
+def test_transform_accepts_media_directory(voc_dataset_media_dir):
+    """The images directory may be named "media" (current download layout) instead of "images"."""
+    base_path, num_images = voc_dataset_media_dir
+
+    runner = CliRunner()
+    result = runner.invoke(
+        transform,
+        ["--base-path", str(base_path), "--crop-size", str(CROP_SIZE), "--crop-overlap", "0.0"],
+    )
+
+    assert result.exit_code == 0, f"Command should succeed, got: {result.output}"
+
+    transformed_images = list((base_path / "transformed" / "images").glob("*"))
+    assert len(transformed_images) == num_images
+
+
 def test_transform_no_negatives_by_default(voc_dataset):
     """By default (negative-percent=0.0), only annotated crops should be kept."""
     base_path, num_images = voc_dataset
