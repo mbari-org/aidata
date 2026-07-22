@@ -330,6 +330,8 @@ def download(
                     kwargs["attribute_gt"] = attribute_gt
                 if attribute_lt:
                     kwargs["attribute_lt"] = attribute_lt
+                if section_id:
+                    kwargs["section"] = section_id
 
                 info(f"Query records {start} to {start + inc} using {kwargs} {prefix} {query_str}")
 
