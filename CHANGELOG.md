@@ -2,6 +2,20 @@
 
 <!-- version list -->
 
+## v1.79.1 (2026-07-22)
+
+### Bug Fixes
+
+- **generators**: Apply section filter when paging localizations in download (#75)
+  ([#75](https://github.com/mbari-org/aidata/pull/75),
+  [`64afc8f`](https://github.com/mbari-org/aidata/commit/64afc8f5223e4cb921fe64d598789d1c420ed615))
+
+### Documentation
+
+- Update README.md
+  ([`ff59879`](https://github.com/mbari-org/aidata/commit/ff5987923f370eaea45dd7605c67bdc55f14144c))
+
+
 ## v1.79.0 (2026-07-14)
 
 ### Bug Fixes
