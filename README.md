@@ -16,15 +16,14 @@ More documentation and examples are available at [https://docs.mbari.org/interna
 ## 🚀 Features
 * 🧠 Object Detection/Clustering Integration: Loads detection/classification/clustering output from SDCAT formatted results.
 * Flexible Data Export: Downloads from Tator into machine learning formats like COCO, CIFAR, or PASCAL VOC.
-* Crop localization into optimized datasets for training classification models.
-* Real-Time Uploads: Pushes localizations to [Tator](https://www.tator.io/) via [Redis](https://redis.io/glossary/redis-queue/) queues for real-time workflows.
+* Smart cropping: Optimized localization crops for training classification models.
 * Metadata Extraction: Parses images metadata such as GPS/time/date through a plugin-based system (extractors).
 * Duplicate Detection & flexible media references: Supports duplicate media load checks with the --check-duplicates flag. 
-* Images or video can be loaded through a web server without needing to upload or move them from your internal NFS project mounts (e.g. Thalassa)
-* Or, video can be uploaded without needing to figure out how to do the video transcoding required for web viewing.
-* Video tracks can be uploaded into Tator for training and evaluation, including time-decay weighted tracks.
-* Multiple data versions can be downloaded into a single dataset for training or evaluation using the --version flag with comma separated values, otherwise localization data is combined through Non-Maximum Suppression (NMS) to remove duplicate boxes.
-* Augmentation Support: Augment VOC datasets with [Albumentations](https://albumentations.ai/) to boost your object detection model performance.
+* Flexible media load: Images or video can be loaded through a web server without needing to upload or move them from your internal NFS project mounts, or, video can be uploaded without needing to figure out how to do the video transcoding required for web viewing.
+* Video tracks can be uploaded into Tator for annotation, including time-decay weighted tracks (TWDA).
+* Data versions can be downloaded into a single dataset for training or evaluation using the --version flag with comma separated values, otherwise localization data is combined through Non-Maximum Suppression (NMS) to remove duplicate boxes.
+* Augmentation Support: Augment VOC datasets with [Albumentations](https://albumentations.ai/) and create negative examples to boost your model performance.
+* Real-Time Uploads: Pushes localizations to [Tator](https://www.tator.io/) via [Redis](https://redis.io/glossary/redis-queue/) queues for real-time workflows.
 
 ## Requirements
 - Python 3.10 or higher
@@ -116,7 +115,7 @@ tator:
         type: int
       exemplar:
         type: bool
-  tdwa_box: #<-------Optional for videos track loads
+  tdwa_box: #<-------Optional for video track loads
     attributes:
       Label:
         type: string
@@ -126,7 +125,7 @@ tator:
         type: bool
       similarity_score:
         type: float
-  track_state:  #<-------Optional for videos track loads
+  track_state:  #<-------Optional for video track loads
     attributes:
       Label:
         type: string
@@ -212,4 +211,4 @@ Source code is available at [github.com/mbari-org/aidata](https://github.com/mba
 ## Development
 See the [Development Guide](https://github.com/mbari-org/aidata/blob/main/DEVELOPMENT.md) for more information on how to set up the development environment or the [justfile](justfile)  
  
-🗓️ Last updated: 2026-06-13
+🗓️ Last updated: 2026-07-22
