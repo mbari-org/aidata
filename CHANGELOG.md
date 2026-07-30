@@ -2,6 +2,14 @@
 
 <!-- version list -->
 
+## v1.79.2 (2026-07-30)
+
+### Bug Fixes
+
+- YOLO format requires the box CENTER, not the corner
+  ([`8e683ce`](https://github.com/mbari-org/aidata/commit/8e683ce8caca6627b415d61bcdd924bdad742eb2))
+
+
 ## v1.79.1 (2026-07-22)
 
 ### Bug Fixes
