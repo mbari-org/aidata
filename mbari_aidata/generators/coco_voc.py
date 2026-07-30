@@ -659,8 +659,9 @@ def download(
                         label_idx = labels.index(loc.attributes["Label"])
 
                         # Bounding box in Tator-native format: top-left (x, y), width, height, all normalized 0-1
-                        x = loc.x
-                        y = loc.y
+                        # YOLO format requires the box CENTER, not the corner -- convert here.
+                        x = loc.x + loc.width / 2
+                        y = loc.y + loc.height / 2
                         w = loc.width
                         h = loc.height
                         if save_score:
