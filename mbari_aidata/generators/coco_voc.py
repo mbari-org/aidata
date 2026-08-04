@@ -25,6 +25,13 @@ from mbari_aidata.generators.localization_csv import (
 from mbari_aidata.generators.utils import build_roi_crop_filter, combine_localizations, crop_frame, crop_frame_multi
 from tator.openapi.tator_openapi import Localization  
 
+# Seconds a server-side presigned media URL stays valid. Presigning in the media query keeps
+# tator.util.download_media on its https branch so it never calls DownloadInfo, which rejects
+# any object key whose project prefix differs from the queried project. Media cloned between
+# projects keep the source project's prefix and are otherwise undownloadable.
+PRESIGN_EXPIRATION = 86400
+
+
 def resolve_external_video_file(root: Path, media_name: str) -> Optional[Path]:
     stem = Path(media_name).stem
     for ext in (".avi", ".mov", ".mp4"):
@@ -487,6 +494,7 @@ def download(
             # VOC/CIFAR files which reference the media file size.
             # Videos (.mp4) are also downloaded when crop_roi is set and no external_video_root
             # is provided, since ROI cropping requires a local source file.
+            failed_media_ids = set()
             for media in tqdm(all_media, desc="Downloading", unit="iteration"):
                 out_path = media_path / media.name
                 if '.mp4' in media.name and not (crop_roi and external_video_root is None):
@@ -499,15 +507,27 @@ def download(
                         try:
                             for progress in tator.util.download_media(api, media, out_path):
                                 debug(f"{media.name} download progress: {progress}%")
+                            # tator.util retries HTTP failures internally and returns without
+                            # raising, so check that bytes actually landed on disk.
+                            if not out_path.exists() or out_path.stat().st_size == 0:
+                                raise IOError("download produced no data")
                             success = True
                         except Exception as e:
-                            err(str(e))
+                            err(f"{media.name}: {e}")
                             num_tries += 1
-                    if num_tries == 3:
-                        err(f"Could not download {media.name}")
-                        exit(-1)
+                    if not success:
+                        err(f"Could not download {media.name}, skipping it")
+                        failed_media_ids.add(media.id)
                 else:
                     debug(f"Skipping download of {media.name}")
+
+            # Drop undownloadable media so the crop, VOC, and CIFAR stages do not run against
+            # files that are not on disk.
+            if failed_media_ids:
+                err(f"Could not download {len(failed_media_ids)} of {len(all_media)} media, excluding them")
+                all_media = [m for m in all_media if m.id not in failed_media_ids]
+                for media_id in failed_media_ids:
+                    localizations_by_media_id.pop(media_id, None)
 
         if crop_roi:
             info(f"Cropping {num_localizations} ROIs...")
@@ -792,6 +812,26 @@ def frame_to_timestamp(media: tator.models.Media, frame: int) -> str:
     return f"{total_microseconds}us"
 
 
+def get_media_chunk(api: tator.api, project_id: int, media_ids: List[int]) -> List[tator.models.Media]:
+    """
+    Get one chunk of media with presigned download URLs, falling back to unsigned object keys
+    if the server cannot presign them.
+    :param api: tator.api
+    :param project_id: project id
+    :param media_ids: List of media ids
+    """
+    try:
+        return api.get_media_list(
+            project=project_id,
+            media_id=media_ids,
+            presigned=PRESIGN_EXPIRATION,
+            no_cache=True,
+        )
+    except Exception as e:
+        err(f"Could not presign media URLs ({e}); falling back to unsigned object keys")
+        return api.get_media_list(project=project_id, media_id=media_ids)
+
+
 def get_media(api: tator.api, project_id: int, media_ids: List[int]) -> List[tator.models.Media]:
     """
     Get media from a project
@@ -799,11 +839,10 @@ def get_media(api: tator.api, project_id: int, media_ids: List[int]) -> List[tat
     :param project_id: project id
     :param media_ids: List of media ids
     """
-    medias = [tator.models.Media]
+    medias: List[tator.models.Media] = []
     try:
         for start in range(0, len(media_ids), 200):
-            new_medias = api.get_media_list(project=project_id, media_id=media_ids[start : start + 200])
-            medias = medias + new_medias
+            medias += get_media_chunk(api, project_id, media_ids[start : start + 200])
         return medias
     except Exception as e:
         err(str(e))
