@@ -2,6 +2,15 @@
 
 <!-- version list -->
 
+## v1.79.3 (2026-08-04)
+
+### Bug Fixes
+
+- Strip image extension before appending .txt in YOLO label export (#76)
+  ([#76](https://github.com/mbari-org/aidata/pull/76),
+  [`40129c1`](https://github.com/mbari-org/aidata/commit/40129c18f736a53b27e0310d624f1fc54c9c4450))
+
+
 ## v1.79.2 (2026-07-30)
 
 ### Bug Fixes
