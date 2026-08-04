@@ -632,7 +632,7 @@ def download(
             media_localizations = localizations_by_media_id[m.id]
 
             media_lookup_by_id[m.id] = media_path / m.name
-            yolo_path = label_path / f"{m.name}.txt"
+            yolo_path = label_path / f"{Path(m.name).with_suffix('.txt').name}"
             image_path = media_path / m.name
 
             # Get the image size — use PIL for images, Tator metadata for video
