@@ -2,6 +2,14 @@
 
 <!-- version list -->
 
+## v1.79.4 (2026-08-11)
+
+### Bug Fixes
+
+- **generators**: Presign media URLs so cloned media can be downloaded
+  ([`21697ed`](https://github.com/mbari-org/aidata/commit/21697edbf669a022047c3db0e2b63a5d06ceb7c5))
+
+
 ## v1.79.3 (2026-08-04)
 
 ### Bug Fixes
