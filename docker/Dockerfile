@@ -1,4 +1,4 @@
-FROM python:3.11-slim
+FROM python:3.14-slim
 
 LABEL vendor="MBARI"
 LABEL maintainer="dcline@mbari.org"
