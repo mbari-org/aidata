@@ -1,0 +1,72 @@
+version: 2
+
+updates:
+  # GitHub Actions used by pytest.yml and release.yml
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+      time: "06:00"
+      timezone: America/Los_Angeles
+    open-pull-requests-limit: 5
+    # "build(deps...)" is the only build scope kept in the semantic-release changelog
+    commit-message:
+      prefix: build
+      include: scope
+    labels:
+      - dependencies
+      - impact/low
+    groups:
+      actions:
+        patterns:
+          - "*"
+
+  # Python dependencies in pyproject.toml / poetry.lock
+  - package-ecosystem: pip
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+      time: "06:00"
+      timezone: America/Los_Angeles
+    open-pull-requests-limit: 10
+    versioning-strategy: increase-if-necessary
+    commit-message:
+      prefix: build
+      prefix-development: build
+      include: scope
+    labels:
+      - dependencies
+      - python
+    groups:
+      python-minor-and-patch:
+        update-types:
+          - minor
+          - patch
+    ignore:
+      # torch/torchvision are pinned as a compatible pair and must match the
+      # cu121 wheels installed in docker/Dockerfile.cuda; bump them deliberately.
+      - dependency-name: torch
+        update-types:
+          - version-update:semver-major
+          - version-update:semver-minor
+      - dependency-name: torchvision
+        update-types:
+          - version-update:semver-major
+          - version-update:semver-minor
+
+  # Base images in docker/Dockerfile and docker/Dockerfile.cuda
+  - package-ecosystem: docker
+    directory: /docker
+    schedule:
+      interval: weekly
+      day: monday
+      time: "06:00"
+      timezone: America/Los_Angeles
+    open-pull-requests-limit: 5
+    commit-message:
+      prefix: build
+      include: scope
+    labels:
+      - dependencies
