@@ -30,7 +30,7 @@ aidata = "mbari_aidata.__main__:cli"
 
 [tool.poetry.dependencies]
 python = ">=3.10,<3.13"
-redis = "5.0.7"
+redis = "8.1.0"
 tator = "1.2.3"
 ephem = ">=4.1.6"
 moviepy = ">=2.1.1"
