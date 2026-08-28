@@ -5,7 +5,7 @@
 import tator  # type: ignore
 
 from mbari_aidata.logger import info
-from typing import List
+from typing import List, Optional
 
 
 def gen_spec(
@@ -20,6 +20,7 @@ def gen_spec(
     project_id: int,
     attributes: dict,
     normalize: bool = True,
+    elemental_id: Optional[str] = None,
 ) -> dict:
     """
     Generate a media spec for Tator
@@ -34,6 +35,7 @@ def gen_spec(
     :param project_id: project ID
     :param attributes: additional attributes
     :param normalize: If True, normalize the box to 0-1
+    :param elemental_id: Optional Tator elemental_id override for provenance tracking
     :return: The localization spec
     """
     attributes["Label"] = label
@@ -74,6 +76,8 @@ def gen_spec(
         "frame": frame_number,
         "attributes": attributes,
     }
+    if elemental_id:
+        spec["elemental_id"] = str(elemental_id)
     return spec
 
 

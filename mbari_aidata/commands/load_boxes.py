@@ -1,25 +1,26 @@
 # mbari_aidata, Apache-2.0 license
 # Filename: commands/load_boxes.py
-# Description: Load boxes from a directory with SDCAT formatted CSV files
+# Description: Load boxes from VOC XML, SDCAT CSV, or SINKER Planktivore mosaic CSV files
 import click
 from mbari_aidata import common_args
 from pathlib import Path
 
-@click.command("boxes", help="Load boxes from a directory with VOC or SDCAT formatted CSV files")
+@click.command("boxes", help="Load boxes from VOC XML, SDCAT CSV, or SINKER Planktivore mosaic CSV files")
 @common_args.token
 @common_args.disable_ssl_verify
 @common_args.yaml_config
 @common_args.dry_run
 @common_args.version
 @click.option("--exclude", type=str, help="Exclude boxes with this label", multiple=True)
-@click.option("--input", type=Path, required=True, help=" VOC xml or SDCAT formatted CSV files")
+@click.option("--input", type=Path, required=True, help="VOC XML, SDCAT CSV, or SINKER Planktivore mosaic CSV files")
 @click.option("--max-num", type=int, help="Maximum number of boxes to load")
 @click.option("--min-score", type=float, help="Minimum score to load between 0 and 1")
 def load_boxes(token: str, disable_ssl_verify: bool, config: str, version: str, input: Path, dry_run: bool, max_num: int, min_score:float, exclude: str) -> int:
-    """Load boxes from a directory with VOC or SDCAT formatted CSV files. Returns the number of boxes loaded."""
+    """Load boxes from VOC XML, SDCAT CSV, or SINKER Planktivore mosaic CSV files. Returns the number of boxes loaded."""
 
     from mbari_aidata.logger import create_logger_file, info, err
     from mbari_aidata.plugins.extractors.tap_sdcat_csv import extract_sdcat_csv
+    from mbari_aidata.plugins.extractors.tap_sinker_planktivore_csv import extract_sinker_planktivore_csv, is_sinker_planktivore_csv
     from mbari_aidata.plugins.extractors.tap_voc import extract_voc
     from mbari_aidata.plugins.loaders.tator.localization import gen_spec as gen_localization_spec
     from mbari_aidata.plugins.loaders.tator.localization import load_bulk_boxes
@@ -44,9 +45,10 @@ def load_boxes(token: str, disable_ssl_verify: bool, config: str, version: str, 
         assert box_type is not None, f"No box type found in project {project}"
         assert version_id is not None, f"No version found in project {project}"
 
-        # Determine whether to use sdcat or voc format based on the file extension
+        # Determine whether to use sdcat, SINKER Planktivore, or voc format
         valid_extensions = [".csv", ".xml"]
-        extractors = {"csv": extract_sdcat_csv, 'xml': extract_voc}
+        csv_extractor = extract_sinker_planktivore_csv if is_sinker_planktivore_csv(input) else extract_sdcat_csv
+        extractors = {"csv": csv_extractor, "xml": extract_voc}
         df_boxes = []
         if input.is_dir():
             # Search for files with valid extensions
@@ -70,6 +72,8 @@ def load_boxes(token: str, disable_ssl_verify: bool, config: str, version: str, 
             return 0
 
         min_score = 0 if min_score is None else min_score
+        if "score" not in df_boxes.columns:
+            df_boxes["score"] = 1.0
         df_boxes = df_boxes[df_boxes["score"] >= min_score]
 
         if dry_run:
@@ -81,6 +85,8 @@ def load_boxes(token: str, disable_ssl_verify: bool, config: str, version: str, 
         # If we are missing the label column, try to create one from the class column
         if "class" in df_boxes.columns and "label" not in df_boxes.columns:
             df_boxes = df_boxes.rename(columns={"class": "label"})
+        if "label" not in df_boxes.columns:
+            df_boxes["label"] = "Unknown"
 
         max_load = -1 if max_num is None else max_num
         # If missing x,y,xx,xy columns default to the entire image, this means one box per image
@@ -123,6 +129,7 @@ def load_boxes(token: str, disable_ssl_verify: bool, config: str, version: str, 
                             media_id=media_map[image_name],
                             project_id=tator_project.id,
                             normalize=False,  # sdcat is already normalized between 0-1
+                            elemental_id=obj.get("elemental_id") or obj.get("uuid"),
                         )
                     )
                 # Truncate the boxes if the max number of boxes to load is set
@@ -170,6 +177,7 @@ def load_boxes(token: str, disable_ssl_verify: bool, config: str, version: str, 
                             media_id=media_id,
                             project_id=tator_project.id,
                             normalize=False,  # sdcat is already normalized between 0-1
+                            elemental_id=obj.get("elemental_id") or obj.get("uuid"),
                         )
                     )
 
