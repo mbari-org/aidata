@@ -68,14 +68,17 @@ def _write_jpeg_with_gps(
 
 class TestGpsHelpers:
     def test_dms_west_longitude_is_negative(self):
+        """West GPS longitude ref converts DMS to a negative decimal."""
         dms = ((121, 1), (47, 1), (215652, 10000))
         assert dms_to_decimal(dms, b"W") == pytest.approx(-121.7893236666, rel=1e-8)
 
     def test_dms_north_latitude_is_positive(self):
+        """North GPS latitude ref converts DMS to a positive decimal."""
         dms = ((36, 1), (48, 1), (86162, 10000))
         assert dms_to_decimal(dms, b"N") == pytest.approx(36.8023933888, rel=1e-8)
 
     def test_altitude_below_sea_level_is_negative(self):
+        """GPSAltitudeRef 1 (below sea level) yields a negative altitude."""
         gps = {
             piexif.GPSIFD.GPSAltitude: (2880, 1000),
             piexif.GPSIFD.GPSAltitudeRef: 1,
@@ -83,12 +86,14 @@ class TestGpsHelpers:
         assert gps_altitude(gps) == pytest.approx(-2.88)
 
     def test_filename_datetime(self):
+        """DJI_YYYYMMDDHHMMSS in a _Z.mp4 name parses to a UTC datetime."""
         dt = datetime_from_dji_filename("DJI_20260430125826_0023_Z.mp4")
         assert dt == pytz.utc.localize(datetime(2026, 4, 30, 12, 58, 26))
 
 
 class TestExtractMedia:
     def test_synthetic_wide_image_gps(self, tmp_path):
+        """_W.JPG EXIF yields lat/lon/alt and date, without make or model."""
         image = _write_jpeg_with_gps(
             tmp_path / "DJI_20260430125826_0001_W.JPG",
             lat=36.8023934,
@@ -108,6 +113,7 @@ class TestExtractMedia:
         assert "model" not in df.columns
 
     def test_directory_keeps_only_wide_jpg(self, tmp_path):
+        """Directory scan keeps _W.JPG images and _Z.mp4 videos only."""
         _write_jpeg_with_gps(tmp_path / "DJI_20260430125826_0001_W.JPG", 36.8, 121.7, 10.0)
         _write_jpeg_with_gps(tmp_path / "DJI_20260430125826_0001_Z.JPG", 36.8, 121.7, 10.0)
         _write_jpeg(tmp_path / "trinity-2_20250404T173830_Seymour_DSC01963.JPG")
@@ -119,6 +125,7 @@ class TestExtractMedia:
         assert video_names == ["DJI_20260430125826_0001_Z.mp4"]
 
     def test_video_iso_start_datetime_from_filename(self, tmp_path):
+        """_Z.mp4 media_type is VIDEO and iso_start_datetime comes from the filename."""
         video = tmp_path / "DJI_20260430125826_0023_Z.mp4"
         video.write_bytes(b"not a real mp4")
         df = extract_media(video)
@@ -127,6 +134,7 @@ class TestExtractMedia:
         assert df.iloc[0].iso_start_datetime == pytz.utc.localize(datetime(2026, 4, 30, 12, 58, 26))
 
     def test_txt_listing_filters_to_wide_jpg(self, tmp_path):
+        """A .txt listing keeps only paths that match the _W.JPG name pattern."""
         image = _write_jpeg_with_gps(tmp_path / "DJI_20260430125826_0001_W.JPG", 36.8, 121.7, 5.0)
         other = _write_jpeg(tmp_path / "not_a_matrice.JPG")
         listing = tmp_path / "images.txt"
@@ -136,6 +144,7 @@ class TestExtractMedia:
         assert Path(df.iloc[0].media_path).name == "DJI_20260430125826_0001_W.JPG"
 
     def test_ignores_sony_image_in_uav_data_dir(self):
+        """Sony Trinity JPGs are not treated as Matrice _W.JPG media."""
         if not SONY_FIXTURE.exists():
             pytest.skip("Sony UAV fixture not present")
         df = extract_media(SONY_FIXTURE)
@@ -143,6 +152,7 @@ class TestExtractMedia:
 
     @pytest.mark.skipif(not DJI_FIXTURE.exists(), reason="DJI Matrice fixture not present")
     def test_real_dji_wide_image_gps(self):
+        """Real DJI _W.JPG fixture maps EXIF GPS to latitude, longitude, and altitude."""
         df = extract_media(DJI_FIXTURE)
         assert len(df) == 1
         row = df.iloc[0]

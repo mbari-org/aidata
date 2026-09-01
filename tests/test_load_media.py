@@ -207,6 +207,32 @@ def test_load_image_uav():
     assert result.exit_code == 0
 
 @pytest.mark.skipif(not HAS_DATABASE, reason="This test is excluded because it requires a database")
+def test_load_image_matrice():
+    setup()
+    runner = CliRunner()
+    """Test Matrice TAP load with a DJI _W.JPG directory"""
+    image_path = data_path / "uav"
+    config_yaml = config_path / "config_matrice.yml"
+    print(config_yaml.as_posix())
+    result = runner.invoke(
+        cli,
+        [
+            "load",
+            "images",
+            "--dry-run",
+            "--input",
+            image_path.as_posix(),
+            "--config",
+            config_yaml.as_posix(),
+            "--token",
+            os.environ["TATOR_TOKEN"]
+        ],
+    )
+    print(result.output)
+    assert result.exit_code == 0
+
+
+@pytest.mark.skipif(not HAS_DATABASE, reason="This test is excluded because it requires a database")
 def test_load_image_uav_txt():
     setup()
     runner = CliRunner()
