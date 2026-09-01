@@ -123,6 +123,7 @@ def extract_media(media_path: Path, max_images: int = -1) -> pd.DataFrame:
     """Extract DJI Matrice image/video metadata (GPS EXIF on images, filename time on videos)."""
     df_images = extract_images(media_path, max_images)
     df_videos = extract_videos(media_path, max_images)
+    info(f"Found {len(df_images)} images and {len(df_videos)} videos")
     frames = [df for df in (df_images, df_videos) if not df.empty]
     if not frames:
         return pd.DataFrame()
@@ -135,8 +136,8 @@ def extract_images(media_path: Path, max_images: int = -1) -> pd.DataFrame:
     if max_images > 0:
         images_df = images_df.head(max_images)
 
+    info(f"Found {len(images_df)} unique images")
     if images_df.empty:
-        info("No Matrice _W.JPG images found")
         return images_df
 
     info(f"Reading EXIF GPS from {len(images_df)} Matrice images")
@@ -164,7 +165,7 @@ def extract_images(media_path: Path, max_images: int = -1) -> pd.DataFrame:
     modified_df["longitude"] = longitude
     modified_df["date"] = date
     modified_df["media_type"] = MediaType.IMAGE
-    info("Done")
+    info(f"Extracted GPS from {len(modified_df)} of {len(sorted_df)} images")
     return modified_df
 
 
@@ -174,14 +175,13 @@ def extract_videos(media_path: Path, max_videos: int = -1) -> pd.DataFrame:
     if max_videos > 0:
         videos_df = videos_df.head(max_videos)
 
+    info(f"Found {len(videos_df)} unique videos")
     if videos_df.empty:
-        info("No Matrice _Z.mp4 videos found")
         return videos_df
 
     iso_start: list[datetime] = []
     failed_indexes: list = []
     sorted_df = videos_df.sort_values(by="media_path")
-    info(f"Found {len(sorted_df)} Matrice videos")
     for i, row in sorted_df.iterrows():
         dt_utc = datetime_from_dji_filename(row.media_path)
         if dt_utc is None:
