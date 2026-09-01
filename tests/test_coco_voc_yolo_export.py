@@ -1,13 +1,14 @@
 # mbari_aidata, Apache-2.0 license
-# Filename: tests/test_yolo_label_naming.py
-# Description: Tests YOLO label export must write
-#    NAME.txt for an image NAME.<ext>, not NAME.<ext>.txt.
+# Filename: tests/test_coco_voc_yolo_export.py
+# Description: Tests YOLO label export must write NAME.txt for an image
+#    NAME.<ext> (not NAME.<ext>.txt), and must write the box CENTER.
 
 
 import shutil
 from pathlib import Path
 from types import SimpleNamespace
 
+import pytest
 import tator
 
 from mbari_aidata.generators.coco_voc import download
@@ -74,13 +75,15 @@ def _run_download(tmp_path, monkeypatch):
     monkeypatch.setattr(tator.models, "Localization", FakeLocalization)
 
     media = FakeMedia(id=101, name=FIXTURE_IMAGE.name)
+    # Deliberately asymmetric in both axes and between position and size, so that
+    # swapping x/y or width/height cannot pass unnoticed.
     loc = FakeLocalization(
         id=5001,
         media=media.id,
         x=0.1,
-        y=0.1,
-        width=0.2,
-        height=0.2,
+        y=0.2,
+        width=0.3,
+        height=0.4,
         attributes={"Label": "Orcinus Orca"},
     )
     api = FakeApi(media=media, loc=loc)
@@ -111,12 +114,12 @@ def _run_download(tmp_path, monkeypatch):
         crop_roi=False,
     )
     assert ok
-    return output_path, media.name
+    return output_path, media.name, loc
 
 
 def test_yolo_label_file_matches_image_stem_not_full_filename(tmp_path, monkeypatch):
     # issue #76
-    output_path, image_name = _run_download(tmp_path, monkeypatch)
+    output_path, image_name, _ = _run_download(tmp_path, monkeypatch)
     label_path = output_path / "labels"
 
     expected = label_path / f"{Path(image_name).stem}.txt"
@@ -128,3 +131,26 @@ def test_yolo_label_file_matches_image_stem_not_full_filename(tmp_path, monkeypa
     assert not buggy.exists(), (
         f"Found double-extension label file {buggy.name!r}."
     )
+
+
+def test_yolo_label_holds_box_center_not_top_left_corner(tmp_path, monkeypatch):
+    # issue #77
+    output_path, image_name, loc = _run_download(tmp_path, monkeypatch)
+    label_file = output_path / "labels" / f"{Path(image_name).stem}.txt"
+
+    lines = [line for line in label_file.read_text().splitlines() if line.strip()]
+    assert len(lines) == 1, f"Expected one label line, got {lines!r}"
+    label_idx, x, y, w, h = lines[0].split()
+
+    # Expected values come from the source Localization, not from re-deriving them
+    # the same way the exporter does.
+    assert label_idx == "0"
+    assert float(x) == pytest.approx(loc.x + loc.width / 2)
+    assert float(y) == pytest.approx(loc.y + loc.height / 2)
+    assert float(w) == pytest.approx(loc.width)
+    assert float(h) == pytest.approx(loc.height)
+
+    # The original bug wrote Tator's top-left corner into the center fields, which
+    # shifts every box up-and-left by half its own width and height.
+    assert float(x) != pytest.approx(loc.x)
+    assert float(y) != pytest.approx(loc.y)
