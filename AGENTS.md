@@ -83,6 +83,9 @@ Example set: `type/feature`, `scope/generators`, `impact/medium`, `status/needs-
 ## Testing
 
 Run tests from the repo root after substantive changes (see `README.md` / project docs for full setup).
+Always put a description in the tests, e.g.
+
+    """Test that the process command works when passing arguments with a single image"""
 
 ---
 
