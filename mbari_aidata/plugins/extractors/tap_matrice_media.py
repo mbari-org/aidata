@@ -53,10 +53,8 @@ def _rational_to_float(value) -> float:
 
 
 def dms_to_decimal(dms, ref) -> float:
-    """Convert EXIF GPS DMS plus N/S/E/W ref to signed decimal degrees."""
+    """Convert EXIF GPS DMS plus N/S/E/W ref decimal degrees."""
     decimal = _rational_to_float(dms[0]) + _rational_to_float(dms[1]) / 60.0 + _rational_to_float(dms[2]) / 3600.0
-    if _exif_ascii(ref).upper()[:1] in ("S", "W"):
-        decimal = -decimal
     return decimal
 
 
