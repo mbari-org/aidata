@@ -2,6 +2,17 @@
 
 <!-- version list -->
 
+## v1.79.5 (2026-09-02)
+
+### Bug Fixes
+
+- **extractors**: Set Matrice make/model from DJI EXIF as plain strings
+  ([`ff3f06d`](https://github.com/mbari-org/aidata/commit/ff3f06dac4c8e0d193db457b4ae4adb7a26e515d))
+
+- **extractors**: Use DJI XMP RelativeAltitude for Matrice altitude
+  ([`99dcbef`](https://github.com/mbari-org/aidata/commit/99dcbeffe696a4b50cd031946383776144c1bd95))
+
+
 ## v1.79.4 (2026-08-11)
 
 ### Bug Fixes
