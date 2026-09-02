@@ -38,10 +38,11 @@ def _is_matrice_video(media_path: str) -> bool:
     return Path(name).stem.upper().endswith(VIDEO_CAMERA_SUFFIX) and Path(name).suffix.lower() in VIDEO_EXTENSIONS
 
 
-def _decode_gps_ref(ref) -> str:
-    if isinstance(ref, bytes):
-        return ref.decode("utf-8", errors="ignore").strip("\x00").strip()
-    return str(ref).strip()
+def _exif_ascii(value) -> str:
+    """Decode piexif ASCII tags to a plain str (not the bytes repr like b'DJI')."""
+    if isinstance(value, bytes):
+        return value.decode("utf-8", errors="ignore").strip("\x00").strip()
+    return str(value).strip()
 
 
 def _rational_to_float(value) -> float:
@@ -54,7 +55,7 @@ def _rational_to_float(value) -> float:
 def dms_to_decimal(dms, ref) -> float:
     """Convert EXIF GPS DMS plus N/S/E/W ref to signed decimal degrees."""
     decimal = _rational_to_float(dms[0]) + _rational_to_float(dms[1]) / 60.0 + _rational_to_float(dms[2]) / 3600.0
-    if _decode_gps_ref(ref).upper()[:1] in ("S", "W"):
+    if _exif_ascii(ref).upper()[:1] in ("S", "W"):
         decimal = -decimal
     return decimal
 
@@ -114,8 +115,8 @@ def _read_media_bytes(media_path: str) -> bytes:
     return Path(media_path).read_bytes()
 
 
-def _gps_and_date_from_exif(data: bytes) -> tuple[float, float, float, datetime]:
-    """Return latitude, longitude, relative altitude, and UTC datetime from EXIF GPS + DJI XMP."""
+def _gps_and_date_from_exif(data: bytes) -> tuple[float, float, float, datetime, str, str]:
+    """Return lat, lon, relative altitude, UTC datetime, make, and model."""
     exif = piexif.load(data)
     date_time_str = exif["Exif"][piexif.ExifIFD.DateTimeOriginal].decode("utf-8").strip()
     dt_utc = pytz.utc.localize(datetime.strptime(date_time_str, "%Y:%m:%d %H:%M:%S"))
@@ -125,7 +126,10 @@ def _gps_and_date_from_exif(data: bytes) -> tuple[float, float, float, datetime]
     alt = relative_altitude_from_xmp(data)
     if alt is None:
         alt = gps_altitude(gps)
-    return lat, lon, alt, dt_utc
+    zeroth = exif.get("0th") or {}
+    make = _exif_ascii(zeroth.get(piexif.ImageIFD.Make, b""))
+    model = _exif_ascii(zeroth.get(piexif.ImageIFD.Model, b""))
+    return lat, lon, alt, dt_utc, make, model
 
 
 def extract_media(media_path: Path, max_images: int = -1) -> pd.DataFrame:
@@ -140,7 +144,7 @@ def extract_media(media_path: Path, max_images: int = -1) -> pd.DataFrame:
 
 
 def extract_images(media_path: Path, max_images: int = -1) -> pd.DataFrame:
-    """Extract latitude/longitude from GPS EXIF and altitude from XMP RelativeAltitude."""
+    """Extract latitude/longitude from GPS EXIF, altitude from XMP RelativeAltitude, and DJI make/model."""
     images_df = _collect_paths(media_path, _is_matrice_image)
     if max_images > 0:
         images_df = images_df.head(max_images)
@@ -154,16 +158,20 @@ def extract_images(media_path: Path, max_images: int = -1) -> pd.DataFrame:
     latitude: list[float] = []
     longitude: list[float] = []
     date: list[datetime] = []
+    make: list[str] = []
+    model: list[str] = []
     failed_indexes: list = []
     sorted_df = images_df.sort_values(by="media_path")
     for i, row in sorted_df.iterrows():
         info(f"Reading EXIF data in {row.media_path}")
         try:
-            lat, lon, alt, dt_utc = _gps_and_date_from_exif(_read_media_bytes(row.media_path))
+            lat, lon, alt, dt_utc, camera_make, camera_model = _gps_and_date_from_exif(_read_media_bytes(row.media_path))
             latitude.append(lat)
             longitude.append(lon)
             altitude.append(alt)
             date.append(dt_utc)
+            make.append(camera_make)
+            model.append(camera_model)
         except Exception as e:
             err(f"Failed to read EXIF from {row.media_path}: {str(e)}")
             failed_indexes.append(i)
@@ -173,6 +181,8 @@ def extract_images(media_path: Path, max_images: int = -1) -> pd.DataFrame:
     modified_df["latitude"] = latitude
     modified_df["longitude"] = longitude
     modified_df["date"] = date
+    modified_df["make"] = make
+    modified_df["model"] = model
     modified_df["media_type"] = MediaType.IMAGE
     info(f"Extracted GPS from {len(modified_df)} of {len(sorted_df)} images")
     return modified_df

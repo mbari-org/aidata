@@ -17,6 +17,7 @@ from mbari_aidata.plugins.extractors.tap_matrice_media import (
     extract_media,
     gps_altitude,
     relative_altitude_from_xmp,
+    _exif_ascii,
 )
 
 DATA_DIR = Path(__file__).parent / "data" / "uav"
@@ -76,7 +77,11 @@ def _write_jpeg_with_gps(
         piexif.GPSIFD.GPSAltitude: (int(round(abs(alt) * 1000)), 1000),
     }
     exif_dict = {
-        "0th": {piexif.ImageIFD.DateTime: dt_str.encode("utf-8")},
+        "0th": {
+            piexif.ImageIFD.Make: b"DJI",
+            piexif.ImageIFD.Model: b"ZH20T",
+            piexif.ImageIFD.DateTime: dt_str.encode("utf-8"),
+        },
         "Exif": {piexif.ExifIFD.DateTimeOriginal: dt_str.encode("utf-8")},
         "GPS": gps_ifd,
     }
@@ -96,6 +101,13 @@ class TestGpsHelpers:
         """North GPS latitude ref converts DMS to a positive decimal."""
         dms = ((36, 1), (48, 1), (86162, 10000))
         assert dms_to_decimal(dms, b"N") == pytest.approx(36.8023933888, rel=1e-8)
+
+    def test_exif_ascii_is_plain_str(self):
+        """EXIF Make/Model bytes decode to DJI/ZH20T, not the b'...' repr."""
+        assert _exif_ascii(b"DJI") == "DJI"
+        assert _exif_ascii(b"ZH20T") == "ZH20T"
+        assert _exif_ascii(b"DJI") != "SONY"
+        assert _exif_ascii(b"ZH20T") != "DSC-RX1RM2"
 
     def test_relative_altitude_from_xmp(self):
         """DJI XMP RelativeAltitude is parsed as a positive height above takeoff."""
@@ -118,7 +130,7 @@ class TestGpsHelpers:
 
 class TestExtractMedia:
     def test_synthetic_wide_image_gps(self, tmp_path):
-        """_W.JPG EXIF yields lat/lon/date; altitude comes from XMP RelativeAltitude."""
+        """_W.JPG EXIF yields lat/lon/date/make/model; altitude comes from XMP RelativeAltitude."""
         image = _write_jpeg_with_gps(
             tmp_path / "DJI_20260430125826_0001_W.JPG",
             lat=36.8023934,
@@ -135,8 +147,10 @@ class TestExtractMedia:
         assert row.longitude == pytest.approx(-121.7893237, rel=1e-5)
         assert row.altitude == pytest.approx(29.896)
         assert row.date == pytz.utc.localize(datetime(2026, 4, 30, 12, 58, 26))
-        assert "make" not in df.columns
-        assert "model" not in df.columns
+        assert row.make == "DJI"
+        assert row.model == "ZH20T"
+        assert not str(row.make).startswith("b'")
+        assert not str(row.model).startswith("b'")
 
     def test_altitude_falls_back_to_unsigned_gps(self, tmp_path):
         """Without XMP RelativeAltitude, altitude falls back to unsigned GPSAltitude."""
@@ -190,7 +204,7 @@ class TestExtractMedia:
 
     @pytest.mark.skipif(not DJI_FIXTURE.exists(), reason="DJI Matrice fixture not present")
     def test_real_dji_wide_image_gps(self):
-        """Real DJI _W.JPG fixture maps GPS lat/lon and XMP RelativeAltitude."""
+        """Real DJI _W.JPG fixture maps GPS lat/lon, XMP RelativeAltitude, and DJI make/model."""
         df = extract_media(DJI_FIXTURE)
         assert len(df) == 1
         row = df.iloc[0]
@@ -198,5 +212,9 @@ class TestExtractMedia:
         assert row.latitude == pytest.approx(36.8023933888, rel=1e-8)
         assert row.longitude == pytest.approx(-121.7893236666, rel=1e-8)
         assert row.altitude == pytest.approx(29.896)
+        assert row.make == "DJI"
+        assert row.model == "ZH20T"
+        assert row.make != "SONY"
+        assert row.model != "DSC-RX1RM2"
         assert row.date == pytz.utc.localize(datetime(2026, 4, 30, 12, 58, 26))
         assert Path(row.media_path).name == "DJI_20260430125826_0023_W.JPG"
