@@ -1,6 +1,6 @@
 # mbari_aidata, Apache-2.0 license
-# Filename: plugins/extractors/tap_matrice_media.py
-# Description: Extracts GPS EXIF and DJI XMP relative altitude from Matrice _W.JPG images and _Z.mp4 videos
+# Filename: plugins/extractors/tap_dgi_media.py
+# Description: Extracts GPS EXIF and DJI XMP relative altitude from DJI _W.JPG images and _Z.mp4 videos
 from datetime import datetime
 from urllib.request import urlopen
 
@@ -28,12 +28,12 @@ def _path_name(media_path: str) -> str:
     return Path(media_path.split("?")[0]).name
 
 
-def _is_matrice_image(media_path: str) -> bool:
+def _is_dgi_image(media_path: str) -> bool:
     name = _path_name(media_path)
     return Path(name).stem.upper().endswith(IMAGE_CAMERA_SUFFIX) and Path(name).suffix.lower() in IMAGE_EXTENSIONS
 
 
-def _is_matrice_video(media_path: str) -> bool:
+def _is_dgi_video(media_path: str) -> bool:
     name = _path_name(media_path)
     return Path(name).stem.upper().endswith(VIDEO_CAMERA_SUFFIX) and Path(name).suffix.lower() in VIDEO_EXTENSIONS
 
@@ -72,7 +72,7 @@ def gps_altitude(gps: dict) -> float:
 
 
 def datetime_from_dji_filename(media_path: str) -> datetime | None:
-    """Parse DJI_YYYYMMDDHHMMSS from a Matrice filename as UTC (camera local time, same as Sony)."""
+    """Parse DJI_YYYYMMDDHHMMSS from a DJI filename as UTC (camera local time, same as Sony)."""
     match = _DJI_FILENAME_DT.search(_path_name(media_path))
     if not match:
         return None
@@ -131,7 +131,7 @@ def _gps_and_date_from_exif(data: bytes) -> tuple[float, float, float, datetime,
 
 
 def extract_media(media_path: Path, max_images: int = -1) -> pd.DataFrame:
-    """Extract DJI Matrice image/video metadata (GPS EXIF on images, filename time on videos)."""
+    """Extract DJI image/video metadata (GPS EXIF on images, filename time on videos)."""
     df_images = extract_images(media_path, max_images)
     df_videos = extract_videos(media_path, max_images)
     info(f"Found {len(df_images)} images and {len(df_videos)} videos")
@@ -143,7 +143,7 @@ def extract_media(media_path: Path, max_images: int = -1) -> pd.DataFrame:
 
 def extract_images(media_path: Path, max_images: int = -1) -> pd.DataFrame:
     """Extract latitude/longitude from GPS EXIF, altitude from XMP RelativeAltitude, and DJI make/model."""
-    images_df = _collect_paths(media_path, _is_matrice_image)
+    images_df = _collect_paths(media_path, _is_dgi_image)
     if max_images > 0:
         images_df = images_df.head(max_images)
 
@@ -151,7 +151,7 @@ def extract_images(media_path: Path, max_images: int = -1) -> pd.DataFrame:
     if images_df.empty:
         return images_df
 
-    info(f"Reading EXIF GPS from {len(images_df)} Matrice images")
+    info(f"Reading EXIF GPS from {len(images_df)} DJI images")
     altitude: list[float] = []
     latitude: list[float] = []
     longitude: list[float] = []
@@ -187,8 +187,8 @@ def extract_images(media_path: Path, max_images: int = -1) -> pd.DataFrame:
 
 
 def extract_videos(media_path: Path, max_videos: int = -1) -> pd.DataFrame:
-    """Extract iso_start_datetime from DJI Matrice _Z.mp4 filenames."""
-    videos_df = _collect_paths(media_path, _is_matrice_video)
+    """Extract iso_start_datetime from DJI _Z.mp4 filenames."""
+    videos_df = _collect_paths(media_path, _is_dgi_video)
     if max_videos > 0:
         videos_df = videos_df.head(max_videos)
 
