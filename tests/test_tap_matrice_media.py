@@ -16,6 +16,7 @@ from mbari_aidata.plugins.extractors.tap_matrice_media import (
     dms_to_decimal,
     extract_media,
     gps_altitude,
+    relative_altitude_from_xmp,
 )
 
 DATA_DIR = Path(__file__).parent / "data" / "uav"
@@ -38,6 +39,22 @@ def _write_jpeg(dest: Path) -> Path:
     return dest
 
 
+def _insert_xmp_relative_altitude(dest: Path, relative_alt: float) -> None:
+    jpeg = dest.read_bytes()
+    xmp = (
+        '<?xpacket begin="" id="W5M0MpCehiHzreSzNTczkc9d"?>'
+        '<x:xmpmeta xmlns:x="adobe:ns:meta/">'
+        '<rdf:RDF xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#">'
+        '<rdf:Description xmlns:drone-dji="http://www.dji.com/drone-dji/1.0/" '
+        f'drone-dji:RelativeAltitude="{relative_alt:+.3f}"/>'
+        "</rdf:RDF></x:xmpmeta>"
+        '<?xpacket end="w"?>'
+    ).encode("utf-8")
+    payload = b"http://ns.adobe.com/xap/1.0/\x00" + xmp
+    app1 = b"\xff\xe1" + (len(payload) + 2).to_bytes(2, "big") + payload
+    dest.write_bytes(jpeg[:2] + app1 + jpeg[2:])
+
+
 def _write_jpeg_with_gps(
     dest: Path,
     lat: float,
@@ -47,6 +64,7 @@ def _write_jpeg_with_gps(
     lat_ref: str = "N",
     lon_ref: str = "W",
     alt_ref: int = 0,
+    relative_alt: float | None = None,
 ) -> Path:
     _write_jpeg(dest)
     gps_ifd = {
@@ -63,6 +81,8 @@ def _write_jpeg_with_gps(
         "GPS": gps_ifd,
     }
     piexif.insert(piexif.dump(exif_dict), str(dest))
+    if relative_alt is not None:
+        _insert_xmp_relative_altitude(dest, relative_alt)
     return dest
 
 
@@ -77,13 +97,18 @@ class TestGpsHelpers:
         dms = ((36, 1), (48, 1), (86162, 10000))
         assert dms_to_decimal(dms, b"N") == pytest.approx(36.8023933888, rel=1e-8)
 
-    def test_altitude_below_sea_level_is_negative(self):
-        """GPSAltitudeRef 1 (below sea level) yields a negative altitude."""
+    def test_relative_altitude_from_xmp(self):
+        """DJI XMP RelativeAltitude is parsed as a positive height above takeoff."""
+        data = b'drone-dji:RelativeAltitude="+29.896"'
+        assert relative_altitude_from_xmp(data) == pytest.approx(29.896)
+
+    def test_gps_altitude_fallback_is_unsigned(self):
+        """GPSAltitude fallback ignores below-sea-level ref and stays positive."""
         gps = {
             piexif.GPSIFD.GPSAltitude: (2880, 1000),
             piexif.GPSIFD.GPSAltitudeRef: 1,
         }
-        assert gps_altitude(gps) == pytest.approx(-2.88)
+        assert gps_altitude(gps) == pytest.approx(2.88)
 
     def test_filename_datetime(self):
         """DJI_YYYYMMDDHHMMSS in a _Z.mp4 name parses to a UTC datetime."""
@@ -93,13 +118,14 @@ class TestGpsHelpers:
 
 class TestExtractMedia:
     def test_synthetic_wide_image_gps(self, tmp_path):
-        """_W.JPG EXIF yields lat/lon/alt and date, without make or model."""
+        """_W.JPG EXIF yields lat/lon/date; altitude comes from XMP RelativeAltitude."""
         image = _write_jpeg_with_gps(
             tmp_path / "DJI_20260430125826_0001_W.JPG",
             lat=36.8023934,
             lon=121.7893237,
             alt=2.88,
             alt_ref=1,
+            relative_alt=29.896,
         )
         df = extract_media(image)
         assert len(df) == 1
@@ -107,10 +133,22 @@ class TestExtractMedia:
         assert row.media_type == MediaType.IMAGE
         assert row.latitude == pytest.approx(36.8023934, rel=1e-5)
         assert row.longitude == pytest.approx(-121.7893237, rel=1e-5)
-        assert row.altitude == pytest.approx(-2.88)
+        assert row.altitude == pytest.approx(29.896)
         assert row.date == pytz.utc.localize(datetime(2026, 4, 30, 12, 58, 26))
         assert "make" not in df.columns
         assert "model" not in df.columns
+
+    def test_altitude_falls_back_to_unsigned_gps(self, tmp_path):
+        """Without XMP RelativeAltitude, altitude falls back to unsigned GPSAltitude."""
+        image = _write_jpeg_with_gps(
+            tmp_path / "DJI_20260430125826_0001_W.JPG",
+            lat=36.8,
+            lon=121.7,
+            alt=2.88,
+            alt_ref=1,
+        )
+        df = extract_media(image)
+        assert df.iloc[0].altitude == pytest.approx(2.88)
 
     def test_directory_keeps_only_wide_jpg(self, tmp_path):
         """Directory scan keeps _W.JPG images and _Z.mp4 videos only."""
@@ -152,13 +190,13 @@ class TestExtractMedia:
 
     @pytest.mark.skipif(not DJI_FIXTURE.exists(), reason="DJI Matrice fixture not present")
     def test_real_dji_wide_image_gps(self):
-        """Real DJI _W.JPG fixture maps EXIF GPS to latitude, longitude, and altitude."""
+        """Real DJI _W.JPG fixture maps GPS lat/lon and XMP RelativeAltitude."""
         df = extract_media(DJI_FIXTURE)
         assert len(df) == 1
         row = df.iloc[0]
         assert row.media_type == MediaType.IMAGE
         assert row.latitude == pytest.approx(36.8023933888, rel=1e-8)
         assert row.longitude == pytest.approx(-121.7893236666, rel=1e-8)
-        assert row.altitude == pytest.approx(-2.88)
+        assert row.altitude == pytest.approx(29.896)
         assert row.date == pytz.utc.localize(datetime(2026, 4, 30, 12, 58, 26))
         assert Path(row.media_path).name == "DJI_20260430125826_0023_W.JPG"

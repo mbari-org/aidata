@@ -1,6 +1,6 @@
 # mbari_aidata, Apache-2.0 license
 # Filename: plugins/extractors/tap_matrice_media.py
-# Description: Extracts GPS EXIF from DJI Matrice _W.JPG images and _Z.mp4 videos
+# Description: Extracts GPS EXIF and DJI XMP relative altitude from Matrice _W.JPG images and _Z.mp4 videos
 from datetime import datetime
 from urllib.request import urlopen
 
@@ -19,6 +19,7 @@ IMAGE_EXTENSIONS = (".jpg", ".jpeg")
 VIDEO_EXTENSIONS = (".mp4",)
 # DJI_YYYYMMDDHHMMSS_NNNN_Z.mp4
 _DJI_FILENAME_DT = re.compile(r"DJI_(\d{14})_", re.IGNORECASE)
+_RELATIVE_ALTITUDE = re.compile(br'drone-dji:RelativeAltitude="([+-]?\d+(?:\.\d+)?)"')
 _HTTP_EXIF_BYTES = 200_000
 
 
@@ -58,15 +59,17 @@ def dms_to_decimal(dms, ref) -> float:
     return decimal
 
 
+def relative_altitude_from_xmp(data: bytes) -> float | None:
+    """Return DJI XMP RelativeAltitude in meters (height above takeoff), if present."""
+    match = _RELATIVE_ALTITUDE.search(data)
+    if not match:
+        return None
+    return float(match.group(1))
+
+
 def gps_altitude(gps: dict) -> float:
-    """Return signed GPS altitude in meters (GPSAltitudeRef 1 = below sea level)."""
-    alt = _rational_to_float(gps[piexif.GPSIFD.GPSAltitude])
-    ref = gps.get(piexif.GPSIFD.GPSAltitudeRef, 0)
-    if isinstance(ref, bytes):
-        ref = ref[0] if ref else 0
-    if int(ref) == 1:
-        alt = -alt
-    return alt
+    """Return unsigned GPSAltitude in meters (fallback when XMP RelativeAltitude is missing)."""
+    return _rational_to_float(gps[piexif.GPSIFD.GPSAltitude])
 
 
 def datetime_from_dji_filename(media_path: str) -> datetime | None:
@@ -96,26 +99,32 @@ def _collect_paths(media_path: Path, matcher) -> pd.DataFrame:
     return df.sort_values(by="media_path").reset_index(drop=True)
 
 
-def _load_exif(media_path: str) -> dict:
-    """Load EXIF from a local file or HTTP URL (first 200KB, then full file)."""
+def _read_media_bytes(media_path: str) -> bytes:
+    """Read enough of a local file or HTTP URL for EXIF plus DJI XMP."""
     if str(media_path).startswith("http"):
         try:
             partial_data = urlopen(media_path).read(_HTTP_EXIF_BYTES)
-            return piexif.load(partial_data)
+            if relative_altitude_from_xmp(partial_data) is not None:
+                return partial_data
+            info("RelativeAltitude not in partial read, reading full image...")
+            return urlopen(media_path).read()
         except Exception as partial_error:
             info(f"Partial read failed ({str(partial_error)}), reading full image...")
-            return piexif.load(urlopen(media_path).read())
-    return piexif.load(media_path)
+            return urlopen(media_path).read()
+    return Path(media_path).read_bytes()
 
 
-def _gps_and_date_from_exif(exif: dict) -> tuple[float, float, float, datetime]:
-    """Return latitude, longitude, altitude, and UTC datetime from EXIF GPS + DateTimeOriginal."""
+def _gps_and_date_from_exif(data: bytes) -> tuple[float, float, float, datetime]:
+    """Return latitude, longitude, relative altitude, and UTC datetime from EXIF GPS + DJI XMP."""
+    exif = piexif.load(data)
     date_time_str = exif["Exif"][piexif.ExifIFD.DateTimeOriginal].decode("utf-8").strip()
     dt_utc = pytz.utc.localize(datetime.strptime(date_time_str, "%Y:%m:%d %H:%M:%S"))
     gps = exif["GPS"]
     lat = dms_to_decimal(gps[piexif.GPSIFD.GPSLatitude], gps[piexif.GPSIFD.GPSLatitudeRef])
     lon = dms_to_decimal(gps[piexif.GPSIFD.GPSLongitude], gps[piexif.GPSIFD.GPSLongitudeRef])
-    alt = gps_altitude(gps)
+    alt = relative_altitude_from_xmp(data)
+    if alt is None:
+        alt = gps_altitude(gps)
     return lat, lon, alt, dt_utc
 
 
@@ -131,7 +140,7 @@ def extract_media(media_path: Path, max_images: int = -1) -> pd.DataFrame:
 
 
 def extract_images(media_path: Path, max_images: int = -1) -> pd.DataFrame:
-    """Extract latitude/longitude/altitude and date from DJI Matrice _W.JPG EXIF."""
+    """Extract latitude/longitude from GPS EXIF and altitude from XMP RelativeAltitude."""
     images_df = _collect_paths(media_path, _is_matrice_image)
     if max_images > 0:
         images_df = images_df.head(max_images)
@@ -150,7 +159,7 @@ def extract_images(media_path: Path, max_images: int = -1) -> pd.DataFrame:
     for i, row in sorted_df.iterrows():
         info(f"Reading EXIF data in {row.media_path}")
         try:
-            lat, lon, alt, dt_utc = _gps_and_date_from_exif(_load_exif(row.media_path))
+            lat, lon, alt, dt_utc = _gps_and_date_from_exif(_read_media_bytes(row.media_path))
             latitude.append(lat)
             longitude.append(lon)
             altitude.append(alt)
