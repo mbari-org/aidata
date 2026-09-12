@@ -6,6 +6,21 @@ from pathlib import Path
 import pandas as pd
 import tqdm
 
+
+def clamp_boxes_df(df, cols=('x', 'y', 'xx', 'xy')):
+    """Clamp boxes within 0-1. bounds"""
+    df = df.copy()
+    x, y, xx, xy = cols
+    for c in cols:
+        df[c] = df[c].clip(0.0, 1.0)
+        x_new = df[[x, xx]].min(axis=1)
+        xx_new = df[[x, xx]].max(axis=1)
+        y_new = df[[y, xy]].min(axis=1)
+        xy_new = df[[y, xy]].max(axis=1)
+        df[x], df[xx] = x_new, xx_new
+        df[y], df[xy] = y_new, xy_new
+    return df
+
 def extract_sdcat_csv(csv_path: Path) -> pd.DataFrame:
     """Extracts data from a SDCAT generated csv files."""
     dfs = []
@@ -43,4 +58,5 @@ def extract_sdcat_csv(csv_path: Path) -> pd.DataFrame:
     # Replace /home/ubuntu with /Volumes/tatordata
     combined_df["image_path"] = combined_df["image_path"].str.replace("/home/ubuntu", "/Volumes/tatordata")
 
+    combined_df = clamp_boxes_df(combined_df)
     return combined_df
