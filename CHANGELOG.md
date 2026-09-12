@@ -2,6 +2,14 @@
 
 <!-- version list -->
 
+## v1.79.6 (2026-09-12)
+
+### Bug Fixes
+
+- Clamp sdcat boxes outside of bounds
+  ([`6dbb19e`](https://github.com/mbari-org/aidata/commit/6dbb19e5f7761f0934b2b49577f23969c9cc5199))
+
+
 ## v1.79.5 (2026-09-02)
 
 ### Bug Fixes
