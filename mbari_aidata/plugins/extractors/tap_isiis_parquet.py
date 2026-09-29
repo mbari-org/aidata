@@ -9,7 +9,7 @@ import tqdm
 
 from mbari_aidata.logger import err
 
-DINO_PREFIX = "dino3"
+DINO_PREFIX = "dinov3"
 SCORE_SUFFIX = "-score"
 
 
