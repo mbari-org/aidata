@@ -6,7 +6,7 @@ from pathlib import Path
 import pandas as pd
 import pytest
 
-from mbari_aidata.plugins.extractors.tap_isiis_parquet import extract_isiis_parquet
+from mbari_aidata.plugins.extractors.tap_planktivore_parquet import extract_ptvr_parquet
 
 
 def _write_parquet(path: Path, label_column: str = "dino3_v32_v3") -> None:
@@ -31,7 +31,7 @@ def test_extract_isiis_parquet_remaps_dino_columns(tmp_path: Path):
     parquet_path = tmp_path / "isiis.parquet"
     _write_parquet(parquet_path)
 
-    df = extract_isiis_parquet(parquet_path)
+    df = extract_ptvr_parquet(parquet_path)
 
     assert list(df["image_path"]) == [
         "CFE_ISIIS-001-2023-07-12 09-30-36.364_0001_13.2m.jpg",
@@ -50,7 +50,7 @@ def test_extract_isiis_parquet_accepts_other_dino3_model_names(tmp_path: Path):
     parquet_path = tmp_path / "isiis.parquet"
     _write_parquet(parquet_path, label_column="dino3_other_model")
 
-    df = extract_isiis_parquet(parquet_path)
+    df = extract_ptvr_parquet(parquet_path)
 
     assert set(df["label"]) == {"copepod", "hydromedusa"}
     assert "dino3_other_model" not in df.columns
@@ -65,7 +65,7 @@ def test_extract_isiis_parquet_reads_a_directory(tmp_path: Path):
     _write_parquet(first, label_column="dino3_v32_v3")
     _write_parquet(second, label_column="dino3_v32_v4")
 
-    df = extract_isiis_parquet(tmp_path)
+    df = extract_ptvr_parquet(tmp_path)
 
     assert len(df) == 4
     assert set(df["label"]) == {"copepod", "hydromedusa"}
@@ -83,9 +83,9 @@ def test_extract_isiis_parquet_rejects_missing_score_column(tmp_path: Path):
     ).to_parquet(parquet_path, index=False)
 
     with pytest.raises(ValueError, match="dino3_v32_v3-score"):
-        extract_isiis_parquet(parquet_path)
+        extract_ptvr_parquet(parquet_path)
 
 
 def test_extract_isiis_parquet_empty_directory(tmp_path: Path):
     """Test that a directory with no parquet files returns an empty frame."""
-    assert extract_isiis_parquet(tmp_path).empty
+    assert extract_ptvr_parquet(tmp_path).empty
