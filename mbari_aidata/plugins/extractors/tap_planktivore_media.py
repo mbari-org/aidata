@@ -1,5 +1,5 @@
 # mbari_aidata, Apache-2.0 license
-# Filename: plugins/extractor/tap_planktivore_media.py
+# Filename: plugins/extractors/tap_planktivore_media.py
 # Description: Extracts data from CFE image meta data
 import re
 from datetime import datetime, timezone
@@ -36,6 +36,15 @@ def extract_media(media_path: Path, max_images: Optional[int] = None) -> pd.Data
                                    Path(p).suffix.lower() in [ext.lower() for ext in allowed_extensions]]
     elif media_path.is_dir():
         images_df["media_path"] = [str(file) for file in media_path.rglob("*") if file.suffix.lower() in allowed_extensions]
+    elif media_path.is_file() and media_path.suffix.lower() == ".parquet":
+        frame = pd.read_parquet(media_path)
+        if "filename" not in frame.columns:
+            raise ValueError(f"{media_path} is missing required column 'filename'")
+        images_df["media_path"] = [
+            str(name)
+            for name in frame["filename"].tolist()
+            if Path(str(name)).suffix.lower() in allowed_extensions
+        ]
     elif media_path.is_file():
         images_df["media_path"] = [str(media_path)]
         # Keep only if it has acceptable extension
