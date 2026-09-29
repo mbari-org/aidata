@@ -16,7 +16,7 @@ from pathlib import Path
 @click.option("--max-num", type=int, help="Maximum number of boxes to load")
 @click.option("--min-score", type=float, help="Minimum score to load between 0 and 1")
 def load_boxes(token: str, disable_ssl_verify: bool, config: str, version: str, input: Path, dry_run: bool, max_num: int, min_score:float, exclude: str) -> int:
-    """Load boxes from VOC XML, SDCAT CSV, or ISIIS parquet files. Returns the number of boxes loaded."""
+    """Load boxes from VOC XML, SDCAT CSV, or Planktivore parquet files. Returns the number of boxes loaded."""
 
     from mbari_aidata.logger import create_logger_file, info, err
     from mbari_aidata.plugins.extractors.tap_planktivore_parquet import extract_ptvr_parquet
@@ -45,7 +45,7 @@ def load_boxes(token: str, disable_ssl_verify: bool, config: str, version: str, 
         assert box_type is not None, f"No box type found in project {project}"
         assert version_id is not None, f"No version found in project {project}"
 
-        # Determine whether to use sdcat, voc, or ISIIS parquet based on the file extension
+        # Determine whether to use sdcat, voc, or Planktivore parquet based on the file extension
         valid_extensions = [".csv", ".xml", ".parquet"]
         extractors = {"csv": extract_sdcat_csv, "xml": extract_voc, "parquet": extract_ptvr_parquet}
         df_boxes = []
