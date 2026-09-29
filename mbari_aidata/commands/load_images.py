@@ -3,9 +3,33 @@
 # Description: Load images from a directory. Assumes the images are available via a web server.
 
 from pathlib import Path
+from typing import Optional, Union
+
 import click
 
 from mbari_aidata import common_args
+
+
+def reference_image_url(media_path: str, base_url: str, url_root: Union[str, Path]) -> str:
+    """Build a reference image URL by stripping url_root from a local media path.
+
+    Paths that already start with http are returned unchanged.
+    """
+    if str(media_path).startswith("http"):
+        return str(media_path)
+
+    root = Path(url_root).as_posix().rstrip("/")
+    candidates = [str(media_path)]
+    resolved = Path(media_path).resolve().as_posix()
+    if resolved not in candidates:
+        candidates.append(resolved)
+
+    for candidate in candidates:
+        if candidate == root or candidate.startswith(root + "/"):
+            return f"{base_url}{candidate[len(root):]}"
+
+    raise ValueError(f"{media_path} is not under base path {url_root}")
+
 
 @click.command("images", help="Load images from a directory, a single image file, a text listing of images, or the image_path column from a SDCAT formatted CSV")
 @common_args.token
@@ -17,10 +41,19 @@ from mbari_aidata import common_args
 @click.option("--section", type=str, default="All Media", help="Section to load images into. Default is 'All Media'")
 @click.option("--max-images", type=int, default=-1, help="Only load up to max-images. Useful for testing. Default is to load all images")
 @click.option("--upload", is_flag=True, help="Upload image files directly instead of loading by reference")
-def load_images(token: str, disable_ssl_verify: bool, config: str, dry_run: bool, input: str, section: str, max_images: int, check_duplicates: bool, upload: bool) -> int:
+@click.option(
+    "--base-path",
+    type=click.Path(exists=True, file_okay=False, dir_okay=True, path_type=Path),
+    default=None,
+    help="Directory prefix stripped from each image path when building its URL. Only valid when --upload is not used.",
+)
+def load_images(token: str, disable_ssl_verify: bool, config: str, dry_run: bool, input: str, section: str, max_images: int, check_duplicates: bool, upload: bool, base_path: Optional[Path]) -> int:
     """Load images from a directory. Returns the number of images loaded."""
     import requests
     from tqdm import tqdm
+
+    if base_path is not None and upload:
+        raise click.UsageError("--base-path is only valid when --upload is not used")
 
     from mbari_aidata.commands.load_common import check_mounts, check_duplicate_media, get_media_attributes
     from mbari_aidata.logger import create_logger_file, info, err
@@ -116,11 +149,12 @@ def load_images(token: str, disable_ssl_verify: bool, config: str, dry_run: bool
         specs = []
         num_checked = 0
         for index, row in tqdm(df_media.iterrows(), total=len(df_media), desc="Creating image specs"):
-            if str(row["media_path"]).startswith("http"):
-                image_url = row["media_path"]
-            else:
-                file_loc_sans_root = row["media_path"].split(media.mount_path.as_posix())[-1]
-                image_url = f"{media.base_url}{file_loc_sans_root}"
+            url_root = base_path if base_path is not None else media.mount_path
+            try:
+                image_url = reference_image_url(row["media_path"], media.base_url, url_root)
+            except ValueError as e:
+                err(str(e))
+                return -1
 
             if num_checked < 100:
                 # Check if the URL is valid, but only for the first 100 images
