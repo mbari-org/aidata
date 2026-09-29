@@ -8,8 +8,7 @@ from datetime import datetime
 from dateutil.parser import isoparse
 import re
 import redis
-from tator.openapi.tator_openapi import TatorApi  # type: ignore
-from tator.openapi.tator_openapi.models import Project, MediaType  # type: ignore
+from tator.openapi.tator_openapi import TatorApi, Project, MediaType  # type: ignore
 
 from mbari_aidata.plugins.loaders.tator.media import load_media
 from mbari_aidata.logger import info, err, debug

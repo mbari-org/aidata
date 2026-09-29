@@ -8,8 +8,12 @@ from urllib.parse import urlparse
 import yaml
 from tator.openapi import tator_openapi
 
-from tator.openapi.tator_openapi import TatorApi, CreateListResponse, CreateResponse  # type: ignore
-from tator.openapi.tator_openapi.models import Project  # type: ignore
+from tator.openapi.tator_openapi import (  # type: ignore
+    TatorApi,
+    CreateListResponse,
+    CreateResponse,
+    Project,
+)
 import tator  # type: ignore
 
 from mbari_aidata.logger import info, debug, err
