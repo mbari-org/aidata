@@ -10,6 +10,14 @@ import click
 from mbari_aidata import common_args
 
 
+def resolve_media_path(media_path: str, base_path: Optional[Path]) -> str:
+    """Prefix a relative media path with base_path. Absolute and http paths are unchanged."""
+    path = str(media_path)
+    if base_path is None or path.startswith("http") or Path(path).is_absolute():
+        return path
+    return str(base_path / path)
+
+
 def reference_image_url(media_path: str, base_url: str, url_root: Union[str, Path]) -> str:
     """Build a reference image URL by stripping url_root from a local media path.
 
@@ -98,6 +106,9 @@ def load_images(token: str, disable_ssl_verify: bool, config: str, dry_run: bool
             return -1
 
         df_media = extractor(Path(input), max_images)
+        if base_path is not None and len(df_media) > 0 and "media_path" in df_media.columns:
+            df_media = df_media.copy()
+            df_media["media_path"] = df_media["media_path"].map(lambda p: resolve_media_path(p, base_path))
         if len(df_media) == 0:
             info(f"No images found in {input}")
             return 0

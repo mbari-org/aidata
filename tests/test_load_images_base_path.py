@@ -6,7 +6,10 @@ from pathlib import Path
 import click
 import pytest
 
-from mbari_aidata.commands.load_images import load_images, reference_image_url
+import pandas as pd
+
+from mbari_aidata.commands.load_images import load_images, reference_image_url, resolve_media_path
+from mbari_aidata.plugins.extractors.tap_planktivore_media import extract_media
 
 
 def test_reference_image_url_strips_mount_path():
@@ -40,6 +43,33 @@ def test_reference_image_url_rejects_path_outside_base(tmp_path: Path):
     """Test that a media path outside the base path is rejected."""
     with pytest.raises(ValueError, match="not under base path"):
         reference_image_url("/other/frame.jpg", "http://localhost:8082/tests/", tmp_path)
+
+
+def test_resolve_media_path_joins_relative_parquet_filename(tmp_path: Path):
+    """Test that a relative parquet filename is joined to the image base path."""
+    relative = "20260420T185900/low_mag_cam-1776711593891775-71925687376-0-035-1326-1840-36-36_rawcolor.png"
+    resolved = resolve_media_path(relative, tmp_path)
+    assert resolved == str(tmp_path / relative)
+
+
+def test_extract_media_reads_png_filenames_from_parquet(tmp_path: Path):
+    """Test that Planktivore parquet filename values are loaded, including png images."""
+    parquet_path = tmp_path / "level2.parquet"
+    pd.DataFrame(
+        {
+            "filename": [
+                "20260420T185900/low_mag_cam-1776711593891775-71925687376-0-035-1326-1840-36-36_rawcolor.png",
+                "notes.txt",
+            ]
+        }
+    ).to_parquet(parquet_path, index=False)
+
+    df = extract_media(parquet_path)
+
+    assert list(df["media_path"]) == [
+        "20260420T185900/low_mag_cam-1776711593891775-71925687376-0-035-1326-1840-36-36_rawcolor.png"
+    ]
+    assert df["iso_datetime"].notna().all()
 
 
 def test_base_path_is_rejected_with_upload():
