@@ -2433,21 +2433,26 @@ dev = ["hypothesis (>=6.70.0)", "pytest (>=7.1.0)"]
 
 [[package]]
 name = "tator"
-version = "1.7.11"
+version = "1.2.3"
 description = "Python client for Tator"
 optional = false
 python-versions = "*"
 groups = ["main"]
 files = [
-    {file = "tator-1.7.11-py3-none-any.whl", hash = "sha256:ab427dce0b97d54a0b0e575b6f266efedf4a49cf85f065b29f64f70b2c1a012f"},
+    {file = "tator-1.2.3-py3-none-any.whl", hash = "sha256:fd4e04644f66d4012bea722391e7d89ad71ebe2246073c1081c9d7aa9a3685e2"},
+    {file = "tator-1.2.3.tar.gz", hash = "sha256:8674fb17e78deea24c9c37370d17cd7bab500b3dfe0b0677159bf3a027637038"},
 ]
 
 [package.dependencies]
-Pillow = ">=10.3.0"
+certifi = ">=14.05.14"
+Pillow = ">=10.0.1"
 progressbar2 = ">=3.51.4"
 psutil = ">=5.9.5"
-pyyaml = ">=5.4"
-requests = ">=2.32.4"
+python-dateutil = ">=2.5.3"
+pyyaml = ">=5.3.1"
+requests = ">=2.25"
+six = ">=1.10"
+urllib3 = ">=1.26"
 
 [[package]]
 name = "tokenizers"
@@ -2823,4 +2828,4 @@ zstd = ["backports-zstd (>=1.0.0) ; python_version < \"3.14\""]
 [metadata]
 lock-version = "2.1"
 python-versions = ">=3.10,<3.13"
-content-hash = "bbffe73c7893fe8e7ed6eae71c71ecf023814d768509904af79cb132ec0848da"
+content-hash = "1fe9c17849ec77c609be9cb4630b9841e0677d2b737bd435e0896a1180838ea4"

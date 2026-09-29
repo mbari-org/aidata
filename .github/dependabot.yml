@@ -45,6 +45,8 @@ updates:
           - minor
           - patch
     ignore:
+      # tator is pinned to 1.2.3. Later clients removed tator_openapi.Configuration.
+      - dependency-name: tator
       # torch/torchvision are pinned as a compatible pair and must match the
       # cu121 wheels installed in docker/Dockerfile.cuda; bump them deliberately.
       - dependency-name: torch
