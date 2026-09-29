@@ -16,7 +16,7 @@ SCORE_SUFFIX = "-score"
 def _dino_label_and_score_columns(columns) -> tuple[str, str]:
     """Return the model label column and its matching score column.
 
-    The model name varies, but both columns share the ``dino3`` prefix.
+    The model name varies, but both columns share the ``dinov3`` prefix.
     The score column is the label column name plus ``-score``.
     """
     names = [str(column) for column in columns]
@@ -59,7 +59,7 @@ def _normalize_ptvr_frame(df: pd.DataFrame) -> pd.DataFrame:
 def extract_ptvr_parquet(parquet_path: Path) -> pd.DataFrame:
     """Extract localizations from an ISIIS parquet file or a directory of them.
 
-    Model columns such as ``dino3_v32_v3`` and ``dino3_v32_v3-score`` are
+    Model columns such as ``dinov3_v32_v3`` and ``dinov3_v32_v3-score`` are
     remapped to ``label`` and ``score``. ``filename`` is remapped to
     ``image_path``. Other columns (for example ``epoch_seconds``, ``time``,
     and ``depth``) are left unchanged so they can be mapped as box attributes.
