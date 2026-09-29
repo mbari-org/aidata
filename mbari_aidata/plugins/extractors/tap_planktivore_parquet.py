@@ -1,5 +1,5 @@
 # mbari_aidata, Apache-2.0 license
-# Filename: plugins/extractors/tap_isiis_parquet.py
+# Filename: plugins/extractors/tap_planktivore_parquet.py
 # Description: Extracts localizations from ISIIS parquet files for loading into Tator
 
 from pathlib import Path
@@ -39,7 +39,7 @@ def _dino_label_and_score_columns(columns) -> tuple[str, str]:
     return label_col, score_col
 
 
-def _normalize_isiis_frame(df: pd.DataFrame) -> pd.DataFrame:
+def _normalize_ptvr_frame(df: pd.DataFrame) -> pd.DataFrame:
     """Remap ISIIS parquet columns onto the localization dataframe schema."""
     if "filename" not in df.columns:
         raise ValueError("ISIIS parquet is missing required column 'filename'")
@@ -56,7 +56,7 @@ def _normalize_isiis_frame(df: pd.DataFrame) -> pd.DataFrame:
     return normalized
 
 
-def extract_isiis_parquet(parquet_path: Path) -> pd.DataFrame:
+def extract_ptvr_parquet(parquet_path: Path) -> pd.DataFrame:
     """Extract localizations from an ISIIS parquet file or a directory of them.
 
     Model columns such as ``dino3_v32_v3`` and ``dino3_v32_v3-score`` are
@@ -68,7 +68,7 @@ def extract_isiis_parquet(parquet_path: Path) -> pd.DataFrame:
         frames = []
         for det_path in tqdm.tqdm(sorted(parquet_path.rglob("*.parquet")), desc="Reading ISIIS parquet"):
             try:
-                frames.append(_normalize_isiis_frame(pd.read_parquet(det_path)))
+                frames.append(_normalize_ptvr_frame(pd.read_parquet(det_path)))
             except Exception as e:
                 err(f"Error reading {det_path}: {e}")
                 continue
@@ -76,7 +76,7 @@ def extract_isiis_parquet(parquet_path: Path) -> pd.DataFrame:
             return pd.DataFrame()
         combined_df = pd.concat(frames, ignore_index=True)
     else:
-        combined_df = _normalize_isiis_frame(pd.read_parquet(parquet_path))
+        combined_df = _normalize_ptvr_frame(pd.read_parquet(parquet_path))
 
     if len(combined_df) == 0:
         return combined_df

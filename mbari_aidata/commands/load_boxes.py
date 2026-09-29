@@ -19,7 +19,7 @@ def load_boxes(token: str, disable_ssl_verify: bool, config: str, version: str, 
     """Load boxes from VOC XML, SDCAT CSV, or ISIIS parquet files. Returns the number of boxes loaded."""
 
     from mbari_aidata.logger import create_logger_file, info, err
-    from mbari_aidata.plugins.extractors.tap_isiis_parquet import extract_isiis_parquet
+    from mbari_aidata.plugins.extractors.tap_planktivore_parquet import extract_ptvr_parquet
     from mbari_aidata.plugins.extractors.tap_sdcat_csv import extract_sdcat_csv
     from mbari_aidata.plugins.extractors.tap_voc import extract_voc
     from mbari_aidata.plugins.loaders.tator.localization import gen_spec as gen_localization_spec
@@ -47,7 +47,7 @@ def load_boxes(token: str, disable_ssl_verify: bool, config: str, version: str, 
 
         # Determine whether to use sdcat, voc, or ISIIS parquet based on the file extension
         valid_extensions = [".csv", ".xml", ".parquet"]
-        extractors = {"csv": extract_sdcat_csv, "xml": extract_voc, "parquet": extract_isiis_parquet}
+        extractors = {"csv": extract_sdcat_csv, "xml": extract_voc, "parquet": extract_ptvr_parquet}
         df_boxes = []
         if input.is_dir():
             # Search for files with valid extensions
