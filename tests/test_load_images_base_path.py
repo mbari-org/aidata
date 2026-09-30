@@ -8,7 +8,12 @@ import pytest
 
 import pandas as pd
 
-from mbari_aidata.commands.load_images import load_images, reference_image_url, resolve_media_path
+from mbari_aidata.commands.load_images import (
+    load_images,
+    reference_image_url,
+    reference_url_accepted,
+    resolve_media_path,
+)
 from mbari_aidata.plugins.extractors.tap_planktivore_media import extract_media
 
 
@@ -43,6 +48,12 @@ def test_reference_image_url_rejects_path_outside_base(tmp_path: Path):
     """Test that a media path outside the base path is rejected."""
     with pytest.raises(ValueError, match="not under base path"):
         reference_image_url("/other/frame.jpg", "http://localhost:8082/tests/", tmp_path)
+
+
+def test_reference_url_301_is_rejected():
+    """Test that an HTTP 301 redirect stops image URL validation."""
+    assert reference_url_accepted(200)
+    assert not reference_url_accepted(301)
 
 
 def test_resolve_media_path_joins_relative_parquet_filename(tmp_path: Path):

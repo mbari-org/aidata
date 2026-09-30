@@ -10,6 +10,14 @@ import click
 from mbari_aidata import common_args
 
 
+def reference_url_accepted(status_code: int) -> bool:
+    """A reference image URL is usable only when it responds 200.
+
+    Redirects such as 301 are rejected so a bad URL stops the load.
+    """
+    return status_code == 200
+
+
 def resolve_media_path(media_path: str, base_path: Optional[Path]) -> str:
     """Prefix a relative media path with base_path. Absolute and http paths are unchanged."""
     path = str(media_path)
@@ -177,7 +185,7 @@ def load_images(token: str, disable_ssl_verify: bool, config: str, dry_run: bool
                 try:
                     timeout = 30
                     r = requests.head(image_url, timeout=timeout)
-                    if r.status_code == 301 or r.status_code == 200:
+                    if reference_url_accepted(r.status_code):
                         info(f"URL {image_url} is valid code {r.status_code}")
                         num_checked += 1
                     else:
