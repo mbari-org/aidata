@@ -67,7 +67,7 @@ def check_mounts(config_dict: Dict, input:str, media_type: str) -> (MediaHelper,
     if media_mount["host"].startswith("http"):
         base_url = media_mount["host"]
     else:
-        base_url = f'http://{media_mount["host"]}' # assuming http protocol which may not be correct
+        base_url = f'https://{media_mount["host"]}' # assuming https protocol which may not be correct
 
     if "port" in media_mount:
         port = media_mount["port"]
