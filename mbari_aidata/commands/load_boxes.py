@@ -15,7 +15,8 @@ from pathlib import Path
 @click.option("--input", type=Path, required=True, help="VOC XML, SDCAT CSV, or ISIIS parquet file or directory")
 @click.option("--max-num", type=int, help="Maximum number of boxes to load")
 @click.option("--min-score", type=float, help="Minimum score to load between 0 and 1")
-def load_boxes(token: str, disable_ssl_verify: bool, config: str, version: str, input: Path, dry_run: bool, max_num: int, min_score:float, exclude: str) -> int:
+@click.option("--section", type=str, default=None, help="Only match media in this Tator section")
+def load_boxes(token: str, disable_ssl_verify: bool, config: str, version: str, input: Path, dry_run: bool, max_num: int, min_score:float, exclude: str, section: str) -> int:
     """Load boxes from VOC XML, SDCAT CSV, or Planktivore parquet files. Returns the number of boxes loaded."""
 
     from mbari_aidata.logger import create_logger_file, info, err
@@ -26,7 +27,7 @@ def load_boxes(token: str, disable_ssl_verify: bool, config: str, version: str, 
     from mbari_aidata.plugins.loaders.tator.localization import load_bulk_boxes
     from mbari_aidata.plugins.loaders.tator.attribute_utils import format_attributes
     from mbari_aidata.plugins.loaders.tator.common import init_yaml_config, find_box_type, find_media_type, \
-        init_api_project, get_version_id
+        find_section_id, init_api_project, get_version_id
     from mbari_aidata.plugins.loaders.tator.media import get_media_ids
 
     try:
@@ -44,6 +45,8 @@ def load_boxes(token: str, disable_ssl_verify: bool, config: str, version: str, 
         box_attributes = config_dict["tator"]["box"]["attributes"]
         assert box_type is not None, f"No box type found in project {project}"
         assert version_id is not None, f"No version found in project {project}"
+        section_id = find_section_id(api, tator_project.id, section) if section else None
+        media_query = {"section": section_id} if section_id is not None else {}
 
         # Determine whether to use sdcat, voc, or Planktivore parquet based on the file extension
         valid_extensions = [".csv", ".xml", ".parquet"]
@@ -91,7 +94,7 @@ def load_boxes(token: str, disable_ssl_verify: bool, config: str, version: str, 
             df_boxes["y"] = 0
             df_boxes["xx"] = 1.
             df_boxes["xy"] = 1.
-            media_map = get_media_ids(api, tator_project, image_type.id) # TODO: Add support for kwargs to refine this query
+            media_map = get_media_ids(api, tator_project, image_type.id, **media_query)
 
             # Load in bulk 1000 boxes at a time
             box_count = len(df_boxes)
@@ -142,7 +145,7 @@ def load_boxes(token: str, disable_ssl_verify: bool, config: str, version: str, 
             for image_path, group in df_boxes.groupby("image_path"):
                 # Query for the media object with the same name as the image_path - this assumes the image has a unique name
                 image_name = Path(image_path).name  # type: ignore
-                media = api.get_media_list(project=tator_project.id, name=image_name)
+                media = api.get_media_list(project=tator_project.id, name=image_name, **media_query)
                 if len(media) == 0:
                     info(f"No media found with name {image_name} in project {tator_project.name}.")
                     info("Media must be loaded before localizations.")

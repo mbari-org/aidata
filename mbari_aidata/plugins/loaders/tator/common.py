@@ -171,6 +171,17 @@ def find_box_type(api: TatorApi, project: int, type_name: str = "Box") -> tator.
     return None
 
 
+def find_section_id(api: TatorApi, project: int, section_name: str) -> int:
+    """Return the ID of the section with the given name."""
+    sections = api.get_section_list(project=project)
+    matches = [section.id for section in sections if section.name == section_name]
+    if len(matches) == 0:
+        raise ValueError(f"Could not find section {section_name}")
+    if len(matches) > 1:
+        raise ValueError(f"Found multiple sections named {section_name}")
+    return matches[0]
+
+
 def find_media_type(api: TatorApi, project: int, type_name: str) -> Any | None:
     """
     Find the media type for the given project
