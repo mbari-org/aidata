@@ -24,18 +24,25 @@ def test_reference_image_url_strips_mount_path():
         "http://localhost:8082/tests/",
         Path("/data"),
     )
-    assert url == "http://localhost:8082/tests//cfe/images/frame.jpg"
+    assert url == "http://localhost:8082/tests/cfe/images/frame.jpg"
 
 
-def test_reference_image_url_uses_optional_base_path(tmp_path: Path):
-    """Test that --base-path replaces the mount path as the prefix stripped from the URL."""
-    image = tmp_path / "images" / "frame.jpg"
-    image.parent.mkdir()
-    image.touch()
-
-    url = reference_image_url(str(image), "http://localhost:8082/tests/", tmp_path)
-
-    assert url == f"http://localhost:8082/tests//{image.relative_to(tmp_path).as_posix()}"
+def test_reference_image_url_keeps_path_after_mount():
+    """Test that the hosted URL keeps the path after the config mount path."""
+    local = (
+        "/mnt/DeepSea-AI/data/Planktivore/raw/2026_April_20_Ahi-Planktivore/low_mag_cam/"
+        "20260420T185900/low_mag_cam-1776711593891775-71925687376-0-035-1326-1840-36-36_rawcolor.png"
+    )
+    url = reference_image_url(
+        local,
+        "http://cortex.shore.mbari.org/DeepSea-AI/",
+        Path("/mnt/DeepSea-AI"),
+    )
+    assert url == (
+        "http://cortex.shore.mbari.org/DeepSea-AI/data/Planktivore/raw/"
+        "2026_April_20_Ahi-Planktivore/low_mag_cam/20260420T185900/"
+        "low_mag_cam-1776711593891775-71925687376-0-035-1326-1840-36-36_rawcolor.png"
+    )
 
 
 def test_reference_image_url_leaves_http_paths_unchanged():
