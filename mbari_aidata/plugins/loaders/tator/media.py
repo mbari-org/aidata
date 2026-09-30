@@ -107,7 +107,9 @@ def get_media_ids(
         batch_size = min(1000, media_count)
         debug(f"Searching through {media_count} medias with {kwargs}")
         for i in range(0, media_count, batch_size):
-            media = api.get_media_list(project=project.id, start=i, stop=i + batch_size, **kwargs)
+            media = api.get_media_list(
+                project=project.id, start=i, stop=i + batch_size, type=image_type, **kwargs
+            )
             info(f"Found {len(media)} medias with {kwargs} {i} {i + batch_size}")
             for m in media:
                 media_map[m.name] = m.id
