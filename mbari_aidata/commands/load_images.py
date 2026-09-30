@@ -57,6 +57,7 @@ def reference_image_url(media_path: str, base_url: str, url_root: Union[str, Pat
 )
 def load_images(token: str, disable_ssl_verify: bool, config: str, dry_run: bool, input: str, section: str, max_images: int, check_duplicates: bool, upload: bool, base_path: Optional[Path]) -> int:
     """Load images from a directory. Returns the number of images loaded."""
+    import inspect
     import requests
     from tqdm import tqdm
 
@@ -105,7 +106,10 @@ def load_images(token: str, disable_ssl_verify: bool, config: str, dry_run: bool
             err("Could not find media type Image")
             return -1
 
-        df_media = extractor(Path(input), max_images)
+        extractor_kwargs = {}
+        if dry_run and "parse_timestamps" in inspect.signature(extractor).parameters:
+            extractor_kwargs["parse_timestamps"] = False
+        df_media = extractor(Path(input), max_images, **extractor_kwargs)
         if base_path is not None and len(df_media) > 0 and "media_path" in df_media.columns:
             df_media = df_media.copy()
             df_media["media_path"] = df_media["media_path"].map(lambda p: resolve_media_path(p, base_path))

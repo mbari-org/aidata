@@ -14,7 +14,7 @@ from mbari_aidata.logger import info,debug
 from mbari_aidata.plugins.extractors.media_types import MediaType
 
 
-def extract_media(media_path: Path, max_images: Optional[int] = None) -> pd.DataFrame:
+def extract_media(media_path: Path, max_images: Optional[int] = None, parse_timestamps: bool = True) -> pd.DataFrame:
     """Extracts Planktivore image meta data
     Examples:
         low_mag_cam-1713221040057971-92665779216-379-021-1178-1882-36-36_rawcolor.png
@@ -55,12 +55,16 @@ def extract_media(media_path: Path, max_images: Optional[int] = None) -> pd.Data
     if max_images and max_images > 0:
         images_df = images_df.iloc[:max_images]
 
+    info(f"Found {len(images_df)} unique images")
+    if not parse_timestamps:
+        images_df["media_type"] = MediaType.IMAGE
+        return images_df
+
     pattern1 = re.compile(r'\d{8}T\d{6}\.\d+Z')
     pattern2 = re.compile(r'(high_mag_cam|low_mag_cam)-(\d{16})')
 
     # Grab any additional metadata from the image name,
     iso_datetime = {}
-    info(f"Found {len(images_df)} unique images")
     for index, row in images_df.iterrows():
         image_name = row["media_path"]
         if image_name.startswith("http"):

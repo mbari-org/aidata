@@ -72,6 +72,18 @@ def test_extract_media_reads_png_filenames_from_parquet(tmp_path: Path):
     assert df["iso_datetime"].notna().all()
 
 
+def test_extract_media_dry_run_skips_timestamp_parsing(tmp_path: Path):
+    """Test that a dry run can list parquet images without parsing filenames for timestamps."""
+    parquet_path = tmp_path / "level2.parquet"
+    relative = "20260420T185900/low_mag_cam-1776711593891775-71925687376-0-035-1326-1840-36-36_rawcolor.png"
+    pd.DataFrame({"filename": [relative]}).to_parquet(parquet_path, index=False)
+
+    df = extract_media(parquet_path, parse_timestamps=False)
+
+    assert list(df["media_path"]) == [relative]
+    assert "iso_datetime" not in df.columns
+
+
 def test_base_path_is_rejected_with_upload():
     """Test that --base-path cannot be combined with --upload."""
     with pytest.raises(click.UsageError, match="--base-path is only valid when --upload is not used"):
