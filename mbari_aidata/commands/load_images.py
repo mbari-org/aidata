@@ -42,7 +42,8 @@ def reference_image_url(media_path: str, base_url: str, url_root: Union[str, Pat
 
     for candidate in candidates:
         if candidate == root or candidate.startswith(root + "/"):
-            return f"{base_url}{candidate[len(root):]}"
+            relative = candidate[len(root):].lstrip("/")
+            return f"{base_url.rstrip('/')}/{relative}" if relative else base_url.rstrip("/")
 
     raise ValueError(f"{media_path} is not under base path {url_root}")
 
@@ -61,7 +62,7 @@ def reference_image_url(media_path: str, base_url: str, url_root: Union[str, Pat
     "--base-path",
     type=click.Path(exists=True, file_okay=False, dir_okay=True, path_type=Path),
     default=None,
-    help="Directory prefix stripped from each image path when building its URL. Only valid when --upload is not used.",
+    help="Directory joined to relative image filenames to locate the files. The hosted URL still strips the config mount path. Only valid when --upload is not used.",
 )
 def load_images(token: str, disable_ssl_verify: bool, config: str, dry_run: bool, input: str, section: str, max_images: int, check_duplicates: bool, upload: bool, base_path: Optional[Path]) -> int:
     """Load images from a directory. Returns the number of images loaded."""
@@ -172,9 +173,8 @@ def load_images(token: str, disable_ssl_verify: bool, config: str, dry_run: bool
         specs = []
         num_checked = 0
         for index, row in tqdm(df_media.iterrows(), total=len(df_media), desc="Creating image specs"):
-            url_root = base_path if base_path is not None else media.mount_path
             try:
-                image_url = reference_image_url(row["media_path"], media.base_url, url_root)
+                image_url = reference_image_url(row["media_path"], media.base_url, media.mount_path)
             except ValueError as e:
                 err(str(e))
                 return -1
