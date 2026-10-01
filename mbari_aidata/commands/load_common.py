@@ -108,6 +108,5 @@ def check_mounts(config_dict: Dict, input:str, media_type: str) -> (MediaHelper,
         if not dir_or_file.is_relative_to(mount_path):
             err(f"{dir_or_file} is not a subdirectory of the mount path {mount_path}. "
                 f"This is required to load the media correctly.")
-            return None, -1
 
     return media, 0
