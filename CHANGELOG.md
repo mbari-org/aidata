@@ -2,6 +2,54 @@
 
 <!-- version list -->
 
+## v1.80.0 (2026-10-01)
+
+### Bug Fixes
+
+- Build image URLs from the path after the config mount
+  ([`acd1e17`](https://github.com/mbari-org/aidata/commit/acd1e1740011d2f50a3eefd60b8c307e0007b797))
+
+- Continue media load when the input path is outside the mount
+  ([`7d87aff`](https://github.com/mbari-org/aidata/commit/7d87aff7fb1322d8f0c09d377f65ec1f5828bd0c))
+
+- Load image filenames from Planktivore parquet files
+  ([`d82f248`](https://github.com/mbari-org/aidata/commit/d82f24855d1703684c71244b9f563ea23dbfae65))
+
+- Stop image load when a reference URL returns 301
+  ([`c1bdc13`](https://github.com/mbari-org/aidata/commit/c1bdc13ed7dbde985521c735a14b113c540871a2))
+
+### Build System
+
+- **deps**: Bump pyarrow from 15.0.2 to 25.0.1
+  ([`58294ad`](https://github.com/mbari-org/aidata/commit/58294ad61ebcd2a541f778df98aca99be93c9c77))
+
+- **deps**: Bump the actions group across 1 directory with 2 updates
+  ([`07c17e5`](https://github.com/mbari-org/aidata/commit/07c17e5f4a6240cb5fbb9298c33eb125993bd2d7))
+
+- **deps**: Bump the python-minor-and-patch group across 1 directory with 6 updates (#89)
+  ([#89](https://github.com/mbari-org/aidata/pull/89),
+  [`9f808c5`](https://github.com/mbari-org/aidata/commit/9f808c51c1e1385350b52917918b12091f5b1a7c))
+
+- **deps**: Pin tator to 1.2.3
+  ([`0292853`](https://github.com/mbari-org/aidata/commit/0292853466d92c5b2f2181b2d98a2766fca7f8e5))
+
+### Features
+
+- Add optional base path for image reference URLs
+  ([`4a042bd`](https://github.com/mbari-org/aidata/commit/4a042bdf270726cc4b1e6a601a2244632cf0f6fe))
+
+- Limit box media lookup to a Tator section
+  ([`cb949f9`](https://github.com/mbari-org/aidata/commit/cb949f9d06be8cc21be2e6e792e06079385ced0c))
+
+- Load localizations from ISIIS parquet files
+  ([`ff0cb4d`](https://github.com/mbari-org/aidata/commit/ff0cb4d53652686cdd1bc04f49898f40c76a7cbb))
+
+### Performance Improvements
+
+- Skip filename timestamp parsing on image dry run
+  ([`c8e08ab`](https://github.com/mbari-org/aidata/commit/c8e08ab494fcf311a714da9d065584c969879b8e))
+
+
 ## v1.79.6 (2026-09-12)
 
 ### Bug Fixes
