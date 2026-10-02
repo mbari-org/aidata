@@ -6,7 +6,7 @@ import json
 import os
 import time
 from tempfile import TemporaryDirectory
-from typing import List, Any, Dict
+from typing import Any, Dict, Iterable, Iterator, List, Set
 from urllib.parse import urlparse
 
 from moviepy import VideoFileClip
@@ -24,6 +24,13 @@ from mbari_aidata.logger import err, debug, info
 from mbari_aidata.plugins.loaders.tator.common import find_media_type, init_api_project
 
 FRAGMENT_VERSION=2
+
+# Page size for reading media. Cursor pages stay small so a project with
+# millions of media does not depend on large OFFSET queries.
+MEDIA_PAGE_SIZE = 1000
+# Create size matches tator.util.chunked_create. Specs are flushed at this
+# size so a multi-million load does not hold every spec in memory.
+MEDIA_CREATE_BATCH = 500
 
 def gen_fragment_info(video_path, output_file, **kwargs: Any) -> None:
     """
@@ -87,6 +94,133 @@ def gen_fragment_info(video_path, output_file, **kwargs: Any) -> None:
         json.dump(segment_info, f, indent=4)
 
 
+def iter_media_pages(
+        api: tator.api,
+        project_id: int,
+        media_type: int,
+        *,
+        page_size: int = MEDIA_PAGE_SIZE,
+        **filters,
+) -> Iterator[list]:
+    """Yield media pages ordered by id.
+
+    Uses the ``after`` id cursor instead of start/stop offsets. Offset paging
+    asks the server to walk every preceding row, which does not scale to
+    millions of media.
+
+    :param api: Tator API
+    :param project_id: Project id
+    :param media_type: Media type id
+    :param page_size: Maximum media objects per page
+    :param filters: Extra get_media_list filters, such as section
+    """
+    after_id = None
+    while True:
+        query = dict(filters)
+        query["type"] = media_type
+        query["stop"] = page_size
+        query["sort_by"] = ["$id"]
+        if after_id is not None:
+            query["after"] = after_id
+        page = api.get_media_list(project=project_id, **query)
+        if not page:
+            return
+        yield page
+        page_max = max(media.id for media in page)
+        if after_id is not None and page_max <= after_id:
+            err("Media page did not advance; stopping to avoid a repeat scan")
+            return
+        if len(page) < page_size:
+            return
+        after_id = page_max
+
+
+def existing_media_names(
+        api: tator.api,
+        project_id: int,
+        media_type: int,
+        names: Iterable[str],
+        *,
+        page_size: int = MEDIA_PAGE_SIZE,
+        **filters,
+) -> Set[str]:
+    """Return the subset of *names* that already exist as media in the project.
+
+    Pages existing media by id and stops once every requested name has been
+    found. Matching is case-insensitive, matching Tator's name filter.
+
+    :param api: Tator API
+    :param project_id: Project id
+    :param media_type: Media type id
+    :param names: File names to look for
+    :param page_size: Maximum media objects per page
+    :param filters: Extra get_media_list filters, such as section
+    :return: Names from *names* that are already loaded
+    """
+    wanted = {}
+    for name in names:
+        wanted.setdefault(name.casefold(), name)
+    if not wanted:
+        return set()
+
+    media_count = api.get_media_count(project=project_id, type=media_type, **filters)
+    if media_count == 0:
+        return set()
+
+    info(f"Checking {len(wanted)} file names against {media_count} existing media")
+    found: Set[str] = set()
+    scanned = 0
+    for page in iter_media_pages(api, project_id, media_type, page_size=page_size, **filters):
+        for media in page:
+            scanned += 1
+            original = wanted.pop((media.name or "").casefold(), None)
+            if original is not None:
+                found.add(original)
+        info(
+            f"Scanned {scanned} media; {len(found)} already loaded, "
+            f"{len(wanted)} still to load"
+        )
+        if not wanted:
+            break
+    return found
+
+
+class SpecBatcher:
+    """Flush media specs through a create function in fixed-size batches."""
+
+    def __init__(self, create_fn, batch_size: int = MEDIA_CREATE_BATCH):
+        self._create = create_fn
+        self._batch_size = batch_size
+        self._pending: List[dict] = []
+        self.ids: List[int] = []
+        self.failed = False
+
+    def add(self, spec: dict) -> bool:
+        """Queue one spec and create a batch when the queue is full.
+
+        :return: False when a create call failed
+        """
+        self._pending.append(spec)
+        if len(self._pending) >= self._batch_size:
+            return self.flush()
+        return True
+
+    def flush(self) -> bool:
+        """Create any queued specs.
+
+        :return: False when a create call failed
+        """
+        if self.failed or not self._pending:
+            return not self.failed
+        created = self._create(self._pending)
+        if created is None or len(created) != len(self._pending):
+            self.failed = True
+            return False
+        self.ids.extend(created)
+        self._pending = []
+        return True
+
+
 def get_media_ids(
         api: tator.api,
         project: Project,
@@ -94,7 +228,11 @@ def get_media_ids(
         **kwargs
         ) -> Dict[str, int]:
         """
-        `Get the media ids that match the filter
+        Get the media ids that match the filter.
+
+        Results are read in id-cursor pages so projects with millions of media
+        are not loaded with a single request or a large offset.
+
         :param api:  tator api
         :param kwargs:  filter arguments to pass to the get_media_list function
         :return: name to id mapping
@@ -104,16 +242,11 @@ def get_media_ids(
         if media_count == 0:
             err(f"No media found in project {project.name}")
             return media_map
-        batch_size = min(1000, media_count)
-        debug(f"Searching through {media_count} medias with {kwargs}")
-        for i in range(0, media_count, batch_size):
-            media = api.get_media_list(
-                project=project.id, start=i, stop=i + batch_size, type=image_type, **kwargs
-            )
-            info(f"Found {len(media)} medias with {kwargs} {i} {i + batch_size}")
-            for m in media:
-                media_map[m.name] = m.id
-                debug(f"Found {len(media_map)} medias with {kwargs}")
+        info(f"Searching through {media_count} medias with {kwargs}")
+        for page in iter_media_pages(api, project.id, image_type, **kwargs):
+            for media in page:
+                media_map[media.name] = media.id
+            info(f"Indexed {len(media_map)} of {media_count} medias")
         return media_map
 
 
@@ -275,7 +408,7 @@ def get_video_metadata(video_url_or_path: Path) -> dict or None:
         return None
 
 
-def load_bulk_images(project_id: int, api: tatorapi, specs: list) -> List[int]:
+def load_bulk_images(project_id: int, api: tatorapi, specs: list) -> List[int] | None:
     """
     Load a list of media objects to the database.
     :param project_id: The project ID
@@ -284,7 +417,9 @@ def load_bulk_images(project_id: int, api: tatorapi, specs: list) -> List[int]:
     :return: List of media IDs
     """
     try:
-        chunk_size = min(500, len(specs))
+        if len(specs) == 0:
+            return []
+        chunk_size = min(MEDIA_CREATE_BATCH, len(specs))
         media_ids = []
         info(f"Creating {len(specs)} media images")
         media_ids += [
@@ -296,7 +431,7 @@ def load_bulk_images(project_id: int, api: tatorapi, specs: list) -> List[int]:
         return media_ids
     except Exception as e:
         err(f"Error creating media images {e}")
-        return []
+        return None
 
 
 def load(project_id: int, api: tatorapi, media_path: str, spec: Dict, **kwargs: Any) -> int or None:

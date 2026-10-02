@@ -25,8 +25,11 @@ version = click.option(
     type=str,
     help="Version to load data or download from. Must be provided for loading. Download will default to downloading and merging all versions if not specified.",
 )
-duplicates = click.option("--check-duplicates", is_flag=True,
-                          help="Check if the images are already loaded to avoid duplicates")
+duplicates = click.option(
+    "--check-duplicates",
+    is_flag=True,
+    help="Skip media already in the project and load the remainder. Image and video loads do this automatically.",
+)
 disable_ssl_verify = click.option(
     "--disable-ssl-verify",
     is_flag=True,

@@ -17,14 +17,42 @@ class MediaHelper:
     attributes: dict
 
 def check_duplicate_media(api: TatorApi, project_id:int, media_type:int, df_media: pd.DataFrame) -> List[str]:
-    """Check if the images are already loaded to avoid duplicates"""
-    media_names = []
-    for index, row in df_media.iterrows():
-        name = Path(row["media_path"]).name
-        media = api.get_media_list(project_id, name=name, type=media_type)
-        if media:
-            media_names.append(name)
-    return media_names
+    """Return file names from *df_media* that are already loaded.
+
+    Existing media are read in id-cursor pages, not one request per file, so
+    the check can run against millions of media.
+    """
+    from mbari_aidata.plugins.loaders.tator.media import existing_media_names
+
+    if len(df_media) == 0 or "media_path" not in df_media.columns:
+        return []
+    names = (Path(path).name for path in df_media["media_path"].tolist())
+    found = existing_media_names(api, project_id, media_type, names)
+    return sorted(found)
+
+
+def exclude_loaded_media(api: TatorApi, project_id: int, media_type: int, df_media: pd.DataFrame) -> pd.DataFrame:
+    """Drop rows whose file name is already media in the project.
+
+    A later load can call this and create only the remainder.
+    """
+    if len(df_media) == 0:
+        return df_media
+    duplicates = check_duplicate_media(api, project_id, media_type, df_media)
+    if not duplicates:
+        info("No existing media matched this load")
+        return df_media
+
+    duplicate_set = set(duplicates)
+    info(f"Skipping {len(duplicate_set)} media already in the project")
+    for name in duplicates[:20]:
+        info(f"  Skipping duplicate: {name}")
+    if len(duplicate_set) > 20:
+        info(f"  ... and {len(duplicate_set) - 20} more")
+
+    kept = df_media.loc[~df_media["media_path"].map(lambda path: Path(path).name in duplicate_set)]
+    info(f"{len(kept)} media left to load")
+    return kept
 
 def get_media_attributes(
     config_dict: Dict,

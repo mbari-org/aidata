@@ -22,7 +22,7 @@ def load_video(token: str, disable_ssl_verify: bool, config: str, dry_run: bool,
 
     import shutil
 
-    from mbari_aidata.commands.load_common import check_mounts, check_duplicate_media, get_media_attributes
+    from mbari_aidata.commands.load_common import check_mounts, exclude_loaded_media, get_media_attributes
     from mbari_aidata.logger import info, err, create_logger_file
     from mbari_aidata.plugins.loaders.tator.attribute_utils import format_attributes
     from mbari_aidata.plugins.loaders.tator.media import load_media, upload_media
@@ -85,14 +85,13 @@ def load_video(token: str, disable_ssl_verify: bool, config: str, dry_run: bool,
         info(f'Dry run: Found {len(df_media)} media file to load')
         return len(df_media)
 
+    # A later run skips filenames already stored and loads only the remainder.
     if check_duplicates:
-        duplicates = check_duplicate_media(api, tator_project.id, media_type.id, df_media)
-        if len(duplicates) > 0:
-            err("Video(s) already loaded")
-            info("==== Duplicates ====")
-            for d in duplicates:
-                info(d)
-            return -1
+        info("Duplicate check requested; video loads always skip media already in the project")
+    df_media = exclude_loaded_media(api, tator_project.id, media_type.id, df_media)
+    if len(df_media) == 0:
+        info("All videos were already loaded; nothing to load")
+        return 0
 
     info(f'Found {len(df_media)} media file to load')
     num_loaded = 0
@@ -101,17 +100,6 @@ def load_video(token: str, disable_ssl_verify: bool, config: str, dry_run: bool,
         info(f'Loading {video_path}')
         if not video_path.exists():
             info(f"Video path {video_path} does not exist")
-            continue
-
-        # Check if the video is already loaded by its name
-        attribute_media_filter = [f"$name::{video_path.name}"]
-        medias = api.get_media_list(
-            project=tator_project.id,
-            type=media_type.id,
-            attribute=attribute_media_filter,
-        )
-        if len(medias) == 1:
-            info(f"Video {video_path.name} already loaded")
             continue
 
         # All video requires iso_start_datetime

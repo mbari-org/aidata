@@ -73,10 +73,16 @@ def load_images(token: str, disable_ssl_verify: bool, config: str, dry_run: bool
     if base_path is not None and upload:
         raise click.UsageError("--base-path is only valid when --upload is not used")
 
-    from mbari_aidata.commands.load_common import check_mounts, check_duplicate_media, get_media_attributes
+    from mbari_aidata.commands.load_common import check_mounts, exclude_loaded_media, get_media_attributes
     from mbari_aidata.logger import create_logger_file, info, err
     from mbari_aidata.plugins.extractors.media_types import MediaType
-    from mbari_aidata.plugins.loaders.tator.media import gen_spec as gen_media_spec, load_bulk_images, upload_image
+    from mbari_aidata.plugins.loaders.tator.media import (
+        MEDIA_CREATE_BATCH,
+        SpecBatcher,
+        gen_spec as gen_media_spec,
+        load_bulk_images,
+        upload_image,
+    )
     from mbari_aidata.plugins.module_utils import load_module
     from mbari_aidata.plugins.loaders.tator.attribute_utils import format_attributes
     from mbari_aidata.plugins.loaders.tator.common import init_api_project, find_media_type, init_yaml_config
@@ -133,17 +139,13 @@ def load_images(token: str, disable_ssl_verify: bool, config: str, dry_run: bool
             info(f"Dry run - not loading {len(df_media)} media")
             return 0
 
+        # A later run skips filenames already stored and loads only the remainder.
         if check_duplicates:
-            duplicates = check_duplicate_media(api, tator_project.id, media_type.id, df_media)
-            if len(duplicates) > 0:
-                duplicate_set = set(duplicates)
-                info(f"Skipping {len(duplicates)} image(s) already in project")
-                for d in duplicates:
-                    info(f"  Skipping duplicate: {d}")
-                df_media = df_media[~df_media["media_path"].apply(lambda p: Path(p).name in duplicate_set)]
-                if len(df_media) == 0:
-                    info("All images were duplicates; nothing to load")
-                    return 0
+            info("Duplicate check requested; image loads always skip media already in the project")
+        df_media = exclude_loaded_media(api, tator_project.id, media_type.id, df_media)
+        if len(df_media) == 0:
+            info("All images were already loaded; nothing to load")
+            return 0
 
         if upload:
             # Fetch attribute mapping from Tator so metadata (depth, iso_datetime, …) is forwarded
@@ -169,10 +171,21 @@ def load_images(token: str, disable_ssl_verify: bool, config: str, dry_run: bool
             info(f"Uploaded {num_loaded} images")
             return num_loaded
 
-        # Reference-only path: build URL specs and bulk-create media records
-        specs = []
+        # Reference-only path: build URL specs and create them in batches so a
+        # load of millions of images does not hold every spec before the first create.
+        def create_specs(specs):
+            return load_bulk_images(tator_project.id, api, specs)
+
+        batcher = SpecBatcher(create_specs, batch_size=MEDIA_CREATE_BATCH)
         num_checked = 0
-        for index, row in tqdm(df_media.iterrows(), total=len(df_media), desc="Creating image specs"):
+        # Materialize one create-batch of rows at a time so a multi-million
+        # frame is not copied into a second full list of dicts.
+        row_batches = (
+            df_media.iloc[start:start + MEDIA_CREATE_BATCH].to_dict("records")
+            for start in range(0, len(df_media), MEDIA_CREATE_BATCH)
+        )
+        rows = (row for batch in row_batches for row in batch)
+        for row in tqdm(rows, total=len(df_media), desc="Creating image specs"):
             try:
                 image_url = reference_image_url(row["media_path"], media.base_url, media.mount_path)
             except ValueError as e:
@@ -200,27 +213,25 @@ def load_images(token: str, disable_ssl_verify: bool, config: str, dry_run: bool
                     err(f"Image {row.media_path} does not exist")
                     return -1
 
-            info("Formatting attributes")
-            attributes = format_attributes(row.to_dict(), media.attributes)
+            attributes = format_attributes(row, media.attributes)
 
-            specs.append(
-                gen_media_spec(
-                    file_loc=row.media_path,
-                    file_url=image_url,
-                    type_id=media_type.id,
-                    section=section,
-                    attributes=attributes,
-                    base_url=media.base_url,
-                )
+            spec = gen_media_spec(
+                file_loc=row["media_path"],
+                file_url=image_url,
+                type_id=media_type.id,
+                section=section,
+                attributes=attributes,
+                base_url=media.base_url,
             )
+            if not batcher.add(spec):
+                err("Error loading images")
+                return -1
 
-        info(f"Loading {len(specs)} images")
-        ids = load_bulk_images(tator_project.id, api, specs)
-        if ids is None:
-            err(f"Error loading images")
+        if not batcher.flush():
+            err("Error loading images")
             return -1
-        info(f"Loaded {len(ids)} images")
-        return len(ids)
+        info(f"Loaded {len(batcher.ids)} images")
+        return len(batcher.ids)
     except Exception as e:
         err(f"Error loading images: {e}")
         raise e
