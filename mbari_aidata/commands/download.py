@@ -45,6 +45,16 @@ DEFAULT_BASE_DIR = Path.home() / "mbari_aidata" / "datasets"
 )
 @click.option("--crop-roi", is_flag=True, help="True to download the rois cropped from the original images/video.")
 @click.option(
+    "--delete",
+    "--clean",
+    "delete_full_frames",
+    is_flag=True,
+    help=(
+        "Delete downloaded full-frame images after ROI crops are created (requires --crop-roi). "
+        "Full frames are kept by default so they are not downloaded again."
+    ),
+)
+@click.option(
     "--external-video-root",
     type=Path,
     default=None,
@@ -89,6 +99,7 @@ def download(
     labels: str,
     concepts: str,
     crop_roi: bool,
+    delete_full_frames: bool,
     external_video_root: Optional[Path],
     resize: int,
     fill: Optional[str],
@@ -121,6 +132,8 @@ def download(
                 )
         if fill is not None and not crop_roi:
             raise click.UsageError("--fill requires --crop-roi")
+        if delete_full_frames and not crop_roi:
+            raise click.UsageError("--delete/--clean requires --crop-roi")
         base_path.mkdir(exist_ok=True, parents=True)
         # Load the configuration file
         config_dict = init_yaml_config(config)
@@ -202,6 +215,7 @@ def download(
             coco=coco,
             cifar=cifar,
             crop_roi=crop_roi,
+            delete_full_frames=delete_full_frames,
             external_video_root=external_video_root,
             resize=resize,
             fill=fill,
