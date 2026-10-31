@@ -40,6 +40,30 @@ def _read_state_dict(model_dir: str) -> dict:
     raise ValueError(f"No model.safetensors or pytorch_model.bin in {model_dir}")
 
 
+def _align_module_prefixes(state: dict, expected: set) -> dict:
+    """Rename saved keys that differ from the model's keys only by a leading module path.
+
+    Transformers versions nest modules differently, e.g. DINOv3 layers are "layer.N" in 4.x
+    and "model.layer.N" in 5.x. from_pretrained renames these itself; load_state_dict does not.
+    A key is renamed only when exactly one unclaimed expected key matches it.
+    """
+    unexpected = [k for k in state if k not in expected]
+    unclaimed = expected - set(state)
+    if not unexpected or not unclaimed:
+        return state
+
+    renamed = {}
+    for key in unexpected:
+        candidates = [m for m in unclaimed if m.endswith("." + key) or key.endswith("." + m)]
+        if len(candidates) == 1:
+            renamed[key] = candidates[0]
+            unclaimed.discard(candidates[0])
+
+    if renamed:
+        info(f"Renamed {len(renamed)} backbone weight keys to match the installed transformers module layout")
+    return {renamed.get(k, k): v for k, v in state.items()}
+
+
 def _load_backbone_classifier(model_dir: str, config: dict):
     """Rebuild the fine-tuned backbone and drop the classification head.
 
@@ -81,6 +105,7 @@ def _load_backbone_classifier(model_dir: str, config: dict):
     if foreign:
         raise ValueError(f"Unexpected weight keys in {model_dir}: {foreign[:8]}")
 
+    backbone_state = _align_module_prefixes(backbone_state, set(model.state_dict()))
     missing, unexpected = model.load_state_dict(backbone_state, strict=False)
     if missing or unexpected:
         raise ValueError(

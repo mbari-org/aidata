@@ -8,6 +8,7 @@ import pytest
 import torch
 
 from mbari_aidata.predictors.process_vits import (
+    _align_module_prefixes,
     _is_backbone_classifier,
     _load_backbone_classifier,
     _read_state_dict,
@@ -26,6 +27,9 @@ class _Model:
         self.state = None
         self.missing = missing or []
         self.unexpected = unexpected or []
+
+    def state_dict(self):
+        return {}
 
     def load_state_dict(self, state, strict=False):
         self.state = state
@@ -189,6 +193,65 @@ def test_backbone_classifier_rejects_incomplete_saves(tmp_path: Path, monkeypatc
     _patch_automodel(monkeypatch, mismatched, {})
     with pytest.raises(ValueError, match="do not match the architecture"):
         _load_backbone_classifier(str(tmp_path), json.loads((tmp_path / "config.json").read_text()))
+
+
+def test_align_module_prefixes_adds_and_strips_nesting():
+    """Test that keys differing only by a leading module path are renamed in both directions."""
+    weight = torch.ones(1)
+    added = _align_module_prefixes(
+        {"embeddings.cls_token": weight, "layer.0.norm1.weight": weight},
+        {"embeddings.cls_token", "model.layer.0.norm1.weight"},
+    )
+    assert set(added) == {"embeddings.cls_token", "model.layer.0.norm1.weight"}
+
+    stripped = _align_module_prefixes(
+        {"model.layer.0.norm1.weight": weight},
+        {"layer.0.norm1.weight"},
+    )
+    assert set(stripped) == {"layer.0.norm1.weight"}
+
+
+def test_align_module_prefixes_skips_ambiguous_matches():
+    """Test that a key matching more than one expected key is left alone."""
+    state = {"norm.weight": torch.ones(1)}
+    aligned = _align_module_prefixes(state, {"a.norm.weight", "b.norm.weight"})
+    assert set(aligned) == {"norm.weight"}
+
+
+@pytest.mark.parametrize("saved_prefix", ["model.", ""])
+def test_load_vision_model_loads_dinov3_across_transformers_layouts(tmp_path: Path, saved_prefix: str):
+    """Test that a DINOv3 BackboneClassifier loads whether layers were saved as layer.N or model.layer.N."""
+    transformers = pytest.importorskip("transformers")
+    from transformers import AutoConfig, AutoModel
+
+    backbone_config = {
+        "model_type": "dinov3_vit",
+        "hidden_size": 32,
+        "num_hidden_layers": 2,
+        "num_attention_heads": 2,
+        "intermediate_size": 64,
+    }
+    try:
+        reference = AutoModel.from_config(
+            AutoConfig.for_model("dinov3_vit", **{k: v for k, v in backbone_config.items() if k != "model_type"})
+        )
+    except (KeyError, ValueError):
+        pytest.skip(f"transformers {transformers.__version__} has no dinov3_vit")
+
+    saved = {}
+    for key, value in reference.state_dict().items():
+        bare = key[len("model.") :] if key.startswith("model.layer.") else key
+        if bare.startswith("layer."):
+            bare = saved_prefix + bare
+        saved["backbone." + bare] = value.clone()
+    saved["classifier.weight"] = torch.zeros(3, 32)
+    _write_bin(tmp_path, saved)
+    _write_config(tmp_path, {"model_type": "backbone_classifier", "backbone_config": backbone_config})
+
+    loaded = load_vision_model(str(tmp_path))
+
+    for key, value in reference.state_dict().items():
+        assert torch.equal(loaded.state_dict()[key], value)
 
 
 def test_read_state_dict_loads_pytorch_bin(tmp_path: Path):
