@@ -1,6 +1,7 @@
 # mbari_aidata, Apache-2.0 license
 # Filename: predictors/process_vits.py
-# Description: Process images with Vision Transformer (ViT) model and store/search in Redis
+# Description: Process images with a vision backbone, including BackboneClassifier fine-tunes, and store or search embeddings in Redis
+import json
 import os
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from typing import List, Tuple
@@ -9,10 +10,124 @@ import numpy as np
 import redis
 import torch
 from PIL import Image
-from transformers import AutoModel, AutoImageProcessor  # type: ignore
+from transformers import AutoConfig, AutoImageProcessor, AutoModel  # type: ignore
 
 from mbari_aidata.logger import info
 from mbari_aidata.predictors.vector_similarity import VectorSimilarity
+
+
+def _is_backbone_classifier(config: dict) -> bool:
+    """True for a fine-tune saved as a plain classification wrapper, not an HF architecture.
+
+    DINOv3 has no AutoModelForImageClassification class, so those runs save a
+    BackboneClassifier: config.json says model_type "backbone_classifier" and the
+    weights are stored under a "backbone." prefix. AutoModel cannot resolve that type.
+    """
+    if config.get("model_type") == "backbone_classifier":
+        return True
+    return "BackboneClassifier" in (config.get("architectures") or [])
+
+
+def _read_state_dict(model_dir: str) -> dict:
+    safe = os.path.join(model_dir, "model.safetensors")
+    binary = os.path.join(model_dir, "pytorch_model.bin")
+    if os.path.isfile(safe):
+        from safetensors.torch import load_file
+
+        return load_file(safe)
+    if os.path.isfile(binary):
+        return torch.load(binary, map_location="cpu", weights_only=True)
+    raise ValueError(f"No model.safetensors or pytorch_model.bin in {model_dir}")
+
+
+def _align_module_prefixes(state: dict, expected: set) -> dict:
+    """Rename saved keys that differ from the model's keys only by a leading module path.
+
+    Transformers versions nest modules differently, e.g. DINOv3 layers are "layer.N" in 4.x
+    and "model.layer.N" in 5.x. from_pretrained renames these itself; load_state_dict does not.
+    A key is renamed only when exactly one unclaimed expected key matches it.
+    """
+    unexpected = [k for k in state if k not in expected]
+    unclaimed = expected - set(state)
+    if not unexpected or not unclaimed:
+        return state
+
+    renamed = {}
+    for key in unexpected:
+        candidates = [m for m in unclaimed if m.endswith("." + key) or key.endswith("." + m)]
+        if len(candidates) == 1:
+            renamed[key] = candidates[0]
+            unclaimed.discard(candidates[0])
+
+    if renamed:
+        info(f"Renamed {len(renamed)} backbone weight keys to match the installed transformers module layout")
+    return {renamed.get(k, k): v for k, v in state.items()}
+
+
+def _load_backbone_classifier(model_dir: str, config: dict):
+    """Rebuild the fine-tuned backbone and drop the classification head.
+
+    The head is unused here: embeddings are the backbone CLS token. Leaving the
+    wrapper's model_type in place makes AutoModel raise, and loading the state dict
+    without stripping the "backbone." prefix would keep randomly initialized weights.
+    """
+    backbone_config = config.get("backbone_config")
+    if backbone_config:
+        backbone_config = dict(backbone_config)
+        model_type = backbone_config.pop("model_type", None)
+        if not model_type:
+            raise ValueError(f"backbone_config in {model_dir}/config.json has no model_type")
+        model = AutoModel.from_config(AutoConfig.for_model(model_type, **backbone_config))
+        info(f"Rebuilt a {model_type} backbone from {model_dir}")
+    elif config.get("base_model"):
+        model = AutoModel.from_pretrained(config["base_model"])
+        info(f"Rebuilt the backbone from {config['base_model']}")
+    else:
+        raise ValueError(
+            f"{model_dir}/config.json has neither backbone_config nor base_model, so the architecture cannot be reconstructed."
+        )
+
+    state = _read_state_dict(model_dir)
+    backbone_state = {}
+    foreign = []
+    for key, value in state.items():
+        if key.startswith("backbone."):
+            backbone_state[key[len("backbone.") :]] = value
+        elif key.startswith(("classifier.", "dropout.")):
+            continue
+        else:
+            foreign.append(key)
+
+    if not backbone_state:
+        raise ValueError(
+            f"No backbone weights in {model_dir}; keys start with {sorted({k.split('.')[0] for k in state})}"
+        )
+    if foreign:
+        raise ValueError(f"Unexpected weight keys in {model_dir}: {foreign[:8]}")
+
+    backbone_state = _align_module_prefixes(backbone_state, set(model.state_dict()))
+    missing, unexpected = model.load_state_dict(backbone_state, strict=False)
+    if missing or unexpected:
+        raise ValueError(
+            f"Backbone weights in {model_dir} do not match the architecture in backbone_config "
+            f"(missing={len(missing)}, unexpected={len(unexpected)})."
+        )
+    return model
+
+
+def load_vision_model(model_name: str):
+    """Load a vision backbone, including BackboneClassifier fine-tunes AutoModel cannot open."""
+    config_path = os.path.join(model_name, "config.json")
+    if os.path.isfile(config_path):
+        with open(config_path, encoding="utf-8") as f:
+            config = json.load(f)
+        if _is_backbone_classifier(config):
+            info(f"{model_name} is a BackboneClassifier save; loading its backbone and dropping the head")
+            model = _load_backbone_classifier(model_name, config)
+            # Exemplar vectors are tagged with this path. from_config leaves it empty.
+            model.config._name_or_path = model_name
+            return model
+    return AutoModel.from_pretrained(model_name)
 
 
 class ViTWrapper:
@@ -26,7 +141,7 @@ class ViTWrapper:
         self.r = r
         self.batch_size = batch_size
         self.processor = AutoImageProcessor.from_pretrained(model_name)
-        self.model = AutoModel.from_pretrained(model_name)
+        self.model = load_vision_model(model_name)
         self.vs = VectorSimilarity(r, vector_dimensions=self.vector_dimensions, reset=reset)
 
         # Load the model and processor
