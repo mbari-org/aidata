@@ -2,6 +2,15 @@
 
 <!-- version list -->
 
+## v1.81.0 (2026-10-31)
+
+### Features
+
+- Load BackboneClassifier fine-tunes for exemplar embeddings (#102)
+  ([#102](https://github.com/mbari-org/aidata/pull/102),
+  [`03dd485`](https://github.com/mbari-org/aidata/commit/03dd485b1b524781b3006c21ed5cd738af93b95b))
+
+
 ## v1.80.0 (2026-10-01)
 
 ### Bug Fixes
