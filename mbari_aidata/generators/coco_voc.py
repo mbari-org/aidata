@@ -75,6 +75,7 @@ def download(
     coco: bool = False,
     cifar: bool = False,
     crop_roi: bool = False,
+    delete_full_frames: bool = False,
     external_video_root: Optional[Path] = None,
     resize: int = 0,
     fill: Optional[str] = None,
@@ -105,6 +106,8 @@ def download(
     :param coco: (optional) True if the dataset should also be stored in COCO format
     :param cifar: (optional) True if the dataset should also be stored in CIFAR format
     :param crop_roi: (optional) True if the dataset should crop the ROI from the original images
+    :param delete_full_frames: (optional) True to delete downloaded full-frame images after ROI crops
+        are created. Full frames are kept by default. Requires crop_roi.
     :param external_video_root: (optional) Directory containing source videos for ROI cropping. For a given
         Tator media item, the stem is matched and <stem>.mov is preferred, else <stem>.mp4.
     :param resize: (optional) Resize images to this size after cropping thems
@@ -772,14 +775,18 @@ def download(
 
                 json_content[yolo_path.as_posix()] = coco_localizations
 
-        # Remove downloaded image files that are redundant to crops
-        if crop_roi:
+        # Keep downloaded full-frame images by default so a later --crop-roi run can
+        # reuse them. --delete/--clean removes images that are redundant once crops exist.
+        # Source videos are left in place; YOLO and VOC outputs still reference them.
+        if crop_roi and delete_full_frames:
             for m in all_media:
                 if Path(m.name).suffix.lower() not in _VIDEO_EXTS:
                     local_file = media_path / m.name
                     if local_file.exists():
                         local_file.unlink()
                         debug(f"Removed {local_file} (redundant to crops)")
+        elif crop_roi:
+            info(f"Retaining downloaded full-frame media in {media_path}")
 
         # optionally create a CIFAR formatted dataset
         if cifar:

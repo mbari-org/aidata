@@ -1,6 +1,6 @@
 # mbari_aidata, Apache-2.0 license
 # Filename: tests/test_download.py
-# Description: Tests for dataset download CLI version filters
+# Description: Tests for dataset download CLI options
 
 from types import SimpleNamespace
 import sys
@@ -14,7 +14,7 @@ def _setup_download_mocks(monkeypatch, version_names):
     captured = {}
 
     def fake_download(*args, **kwargs):
-        captured["version_list"] = kwargs["version_list"]
+        captured.update(kwargs)
         return True
 
     fake_logger = SimpleNamespace(create_logger_file=lambda *args, **kwargs: None, info=lambda *args, **kwargs: None, exception=lambda *args, **kwargs: None)
@@ -75,3 +75,111 @@ def test_download_exclude_versions_filters_api_versions(monkeypatch, tmp_path):
 
     assert result.exit_code == 0
     assert captured["version_list"] == ["v1"]
+
+
+def test_download_delete_requires_crop_roi():
+    """Test that --delete is rejected unless --crop-roi is set."""
+    runner = CliRunner()
+    result = runner.invoke(
+        download,
+        [
+            "--token",
+            "token",
+            "--config",
+            "config.yml",
+            "--delete",
+        ],
+    )
+
+    assert result.exit_code == 2
+    assert "--delete/--clean requires --crop-roi" in result.output
+
+
+def test_download_clean_requires_crop_roi():
+    """Test that --clean is rejected unless --crop-roi is set."""
+    runner = CliRunner()
+    result = runner.invoke(
+        download,
+        [
+            "--token",
+            "token",
+            "--config",
+            "config.yml",
+            "--clean",
+        ],
+    )
+
+    assert result.exit_code == 2
+    assert "--delete/--clean requires --crop-roi" in result.output
+
+
+def test_download_crop_roi_keeps_full_frames_by_default(monkeypatch, tmp_path):
+    """Test that --crop-roi keeps full-frame media unless --delete or --clean is set."""
+    captured = _setup_download_mocks(monkeypatch, version_names=["v1"])
+    runner = CliRunner()
+    result = runner.invoke(
+        download,
+        [
+            "--token",
+            "token",
+            "--config",
+            "config.yml",
+            "--version",
+            "v1",
+            "--crop-roi",
+            "--base-path",
+            str(tmp_path),
+        ],
+    )
+
+    assert result.exit_code == 0
+    assert captured["crop_roi"] is True
+    assert captured["delete_full_frames"] is False
+
+
+def test_download_delete_requests_full_frame_removal(monkeypatch, tmp_path):
+    """Test that --delete with --crop-roi asks the generator to remove full frames."""
+    captured = _setup_download_mocks(monkeypatch, version_names=["v1"])
+    runner = CliRunner()
+    result = runner.invoke(
+        download,
+        [
+            "--token",
+            "token",
+            "--config",
+            "config.yml",
+            "--version",
+            "v1",
+            "--crop-roi",
+            "--delete",
+            "--base-path",
+            str(tmp_path),
+        ],
+    )
+
+    assert result.exit_code == 0
+    assert captured["delete_full_frames"] is True
+
+
+def test_download_clean_requests_full_frame_removal(monkeypatch, tmp_path):
+    """Test that --clean with --crop-roi asks the generator to remove full frames."""
+    captured = _setup_download_mocks(monkeypatch, version_names=["v1"])
+    runner = CliRunner()
+    result = runner.invoke(
+        download,
+        [
+            "--token",
+            "token",
+            "--config",
+            "config.yml",
+            "--version",
+            "v1",
+            "--crop-roi",
+            "--clean",
+            "--base-path",
+            str(tmp_path),
+        ],
+    )
+
+    assert result.exit_code == 0
+    assert captured["delete_full_frames"] is True
