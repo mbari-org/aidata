@@ -78,6 +78,7 @@ def download(
     external_video_root: Optional[Path] = None,
     resize: int = 0,
     fill: Optional[str] = None,
+    concurrent_localizations: bool = False,
 ) -> bool:
     """
     Download a dataset based on a version tag for training
@@ -109,6 +110,9 @@ def download(
         Tator media item, the stem is matched and <stem>.mov is preferred, else <stem>.mp4.
     :param resize: (optional) Resize images to this size after cropping thems
     :param fill: (optional) Fill color (``black`` or ``white``) for squaring ROI crops near image edges
+    :param concurrent_localizations: (optional) True to also include every localization in the same version(s) that shares a
+        frame with a selected localization, even if it fails the label, concept, verified, score, saliency,
+        generator, or group filters. Gives full per-frame coverage for object detection training.
     :return: True if the dataset was created successfully, False otherwise
     """
     try:
@@ -360,28 +364,70 @@ def download(
                     if l.media not in localizations_by_media_id.keys():
                         continue
 
-                    # Override the score if more than one version is being used for verified labels.
-                    # This helps propagate the human verified label via NMS
-                    if len(version_ids) > 1 and l.attributes.get("verified", False) == verified:
-                        l.attributes["score"] = 1
-
-                    # Only keep needed fields to reduce memory usage
-                    loc = tator.models.Localization(
-                        x=l.x,
-                        y=l.y,
-                        width=l.width,
-                        height=l.height,
-                        media=l.media,
-                        attributes=l.attributes,
-                        id=l.id,
-                        frame=l.frame,
-                        elemental_id=l.elemental_id,
-                    )
-                    if single_class:
-                        loc.attributes["Label"] = single_class
-
                     # Append the localization to the media
-                    localizations_by_media_id[l.media].append(loc)
+                    localizations_by_media_id[l.media].append(to_kept_localization(l))
+
+        def to_kept_localization(l: Localization) -> Localization:
+            # Override the score if more than one version is being used for verified labels.
+            # This helps propagate the human verified label via NMS
+            if len(version_ids) > 1 and l.attributes.get("verified", False) == verified:
+                l.attributes["score"] = 1
+
+            # Only keep needed fields to reduce memory usage
+            loc = tator.models.Localization(
+                x=l.x,
+                y=l.y,
+                width=l.width,
+                height=l.height,
+                media=l.media,
+                attributes=l.attributes,
+                id=l.id,
+                frame=l.frame,
+                elemental_id=l.elemental_id,
+            )
+            if single_class:
+                loc.attributes["Label"] = single_class
+            return loc
+
+        def add_concurrent_localizations():
+            # Add every localization that shares a frame with one already selected, ignoring the
+            # localization-level filters (labels, concepts, verified, score, saliency, generator, group).
+            # Detection models need every object in a frame boxed, or unlabeled objects become negatives.
+            # Only the version filter still applies.
+            frames_by_media_id = {}
+            seen_ids = set()
+            for media_id, locs in localizations_by_media_id.items():
+                if locs:
+                    frames_by_media_id[media_id] = {loc.frame or 0 for loc in locs}
+                    seen_ids.update(loc.id for loc in locs)
+
+            media_ids = list(frames_by_media_id.keys())
+            num_added = 0
+            for chunk_start in range(0, len(media_ids), 200):
+                chunk = media_ids[chunk_start : chunk_start + 200]
+                start = 0
+                while True:
+                    new_localizations = api.get_localization_list(
+                        project=project_id,
+                        media_id=chunk,
+                        version=version_ids,
+                        start=start,
+                        stop=start + 5000,
+                    )
+                    for l in new_localizations:
+                        if not isinstance(l, tator.models.Localization):
+                            continue
+                        if l.id in seen_ids or l.media not in frames_by_media_id:
+                            continue
+                        if (l.frame or 0) not in frames_by_media_id[l.media]:
+                            continue
+                        seen_ids.add(l.id)
+                        localizations_by_media_id[l.media].append(to_kept_localization(l))
+                        num_added += 1
+                    if len(new_localizations) < 5000:
+                        break
+                    start += 5000
+            info(f"Added {num_added} concurrent localizations across {len(media_ids)} media")
 
         if concepts_list:
             for concept in concepts_list:
@@ -391,6 +437,9 @@ def download(
                 query_localizations("Label", label, num_label_records[label])
         if not concepts_list and not labels_list:
             query_localizations("", "", num_records)
+
+        if concurrent_localizations:
+            add_concurrent_localizations()
 
         # For Image-type media that carry a Label/label attribute on the media itself
         # (image-level classification with no per-object box), inject a synthetic
@@ -425,26 +474,14 @@ def download(
         # Run NMS on the localizations for each media if there are multiple versions
         if len(version_ids) > 1:
             for media_id, locs in localizations_by_media_id.items():
-                # Group by frame, combine localizations per frame
-                df_localizations = pd.DataFrame([l.to_dict() for l in locs])
-                for frame, in_frame_loc in df_localizations.groupby('frame'):
-                    # Convert in_frame_loc to List[Localization]
-                    tmp_locs = []
-                    for _, row in in_frame_loc.iterrows():
-                        loc = Localization(
-                            x=row['x'],
-                            y=row['y'],
-                            width=row['width'],
-                            height=row['height'],
-                            media=row['media'],
-                            attributes=row.get('attributes', {}),
-                            id=row['id'],
-                            frame=row['frame'],
-                            elemental_id=row.get('elemental_id', None),
-                        )
-                        tmp_locs.append(loc)
-                    combined_locs = combine_localizations(tmp_locs)
-                    localizations_by_media_id[media_id] = combined_locs
+                # Group by frame and combine localizations per frame, keeping the results of every frame
+                locs_by_frame = defaultdict(list)
+                for loc in locs:
+                    locs_by_frame[loc.frame or 0].append(loc)
+                combined_locs = []
+                for frame in sorted(locs_by_frame):
+                    combined_locs.extend(combine_localizations(locs_by_frame[frame]))
+                localizations_by_media_id[media_id] = combined_locs
 
         # Count the number of labels and num_localizations
         num_localizations = 0

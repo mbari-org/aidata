@@ -68,6 +68,16 @@ DEFAULT_BASE_DIR = Path.home() / "mbari_aidata" / "datasets"
 @click.option("--save-score", is_flag=True, help="True to save score in YOLO output, False if not.")
 @click.option("--verified", is_flag=True, help="True if only download verified annotations.")
 @click.option("--unverified", is_flag=True, help="True if only download not verified annotations.")
+@click.option(
+    "--concurrent",
+    is_flag=True,
+    help=(
+        "Also download every localization in the same frame as a selected one, even those that fail "
+        "--labels, --concepts, --verified, --unverified, --min-score, --min-saliency, --max-saliency, "
+        "--generator or --group. Only --version still applies. Use with --voc for full-coverage "
+        "object detection datasets. Cannot be used with --crop-roi."
+    ),
+)
 @click.option("--single-class", type=str, help="Set to collapse all classes into a single class, e.g. 'marine organism'")
 @click.option(
     "--skip-image-download", is_flag=True, help="Skip image download, only download annotations. CIFAR requires images."
@@ -101,6 +111,7 @@ def download(
     skip_image_download: bool,
     verified: bool,
     unverified: bool,
+    concurrent: bool,
 ) -> bool:
     from mbari_aidata.logger import create_logger_file, info, exception
 
@@ -121,6 +132,8 @@ def download(
                 )
         if fill is not None and not crop_roi:
             raise click.UsageError("--fill requires --crop-roi")
+        if concurrent and crop_roi:
+            raise click.UsageError("--concurrent cannot be used with --crop-roi; it is for full-frame detection datasets")
         base_path.mkdir(exist_ok=True, parents=True)
         # Load the configuration file
         config_dict = init_yaml_config(config)
@@ -205,6 +218,7 @@ def download(
             external_video_root=external_video_root,
             resize=resize,
             fill=fill,
+            concurrent_localizations=concurrent,
         )
         return success
     except click.ClickException:
